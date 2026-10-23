@@ -154,6 +154,22 @@ ol.method li::before{content:counter(s);flex:none;width:26px;height:26px;border-
 .price:hover{background:var(--soft)}
 .price.edited{background:#fff3c4;color:#111}
 .totals .stats{grid-template-columns:repeat(3,1fr)}
+
+.extras{margin-bottom:28px}
+.addrow{display:flex;gap:8px;margin:10px 0 4px}
+.addrow input{flex:1;min-width:0;border:0;background:var(--bg);border-radius:99px;padding:10px 16px;font-size:16px;outline:none}
+.addrow input:focus{box-shadow:0 0 0 2px var(--ink) inset}
+.extras .item:last-child{border-bottom:0}
+.sync{margin-top:16px}
+.sync .field{background:var(--bg);margin:10px 0}
+.card .pill.ghost{background:var(--bg)}
+.sync .field input{font-size:16px;font-weight:500;letter-spacing:0;padding-top:2px}
+.syncbadge{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap}
+.syncbadge::before{content:"";width:8px;height:8px;border-radius:99px;background:var(--dot,#9a9a96)}
+.syncbadge[data-s="ok"]{--dot:#0e9a5c}
+.syncbadge[data-s="syncing"]{--dot:#f5a400}
+.syncbadge[data-s="offline"],.syncbadge[data-s="auth"]{--dot:#d9480f}
+@media (max-width:480px){.syncbadge{font-size:0;gap:0}}
 </style>
 </head>
 <body>
@@ -163,6 +179,7 @@ ol.method li::before{content:counter(s);flex:none;width:26px;height:26px;border-
     <a class="tab" href="#/" data-r="week">This week</a>
     <a class="tab" href="#/shop" data-r="shop">Shopping</a>
     <a class="tab" href="#/macros" data-r="macros">Macros</a>
+    <a class="syncbadge" id="syncbadge" href="#/macros" hidden></a>
   </nav>
   <main id="app"></main>
 </div>
@@ -315,10 +332,16 @@ const COL = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)'];
 const DEF = {kcal:2500,protein:160,carbs:260,fat:85,share:30,people:1};
 let S = norm(load());
 function norm(x){ x = x || {};
-  x.settings = {...DEF, ...(x.settings||{})}; x.plan = x.plan||[]; x.locked = x.locked||[]; x.ticked = x.ticked||{}; x.cooked = x.cooked||[]; x.lunch = x.lunch||[]; x.prices = x.prices||{};
+  x.settings = {...DEF, ...(x.settings||{})}; x.plan = x.plan||[]; x.locked = x.locked||[]; x.ticked = x.ticked||{}; x.cooked = x.cooked||[]; x.lunch = x.lunch||[]; x.prices = x.prices||{}; x.extras = x.extras||{}; x._mt = x._mt||{};
   return x; }
 function load(){ try{ return JSON.parse(localStorage.getItem('wc')); }catch(e){ return null; } }
-function save(){ try{ lastSaved = JSON.stringify(S); localStorage.setItem('wc', lastSaved); }catch(e){} }
+function save(push=true){ try{ lastSaved = JSON.stringify(S); localStorage.setItem('wc', lastSaved); }catch(e){} if(push) queuePush(); }
+// Every change goes through put() so each piece carries its own timestamp — that's what lets two phones merge cleanly.
+function getP(o,path){ const i=path.indexOf('.'); if(i<0) return o[path]; const t=o[path.slice(0,i)]; return t==null?undefined:t[path.slice(i+1)]; }
+function setP(o,path,v){ const i=path.indexOf('.'); if(i<0){ o[path]=v; return; } o[path.slice(0,i)][path.slice(i+1)]=v; }
+function put(path,val,ts){ setP(S,path,val); S._mt[path] = ts===undefined ? Date.now() : ts; }
+function untickAll(ts){ Object.keys(S.ticked).forEach(k=>{ if(S.ticked[k]) put('ticked.'+k,false,ts); }); }
+const esc = t => String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const $ = id => document.getElementById(id);
 const byId = id => R.find(r => r.id === id);
 
@@ -337,15 +360,17 @@ function pick(exclude, used){
   return pool[pool.length-1].id;
 }
 function tagsOf(ids){ const t={}; ids.forEach(id=>{ if(id){ const g=byId(id).tag; t[g]=(t[g]||0)+1; } }); return t; }
-function generate(){
+function generate(initial){
+  const ts = initial ? 0 : undefined;   // a brand-new device's starter week never overrides a synced one
   const plan = DAYS.map((_,i)=>S.locked[i]?S.plan[i]:null);
   DAYS.forEach((_,i)=>{ if(!plan[i]) plan[i]=pick(plan.filter(Boolean),tagsOf(plan)); });
-  DAYS.forEach((_,i)=>{ if(!S.locked[i]) S.cooked[i]=false; });
-  S.plan=plan; S.ticked={}; save(); route();
+  DAYS.forEach((_,i)=>{ if(!S.locked[i]) put('cooked.'+i,false,ts); });
+  put('plan',plan,ts); untickAll(ts); save(); route();
 }
 function swap(i){
   const others=S.plan.filter((_,j)=>j!==i);
-  S.plan[i]=pick([...others,S.plan[i]],tagsOf(others)); S.cooked[i]=false; S.ticked={}; save(); route();
+  const plan=[...S.plan]; plan[i]=pick([...others,S.plan[i]],tagsOf(others));
+  put('plan',plan); put('cooked.'+i,false); untickAll(); save(); route();
   toast('Swapped '+DAYS[i]);
 }
 
@@ -473,7 +498,7 @@ function viewRecipe(i){
 
 function viewShop(){
   const rows=shopRows(), t=totals(rows), g=shopping();
-  const got=rows.filter(x=>S.ticked[x.name+'|'+x.u]).length;
+  const ex=extrasList(), got=rows.filter(x=>S.ticked[x.name+'|'+x.u]).length + ex.filter(([,v])=>v.done).length;
   const shopSec = sh => {
     const list=rows.filter(r=>r.shop===sh); if(!list.length) return '';
     const left=list.filter(r=>r.a==='M'||r.a==='V'), right=list.filter(r=>r.a==='D'||r.a==='C');
@@ -482,13 +507,17 @@ function viewShop(){
       <div class="grid">${list.length>6?`<div>${col(left)}</div><div>${col(right)}</div>`:`<div>${col(list)}</div>`}</div></section>`;
   };
   return `<h1>Shopping</h1>
-  <div class="sub">${got} of ${rows.length} in the basket · for ${weekRange()}${lunches()?` · includes ${lunches()} lunch${lunches()>1?'es':''}`:''}</div>
+  <div class="sub">${got} of ${rows.length+ex.length} in the basket · for ${weekRange()}${lunches()?` · includes ${lunches()} lunch${lunches()>1?'es':''}`:''}</div>
   <div class="card totals"><div class="stats">
       <div class="stat"><b>${gbp(t.all)}</b><span>estimated total</span></div>
       <div class="stat"><b>${gbp(t.A)}</b><span>Aldi</span></div>
       <div class="stat"><b>${gbp(t.S)}</b><span>Sainsbury's</span></div></div>
     <div class="small" style="margin-top:8px">Prices checked ${PRICED}. Tap a price to change it to what you paid.</div></div>
   <div class="btns" style="margin:14px 0 26px"><button class="pill" data-act="copy">Copy list</button>${got?`<button class="pill ghost" data-act="untick">Untick all</button>`:''}</div>
+  <section class="card extras"><b>Added items</b>
+    <div class="addrow"><input id="xtra" placeholder="Milk, bin bags, snacks…" autocomplete="off" enterkeyhint="done"><button class="pill" data-act="addx">Add</button></div>
+    ${ex.map(([id,v])=>`<label class="item ${v.done?'done':''}"><input type="checkbox" data-extra="${id}" ${v.done?'checked':''}><span class="nm"><span class="pn">${esc(v.t)}</span></span><button class="price" data-act="delx" data-id="${id}" aria-label="Remove ${esc(v.t)}">✕</button></label>`).join('')}
+  </section>
   ${shopSec('A')}${shopSec('S')}
   ${g.S?`<div class="card small"><b style="color:var(--ink)">Check you have</b><p style="margin-top:4px">${g.S.map(x=>x.name).join(', ')}</p></div>`:''}`;
 }
@@ -513,7 +542,18 @@ function viewMacros(){
   <div class="fields">${f('kcal','Daily kcal',50)}${f('protein','Protein (g)',5)}${f('carbs','Carbs (g)',5)}${f('fat','Fat (g)',5)}${f('share','Dinner share %',5)}${f('people','People',1)}</div>
   <div class="card" style="margin-top:16px"><b>Each dinner aims for</b>
     <div class="stats" id="tgt">${tgt(t)}</div></div>
-  <div class="btns"><button class="pill" data-act="gen">Re-pick this week</button><a class="pill ghost" href="#/">Done</a></div>`;
+  <div class="btns"><button class="pill" data-act="gen">Re-pick this week</button><a class="pill ghost" href="#/">Done</a></div>
+  ${syncCard()}`;
+}
+function syncCard(){
+  if(!SY.cfg) return `<section class="card sync"><b>Household sync</b>
+    <div class="small" style="margin-top:2px">Share this week between phones — cooked dinners, lunch stickers, ticks and added items. Turn it on on your device first, then on hers with the same repo and token.</div>
+    <label class="field"><span>Data repo</span><input id="syncRepo" value="SteeShaw/WhatsCooking-data" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+    <label class="field"><span>Access token</span><input id="syncToken" type="password" autocomplete="off" placeholder="github_pat_…"></label>
+    <button class="pill" data-act="syncon">Turn on sync</button></section>`;
+  return `<section class="card sync"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><b>Household sync</b><span id="syncstatus" class="small">${syncText()}</span></div>
+    <div class="small" style="margin-top:2px">Syncing with ${esc(SY.cfg.repo)}. Checks for changes every 15 seconds and whenever you open the app.</div>
+    <div class="btns" style="margin-top:12px"><button class="pill" data-act="syncnow">Sync now</button><button class="pill ghost" data-act="syncoff">Turn off on this device</button></div></section>`;
 }
 const tgt = t => `<div class="stat"><b>${k0(t.kcal)}</b><span>kcal</span></div><div class="stat"><b>${k0(t.p)}g</b><span>protein</span></div><div class="stat"><b>${k0(t.c)}g</b><span>carbs</span></div><div class="stat"><b>${k0(t.f)}g</b><span>fat</span></div>`;
 
@@ -538,35 +578,54 @@ $('app').addEventListener('click', e=>{
   const i=+b.dataset.i, a=b.dataset.act;
   if(a==='gen'){ generate(); toast('New week picked'); if(location.hash.includes('macros')) location.hash='#/'; }
   if(a==='swap') swap(i);
-  if(a==='cook'){ S.cooked[i]=!S.cooked[i]; save(); route(); if(S.cooked[i]) toast(DAYS[i]+' cooked'); }
-  if(a==='lock'){ S.locked[i]=!S.locked[i]; save(); route(); }
+  if(a==='cook'){ put('cooked.'+i,!S.cooked[i]); save(); route(); if(S.cooked[i]) toast(DAYS[i]+' cooked'); }
+  if(a==='lock'){ put('locked.'+i,!S.locked[i]); save(); route(); }
   if(a==='lunch') setLunch(i,!S.lunch[i]);
-  if(a==='untick'){ S.ticked={}; save(); route(); }
+  if(a==='untick'){ untickAll(); Object.entries(S.extras).forEach(([id,v])=>{ if(v&&v.done) put('extras.'+id,{...v,done:false}); }); save(); route(); }
+  if(a==='addx') addExtra();
+  if(a==='delx'){ put('extras.'+b.dataset.id,null); save(); route(); }
+  if(a==='syncon'){
+    const repo=$('syncRepo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\/$/,''), token=$('syncToken').value.trim();
+    if(!/^[\w.-]+\/[\w.-]+$/.test(repo) || !token){ toast('Add the repo and token'); return; }
+    SY.cfg={repo,token}; try{ localStorage.setItem('wc-sync', JSON.stringify(SY.cfg)); }catch(e){}
+    route(); syncNow();
+  }
+  if(a==='syncnow') syncNow();
+  if(a==='syncoff'){ if(!confirm('Stop syncing on this device? Your week stays here.')) return; SY.cfg=null; try{ localStorage.removeItem('wc-sync'); }catch(e){} setSync('off'); route(); }
   if(a==='price'){
     const k=b.dataset.key, l=b.dataset.label, pr=P[k], cur=priceOf(k,l, l==='kg'?pr.perKg:(pr.packs.find(x=>x[2]===l)||[])[1]);
     const v=prompt(`${pr.n} — ${l==='kg'?'price per kg':l}\nWhat did it cost? (leave blank to reset)`, cur.toFixed(2));
     if(v===null) return; const x=parseFloat(String(v).replace('£',''));
-    if(String(v).trim()==='') delete S.prices[k+'|'+l]; else if(isFinite(x)&&x>=0) S.prices[k+'|'+l]=x; else return;
+    if(String(v).trim()==='') put('prices.'+k+'|'+l,null); else if(isFinite(x)&&x>=0) put('prices.'+k+'|'+l,x); else return;
     save(); route();
   }
   if(a==='copy'){
     const rows=shopRows(), t=totals(rows), g=shopping();
     const txt=['A','S'].map(sh=>{ const l=rows.filter(r=>r.shop===sh); if(!l.length) return '';
       return SHOP[sh].toUpperCase()+` (${gbp(t[sh])})\n`+l.map(r=>`- ${r.prod?r.prod.n:r.name} — ${packStr(r.bp)} ${r.bp?gbp(r.bp.cost):''}`).join('\n'); }).filter(Boolean).join('\n\n')
+      +(extrasList().length?'\n\nALSO\n'+extrasList().map(([,v])=>'- '+v.t).join('\n'):'')
       +(g.S?'\n\nCHECK YOU HAVE\n'+g.S.map(x=>'- '+x.name).join('\n'):'')+`\n\nEstimated total ${gbp(t.all)}`;
     navigator.clipboard.writeText(txt).then(()=>toast('List copied')).catch(()=>toast('Copy failed'));
   }
 
 });
+$('app').addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.id==='xtra'){ e.preventDefault(); addExtra(); } });
+function addExtra(){
+  const el=$('xtra'); const t=el && el.value.trim(); if(!t) return;
+  put('extras.'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), {t, done:false}); save(); route();
+  $('xtra')?.focus(); toast('Added '+t);
+}
+const extrasList = () => Object.entries(S.extras).filter(([,v])=>v && v.t);
 $('app').addEventListener('change', e=>{
-  const k=e.target.dataset.key; if(!k) return; S.ticked[k]=e.target.checked; save(); route();
+  const x=e.target.dataset.extra; if(x){ put('extras.'+x,{...S.extras[x],done:e.target.checked}); save(); route(); return; }
+  const k=e.target.dataset.key; if(!k) return; put('ticked.'+k,e.target.checked); save(); route();
 });
 $('app').addEventListener('input', e=>{
   const id=e.target.id; if(!(id in S.settings)) return;
   const v=parseFloat(e.target.value); if(!isFinite(v)||v<=0) return;
-  S.settings[id]=v; save(); const el=$('tgt'); if(el) el.innerHTML=tgt(targets());
+  put('settings.'+id,v); save(); const el=$('tgt'); if(el) el.innerHTML=tgt(targets());
 });
-function setLunch(i,on,quiet){ S.lunch[i]=on; save(); route(); if(!quiet) toast(on?`Lunch added to ${DAYS[i]}`:`Lunch removed from ${DAYS[i]}`); }
+function setLunch(i,on,quiet){ put('lunch.'+i,on); save(); route(); if(!quiet) toast(on?`Lunch added to ${DAYS[i]}`:`Lunch removed from ${DAYS[i]}`); }
 
 let drag=null;
 $('app').addEventListener('pointerdown', e=>{
@@ -590,7 +649,7 @@ function endDrag(e){
   if(!d.moved){ if(d.from!=='tray') setLunch(+d.from,false); else toast('Drag me onto a dinner'); return; }
   const to = d.target ? +d.target.dataset.i : null, from = d.from==='tray' ? null : +d.from;
   if (to===null){ if(from!==null) setLunch(from,false); return; }
-  if (from!==null && from!==to) S.lunch[from]=false;
+  if (from!==null && from!==to) put('lunch.'+from,false);
   setLunch(to,true);
 }
 addEventListener('pointerup', endDrag); addEventListener('pointercancel', endDrag);
@@ -613,7 +672,69 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) resy
 addEventListener('pageshow', resync);
 addEventListener('focus', resync);
 
-if (S.plan.length!==5 || S.plan.some(id=>!byId(id))) { S.locked=[]; S.cooked=[]; generate(); } else route();
+// ---------- Household sync via a private GitHub repo ----------
+const SY = { cfg:(()=>{ try{ return JSON.parse(localStorage.getItem('wc-sync')); }catch(e){ return null; } })(), sha:null, state:'off', last:null, busy:false, again:false, t:null };
+const FILE = 'whatscooking.json';
+const b64e = t => btoa(unescape(encodeURIComponent(t)));
+const b64d = t => decodeURIComponent(escape(atob(t.replace(/\s/g,''))));
+function gh(method, body){
+  return fetch(`https://api.github.com/repos/${SY.cfg.repo}/contents/${FILE}`, { method, cache:'no-store',
+    headers:{ Authorization:'Bearer '+SY.cfg.token, Accept:'application/vnd.github+json' }, body: body ? JSON.stringify(body) : undefined });
+}
+function allPaths(){
+  const ps=['plan']; Object.keys(S.settings).forEach(k=>ps.push('settings.'+k));
+  for(let i=0;i<5;i++) ps.push('cooked.'+i,'locked.'+i,'lunch.'+i);
+  ['ticked','prices','extras'].forEach(a=>Object.keys(S[a]).forEach(k=>ps.push(a+'.'+k)));
+  return ps;
+}
+// take whichever side changed each piece most recently
+function mergeIn(remote){
+  let changed=false;
+  for (const [path,t] of Object.entries(remote._mt||{})){
+    if (S._mt[path] >= t) continue;
+    const v = getP(remote,path); setP(S, path, v===undefined ? null : JSON.parse(JSON.stringify(v))); S._mt[path]=t; changed=true;
+  }
+  return changed;
+}
+const needsPush = remote => Object.entries(S._mt).some(([p,t]) => !((remote._mt||{})[p] >= t));
+function queuePush(){ if(!SY.cfg) return; clearTimeout(SY.t); SY.t=setTimeout(syncNow, 1200); }
+async function syncNow(){
+  if(!SY.cfg) return; if(SY.busy){ SY.again=true; return; }
+  SY.busy=true; setSync('syncing');
+  try{
+    for (let attempt=0; attempt<3; attempt++){
+      const r = await gh('GET'); let remote=null;
+      if (r.status===200){ const j=await r.json(); SY.sha=j.sha; remote=norm(JSON.parse(b64d(j.content))); }
+      else if (r.status===404){ SY.sha=null; const now=Date.now(); allPaths().forEach(p=>{ if(S._mt[p]==null || S._mt[p]===0) S._mt[p]=now; }); }
+      else if (r.status===401||r.status===403){ setSync('auth'); return; }
+      else throw new Error('GET '+r.status);
+      if (remote && mergeIn(remote)){ save(false); const f=document.activeElement; if(!(f && f.tagName==='INPUT')) route(); }
+      if (remote && !needsPush(remote)){ setSync('ok'); return; }
+      const w = await gh('PUT', { message:'Sync '+new Date().toISOString(), content:b64e(JSON.stringify(S)), ...(SY.sha?{sha:SY.sha}:{}) });
+      if (w.status===200||w.status===201){ SY.sha=(await w.json()).content.sha; setSync('ok'); return; }
+      if (w.status===409||w.status===422) continue;          // the other phone saved first: pull, merge, try again
+      if (w.status===401||w.status===403){ setSync('auth'); return; }
+      throw new Error('PUT '+w.status);
+    }
+    setSync('ok');
+  } catch(e){ setSync('offline'); }
+  finally { SY.busy=false; if(SY.again){ SY.again=false; setTimeout(syncNow,300); } }
+}
+function syncText(){
+  return { off:'', syncing:'Syncing…', offline:'Offline — will retry', auth:"Token didn't work — check it has Contents read & write on that repo",
+    ok:'Synced ✓ '+(SY.last?SY.last.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'') }[SY.state];
+}
+function setSync(st){
+  SY.state=st; if(st==='ok') SY.last=new Date();
+  const b=$('syncbadge'); b.hidden=!SY.cfg; b.dataset.s=st; b.textContent={ok:'Synced',syncing:'Syncing',offline:'Offline',auth:'Sync error',off:''}[st];
+  const el=$('syncstatus'); if(el) el.textContent=syncText();
+}
+setInterval(()=>{ if(SY.cfg && !document.hidden) syncNow(); }, 15000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && SY.cfg) syncNow(); });
+addEventListener('online', ()=>{ if(SY.cfg) syncNow(); });
+
+if (S.plan.length!==5 || S.plan.some(id=>!byId(id))) { S.locked=[]; S.cooked=[]; generate(true); } else route();
+if (SY.cfg) syncNow();
 </script>
 </body>
 </html>
