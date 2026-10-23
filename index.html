@@ -123,7 +123,7 @@ ol.method li::before{content:counter(s);flex:none;width:26px;height:26px;border-
 
 .toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(8px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:99px;font-size:14px;font-weight:600;opacity:0;transition:.2s;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%)}
-@media (max-width:480px){.brand{margin-right:auto;font-size:17px}.tab{padding:5px 9px;font-size:14px}}
+@media (max-width:480px){.brand{margin-right:auto;font-size:17px}.tab{padding:5px 8px;font-size:14px}nav{gap:2px}.syncbadge{margin-left:4px}}
 
 /* lunch stickers */
 .slot{flex:none;display:grid;place-items:center;min-width:74px;height:34px}
@@ -203,6 +203,13 @@ ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));colo
 @keyframes drift{0%{transform:translate(-8%,-6%) rotate(0deg) scale(1)}50%{transform:translate(6%,5%) rotate(35deg) scale(1.18)}100%{transform:translate(-4%,7%) rotate(-18deg) scale(1.06)}}
 @keyframes drift2{0%{transform:translate(6%,4%) rotate(0deg)}100%{transform:translate(-7%,-6%) rotate(-40deg) scale(1.2)}}
 @media (prefers-reduced-motion: reduce){.grad::before,.grad::after{animation:none}}
+
+.hero-photo{position:absolute;top:22px;right:22px;width:clamp(110px,24vw,170px);aspect-ratio:1;object-fit:cover;border-radius:50%;
+  border:4px solid color-mix(in srgb,var(--on,#fff) 85%,transparent);box-shadow:0 14px 34px -10px rgba(0,0,0,.35);transform:rotate(6deg)}
+.thumb{flex:none;width:44px;height:44px;border-radius:12px;object-fit:cover;margin-left:-4px}
+.banner{border-radius:24px;aspect-ratio:16/7;margin:0 0 18px;overflow:hidden}
+.banner img{display:block;width:100%;height:100%;object-fit:cover;position:relative;z-index:1}
+@media (max-width:480px){.banner{aspect-ratio:4/3}.thumb{width:40px;height:40px}}
 </style>
 </head>
 <body>
@@ -622,6 +629,7 @@ function viewWeek(){
   <div class="grid">
     <div>
       <section class="hero grad ${nx===null?'done':''}" data-i="${hi}" style="${dayStyle(hi)}">
+        ${imgTag(r,'hero-photo')}
         <div class="num">${hi+1}</div>
         <div class="eyebrow">${nx===null?'Last up':'Up next'} · ${DAYS[hi]} <span class="chip">${r.tag}</span>${Math.abs(m.s-1)>.04?`<span class="chip">${m.s.toFixed(2).replace(/0$/,'')}× portion</span>`:''}${S.lunch[hi]?'<span class="sticker" data-from="'+hi+'">+ Lunch</span>':''}</div>
         <h2>${r.name}</h2>
@@ -639,7 +647,7 @@ function viewWeek(){
       <div>${S.plan.map((id,i)=>{ const x=byId(id), mm=scaled(x);
         return `<a class="row ${S.cooked[i]?'cooked':''} ${i===hi?'active':''}" data-i="${i}" href="#/recipe/${i}" style="${dayStyle(i)}">
           <div class="tile grad">${i+1}</div>
-          <div class="rbody"><div class="rtitle">${x.name}${S.locked[i]?'<span class="lockdot">LOCKED</span>':''}</div>
+          ${imgTag(x,'thumb')}<div class="rbody"><div class="rtitle">${x.name}${S.locked[i]?'<span class="lockdot">LOCKED</span>':''}</div>
           <div class="rmeta">${DAYS[i].slice(0,3)} · ≈${k0(mm.kcal)} kcal, ≈${k0(mm.p)}g protein${x.mins?` · ${x.mins} min`:''}${x.by?` · ${x.by}`:''}</div></div>
           <span class="slot" data-slot="${i}">${S.lunch[i]?`<span class="sticker" data-from="${i}">+ Lunch</span>`:'<span class="lslot">+ lunch</span>'}</span>
           <span class="chev">›</span></a>`; }).join('')}</div>
@@ -665,6 +673,7 @@ function viewRecipe(i){
   const m=scaled(r), n=S.settings.people, L=S.lunch[i]?1:0;
   return `<a class="back" href="#/">‹ This week</a>
   <div style="${dayStyle(i)}">
+    ${photoOf(r) ? `<div class="banner grad">${imgTag(r,'')}</div>` : ''}
     <div class="rhead"><div class="tile grad">${i+1}</div><div><div class="label" style="margin:2px 0 4px">${DAYS[i]} · ${r.tag}${r.mins?` · ${r.mins} min`:''}</div><h1>${r.name}</h1></div></div>
     <div class="sub" style="margin-top:0">${macroLine(m)} per portion${r.est?' (estimated)':''}${Math.abs(m.s-1)>.04?` · scaled ${m.s.toFixed(2).replace(/0$/,'')}× to hit your target`:''}</div>
     <div class="btns" style="margin:0 0 24px">
@@ -880,6 +889,9 @@ const SY = { cfg:(()=>{ try{ return JSON.parse(localStorage.getItem('wc-sync'));
 const FILE = 'whatscooking.json', PRIV = 'recipes-private.json';
 function addPrivate(list){ if(!Array.isArray(list)) return 0; let n=0; list.forEach(r=>{ if(r && r.id && !R.some(x=>x.id===r.id)){ R.push(r); n++; } }); return n; }
 (()=>{ try{ addPrivate(JSON.parse(localStorage.getItem('wc-priv')||'[]')); }catch(e){} })();
+let PHOTOS = (()=>{ try{ return JSON.parse(localStorage.getItem('wc-photos')||'{}'); }catch(e){ return {}; } })();
+const photoOf = r => r && PHOTOS[r.id] || '';
+const imgTag = (r, cls) => { const u = photoOf(r); return u ? `<img class="${cls}" src="${esc(u)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">` : ''; };
 async function loadPrivate(){
   if(!SY.cfg) return;
   try{
@@ -887,7 +899,12 @@ async function loadPrivate(){
     if (r.status !== 200) return;
     const list = JSON.parse(b64d((await r.json()).content)).recipes || [];
     try{ localStorage.setItem('wc-priv', JSON.stringify(list)); }catch(e){}
-    if (addPrivate(list)) { const f=document.activeElement; if(!(f && f.tagName==='INPUT')) route(); }
+    const added = addPrivate(list);
+    let newPhotos = false;
+    const ph = await fetch(`https://api.github.com/repos/${SY.cfg.repo}/contents/photos.json`, { cache:'no-store', headers:{ Authorization:'Bearer '+SY.cfg.token, Accept:'application/vnd.github+json' } });
+    if (ph.status === 200){ const map = JSON.parse(b64d((await ph.json()).content)).photos || {};
+      newPhotos = JSON.stringify(map) !== JSON.stringify(PHOTOS); PHOTOS = map; try{ localStorage.setItem('wc-photos', JSON.stringify(map)); }catch(e){} }
+    if (added || newPhotos) { const f=document.activeElement; if(!(f && f.tagName==='INPUT')) route(); }
   }catch(e){}
 }
 const b64e = t => btoa(unescape(encodeURIComponent(t)));
