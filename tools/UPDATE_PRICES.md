@@ -80,6 +80,8 @@ Search `https://www.sainsburys.co.uk/gol-ui/SearchResults/<search>` and take the
 | Sainsbury's Mild Salsa\|200g | salsa dip |
 | Sainsbury's Edamame Beans (frozen)\|500g | edamame |
 
+**Sainsbury's fallback range** (used when Aldi has no match): every row of `const CAT_S` in `index.html` is `[name, size, price, aisle]`. Search Sainsbury's for each product name (drop the "Sainsbury's" prefix) and record the price under the key `"<name>|<size>"` exactly as written in the row, in the same `sainsburys` map.
+
 Some Sainsbury's searches occasionally return an empty page — retry once with the alternative wording, then skip.
 
 ## 3. Apply and publish

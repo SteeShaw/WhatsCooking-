@@ -39,6 +39,17 @@ def main():
             seen.add(slug); note(f'{row[1]} {row[0]}', row[3], float(aldi[slug])); row[3] = round(float(aldi[slug]), 2)
     s = s[:m.start(1)] + json.dumps(cat, ensure_ascii=False, separators=(',', ':')) + s[m.end(1):]
 
+    # 1b) Sainsbury's fallback range: const CAT_S = [[name, size, price, aisle], ...];  key "<name>|<size>"
+    m = re.search(r'^const CAT_S = (\[.*\]);$', s, re.M)
+    if m:
+        cs = json.loads(m.group(1))
+        for row in cs:
+            k = f'{row[0]}|{row[1]}'
+            if k in sains:
+                note(row[0], row[2], float(sains[k])); row[2] = round(float(sains[k]), 2)
+        s = s[:m.start(1)] + json.dumps(cs, ensure_ascii=False, separators=(',', ':')) + s[m.end(1):]
+        s = re.sub(r"(// Sainsbury's fallback range \(prices checked )[^)]*\)", rf'\g<1>{date})', s)
+
     # 2) Recipe products: lines like  'Chicken breast': {s:'A', n:'…', packs:[[300,2.29,'300g','slug'],…], u:AL+'slug'},
     out = []
     for line in s.split('\n'):
