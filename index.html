@@ -240,15 +240,36 @@ ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));colo
 /* recipe page header without the tile */
 .rhead{display:block}
 .rhead .label{margin:0 0 6px}
+
+.tab .short{display:none}
+@media (max-width:480px){.tab .full{display:none}.tab .short{display:inline}}
+.calnav{display:flex;align-items:center;justify-content:space-between;max-width:420px;margin:6px 0 14px}
+.calnav b{font-size:20px;letter-spacing:-.02em}
+.calnav .pill{padding:6px 14px;font-size:18px}
+.cal{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.chead{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:0 4px}
+.cday{position:relative;display:flex;flex-direction:column;gap:6px;min-height:132px;padding:8px;border-radius:16px;background:var(--soft);overflow:hidden}
+.cday.empty{background:transparent;border:1.5px dashed var(--line);min-height:40px}
+.cday.out{opacity:.45}
+.cday.today{box-shadow:0 0 0 2px var(--ink) inset}
+.dnum{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700}
+.tick{font-size:11px;color:#fff;background:#0e9a5c;border-radius:99px;width:16px;height:16px;display:grid;place-items:center}
+.ldot{display:inline-block;width:9px;height:9px;border-radius:99px;background:#ffd23f;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
+.sw{display:block;width:100%;aspect-ratio:4/3;border-radius:10px}
+.sw img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
+.dname{font-size:13px;font-weight:600;line-height:1.2;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.cday:not(.empty):hover{background:color-mix(in srgb,var(--soft) 80%,var(--ink) 6%)}
+@media (max-width:560px){.cal{gap:5px}.cday{min-height:92px;padding:5px;border-radius:12px;gap:4px}.dname{font-size:10.5px;-webkit-line-clamp:2}.dnum{font-size:11px}.sw{border-radius:8px}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <nav>
     <a class="brand" href="#/">WhatsCooking</a>
-    <a class="tab" href="#/" data-r="week">This week</a>
-    <a class="tab" href="#/shop" data-r="shop">Shopping</a>
+    <a class="tab" href="#/" data-r="week"><span class="full">This week</span><span class="short">Week</span></a>
+    <a class="tab" href="#/shop" data-r="shop"><span class="full">Shopping</span><span class="short">Shop</span></a>
     <a class="tab" href="#/macros" data-r="macros">Macros</a>
+    <a class="tab" href="#/archive" data-r="archive"><span class="full">Past weeks</span><span class="short">Past</span></a>
     <a class="syncbadge" id="syncbadge" href="#/macros" hidden></a>
   </nav>
   <main id="app"></main>
@@ -486,7 +507,7 @@ const COL = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)'];
 const DEF = {kcal:2500,protein:160,carbs:260,fat:85,share:30,people:1};
 let S = norm(load());
 function norm(x){ x = x || {};
-  x.settings = {...DEF, ...(x.settings||{})}; x.plan = x.plan||[]; x.locked = x.locked||[]; x.ticked = x.ticked||{}; x.cooked = x.cooked||[]; x.lunch = x.lunch||[]; x.prices = x.prices||{}; x.extras = x.extras||{}; x._mt = x._mt||{};
+  x.settings = {...DEF, ...(x.settings||{})}; x.plan = x.plan||[]; x.locked = x.locked||[]; x.ticked = x.ticked||{}; x.cooked = x.cooked||[]; x.lunch = x.lunch||[]; x.prices = x.prices||{}; x.extras = x.extras||{}; x.history = x.history||{}; x._mt = x._mt||{};
   return x; }
 function load(){ try{ return JSON.parse(localStorage.getItem('wc')); }catch(e){ return null; } }
 function save(push=true){ try{ lastSaved = JSON.stringify(S); localStorage.setItem('wc', lastSaved); }catch(e){} if(push) queuePush(); }
@@ -632,13 +653,36 @@ const dayStyle = i => gradStyle(byId(S.plan[i]), i);
 // ---------- Helpers ----------
 const k0 = v => Math.round(v);
 const macroLine = m => `≈${k0(m.kcal)} kcal, ≈${k0(m.p)}g protein, ${k0(m.c)}g carbs, ${k0(m.f)}g fat`;
-function weekRange(){
-  const d=new Date(), dow=(d.getDay()+6)%7; const mon=new Date(d); mon.setDate(d.getDate()-dow);
-  const fri=new Date(mon); fri.setDate(mon.getDate()+4);
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const dayOf = k => { const [y,m,d] = k.split('-').map(Number); return new Date(y, m-1, d); };
+function mondayOf(d){ const m = new Date(d.getFullYear(), d.getMonth(), d.getDate()); m.setDate(m.getDate() - (m.getDay()+6)%7); return m; }
+const thisWeek = () => iso(mondayOf(new Date()));
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+function weekRange(key){
+  const mon = key ? dayOf(key) : mondayOf(new Date());
+  const fri = addDays(mon, 4);
   const M=x=>x.toLocaleDateString('en-GB',{month:'long'});
   return mon.getMonth()===fri.getMonth() ? `${mon.getDate()}–${fri.getDate()} ${M(fri)}` : `${mon.getDate()} ${M(mon).slice(0,3)} – ${fri.getDate()} ${M(fri).slice(0,3)}`;
 }
 const lunches = () => S.lunch.slice(0,5).filter(Boolean).length;
+// ---------- Weekly archive ----------
+function archiveWeek(key){
+  if (!key || S.plan.length !== 5) return;
+  put('history.'+key, { plan:[...S.plan], names:S.plan.map(id => (byId(id)||{}).name || ''), cooked:DAYS.map((_,i)=>!!S.cooked[i]), lunch:DAYS.map((_,i)=>!!S.lunch[i]) });
+}
+// On the first open of a new week: save last week, then start fresh
+function rollover(){
+  const cur = thisWeek();
+  if (!S.week){ put('week', cur, 0); save(); return false; }
+  if (S.week >= cur) return false;
+  archiveWeek(S.week);
+  put('week', cur);
+  DAYS.forEach((_,i) => { put('locked.'+i, false); put('lunch.'+i, false); });
+  Object.entries(S.extras).forEach(([id,v]) => { if (v && v.done) put('extras.'+id, null); });
+  generate();
+  toast('New week picked — last week is saved in Past weeks');
+  return true;
+}
 function nextIndex(){ const i=S.cooked.findIndex((c,j)=>j<5&&!c); return i===-1?null:i; }
 
 // ---------- Views ----------
@@ -797,13 +841,72 @@ function syncCard(){
 }
 const tgt = t => `<div class="stat"><b>${k0(t.kcal)}</b><span>kcal</span></div><div class="stat"><b>${k0(t.p)}g</b><span>protein</span></div><div class="stat"><b>${k0(t.c)}g</b><span>carbs</span></div><div class="stat"><b>${k0(t.f)}g</b><span>fat</span></div>`;
 
+
+// ---------- Past weeks ----------
+function weekData(key){
+  if (key === (S.week || thisWeek())) return { plan:S.plan, cooked:DAYS.map((_,i)=>!!S.cooked[i]), lunch:DAYS.map((_,i)=>!!S.lunch[i]), names:S.plan.map(id=>(byId(id)||{}).name||''), current:true };
+  return S.history[key] || null;
+}
+function viewArchive(ym){
+  const now = new Date(); let [y, m] = (ym && /^\d{4}-\d{2}$/.test(ym)) ? ym.split('-').map(Number) : [now.getFullYear(), now.getMonth()+1];
+  const first = new Date(y, m-1, 1), last = new Date(y, m, 0), today = iso(now);
+  const prev = iso(new Date(y, m-2, 1)).slice(0,7), next = iso(new Date(y, m, 1)).slice(0,7);
+  const weeks = []; for (let mon = mondayOf(first); mon <= last; mon = addDays(mon, 7)) weeks.push(mon);
+  const saved = Object.values(S.history).filter(Boolean), cookedCount = saved.reduce((a,w) => a + (w.cooked||[]).filter(Boolean).length, 0);
+  const cell = (mon, i) => {
+    const d = addDays(mon, i), key = iso(mon), w = weekData(key), id = w && w.plan[i], inMonth = d.getMonth() === m-1;
+    const cls = `cday ${inMonth?'':'out'} ${iso(d)===today?'today':''}`;
+    if (!id) return `<div class="${cls} empty"><span class="dnum">${d.getDate()}</span></div>`;
+    const r = byId(id), name = (r && !r.hidden ? r.name : (w.names||[])[i]) || 'Dinner';
+    return `<a class="${cls}${w.cooked && w.cooked[i] ? ' done' : ''}" href="#/past/${key}/${i}" style="${gradStyle(r, i)}">
+      <span class="dnum">${d.getDate()}${w.cooked && w.cooked[i] ? '<span class="tick">✓</span>' : ''}${w.lunch && w.lunch[i] ? '<span class="ldot" title="+ lunch"></span>' : ''}</span>
+      <span class="sw grad">${imgTag(r,'')}</span><span class="dname">${esc(name)}</span></a>`;
+  };
+  return `<h1>Past weeks</h1>
+  <div class="sub">${saved.length ? `${saved.length} week${saved.length>1?'s':''} saved · ${cookedCount} dinners cooked` : 'Each week is saved here automatically when a new one starts on Monday.'}</div>
+  <div class="calnav"><a class="pill ghost" href="#/archive/${prev}">‹</a><b>${first.toLocaleDateString('en-GB',{month:'long', year:'numeric'})}</b><a class="pill ghost" href="#/archive/${next}">›</a></div>
+  <div class="cal">
+    ${['Mon','Tue','Wed','Thu','Fri'].map(d => `<div class="chead">${d}</div>`).join('')}
+    ${weeks.map(mon => [0,1,2,3,4].map(i => cell(mon, i)).join('')).join('')}
+  </div>
+  <p class="small" style="margin-top:14px">Tap a dinner to see it again or cook it again this week. ✓ cooked · <span class="ldot"></span> with a lunch portion</p>`;
+}
+function viewPast(key, i){
+  if (!key || key === (S.week || thisWeek())) return viewRecipe(i);
+  const w = S.history[key]; if (!w) return viewArchive();
+  const r = byId(w.plan[i]), d = addDays(dayOf(key), i);
+  if (!r || r.hidden) return `<a class="back" href="#/archive/${key.slice(0,7)}">‹ Past weeks</a><h1>${esc((w.names||[])[i]||'Dinner')}</h1><div class="sub">This recipe isn't available on this device — turn on sync to load your private recipes.</div>`;
+  const m = scaled(r);
+  return `<a class="back" href="#/archive/${key.slice(0,7)}">‹ Past weeks</a>
+  <div style="${gradStyle(r, i)}">
+    ${photoOf(r) ? `<div class="banner grad">${imgTag(r,'')}</div>` : ''}
+    <div class="rhead"><div><div class="label">${d.toLocaleDateString('en-GB',{weekday:'long', day:'numeric', month:'long'})}${w.cooked && w.cooked[i] ? ' · cooked ✓' : ''}</div><h1>${r.name}</h1></div></div>
+    <div class="sub" style="margin-top:0">${macroLine(m)} per portion${r.est?' (estimated)':''}</div>
+    <div class="btns" style="margin:0 0 24px"><button class="pill" data-act="again" data-id="${r.id}">Cook this again this week</button>${r.src?`<a class="pill ghost" href="${r.src}" target="_blank" rel="noopener">Full recipe on ${r.by} ↗</a>`:''}</div>
+    <div class="grid">
+      <div class="card"><b>Ingredients</b><span class="small"> · per portion</span>
+        ${r.i.map(([nm,q,u])=>`<div class="item" style="cursor:default"><span class="nm">${nm}</span><span class="q">${portion(q,u,m.s,1)}</span></div>`).join('')}</div>
+      <div><p class="label">Method${r.src?' (in short)':''}</p><ol class="method">${r.m.map(x=>`<li><span>${x}</span></li>`).join('')}</ol></div>
+    </div>
+  </div>`;
+}
+// put a past dinner back into this week: the next day that isn't cooked or locked
+function cookAgain(id){
+  const todayIdx = Math.min(4, (new Date().getDay()+6)%7), open = j => !S.cooked[j] && !S.locked[j];
+  let j = [0,1,2,3,4].find(k => k >= todayIdx && open(k)); if (j === undefined) j = [0,1,2,3,4].find(open);
+  if (j === undefined){ toast('Every night this week is cooked or locked'); return; }
+  const plan = [...S.plan]; plan[j] = id; put('plan', plan); put('cooked.'+j, false); untickAll(); save();
+  location.hash = '#/'; toast(`Added to ${DAYS[j]}`);
+}
+
 // ---------- Router ----------
 function route(){
   const h=location.hash.replace(/^#\/?/,''), [p,arg]=h.split('/');
-  const name = p==='shop'?'shop':p==='macros'?'macros':'week';
+  const name = p==='shop'?'shop':p==='macros'?'macros':(p==='archive'||p==='past')?'archive':'week';
   document.querySelectorAll('.tab').forEach(a=>a.classList.toggle('on',a.dataset.r===name));
-  $('app').innerHTML = p==='recipe' ? viewRecipe(+arg) : p==='shop' ? viewShop() : p==='macros' ? viewMacros() : viewWeek();
-  document.title = (p==='shop'?'Shopping':p==='macros'?'Macros':weekRange()) + ' – WhatsCooking';
+  const parts = h.split('/');
+  $('app').innerHTML = p==='recipe' ? viewRecipe(+arg) : p==='shop' ? viewShop() : p==='macros' ? viewMacros() : p==='archive' ? viewArchive(arg) : p==='past' ? viewPast(parts[1], +parts[2]) : viewWeek();
+  document.title = (p==='shop'?'Shopping':p==='macros'?'Macros':name==='archive'?'Past weeks':weekRange()) + ' – WhatsCooking';
 }
 addEventListener('hashchange', ()=>{ route(); scrollTo(0,0); });
 
@@ -825,6 +928,7 @@ $('app').addEventListener('click', e=>{
   if(a==='addx') addExtra();
   if(a==='delx'){ put('extras.'+b.dataset.id,null); save(); route(); }
   if(a==='checkx') checkExtras(false);
+  if(a==='again') cookAgain(b.dataset.id);
   if(a==='altx'){ const id=b.dataset.id, v=S.extras[id], c=candidates(v.t); if(c.length<2){ toast('No other matches'); return; }
     const i=c.findIndex(o=>o.key===v.m), nx=c[(i+1)%c.length]; const nv={...v, m:nx.key}; delete nv.p; put('extras.'+id, nv); save(); route(); toast(nx.n+(nx.sz?' · '+nx.sz:'')); }
   if(a==='xprice'){ const id=b.dataset.id, v=S.extras[id], x=extraInfo(v), unit=x.cost!=null?x.cost/x.qty:null;
@@ -950,7 +1054,7 @@ function gh(method, body){
     headers:{ Authorization:'Bearer '+SY.cfg.token, Accept:'application/vnd.github+json' }, body: body ? JSON.stringify(body) : undefined });
 }
 function allPaths(){
-  const ps=['plan']; Object.keys(S.settings).forEach(k=>ps.push('settings.'+k));
+  const ps=['plan','week']; Object.keys(S.history).forEach(k=>ps.push('history.'+k)); Object.keys(S.settings).forEach(k=>ps.push('settings.'+k));
   for(let i=0;i<5;i++) ps.push('cooked.'+i,'locked.'+i,'lunch.'+i);
   ['ticked','prices','extras'].forEach(a=>Object.keys(S[a]).forEach(k=>ps.push(a+'.'+k)));
   return ps;
@@ -986,7 +1090,7 @@ async function syncNow(){
     }
     setSync('ok');
   } catch(e){ setSync('offline'); }
-  finally { SY.busy=false; if(SY.again){ SY.again=false; setTimeout(syncNow,300); } }
+  finally { SY.busy=false; rollover(); if(SY.again){ SY.again=false; setTimeout(syncNow,300); } }
 }
 function syncText(){
   return { off:'', syncing:'Syncing…', offline:'Offline — will retry', auth:"Token didn't work — check it has Contents read & write on that repo",
@@ -998,10 +1102,11 @@ function setSync(st){
   const el=$('syncstatus'); if(el) el.textContent=syncText();
 }
 setInterval(()=>{ if(SY.cfg && !document.hidden) syncNow(); }, 15000);
-document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && SY.cfg){ syncNow(); loadPrivate(); } });
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) return; if(SY.cfg){ syncNow(); loadPrivate(); } else rollover(); });
 addEventListener('online', ()=>{ if(SY.cfg) syncNow(); });
 
 if (S.plan.length!==5 || S.plan.some(id=>!byId(id))) { S.locked=[]; S.cooked=[]; generate(true); } else route();
+if (!SY.cfg) rollover();
 if (SY.cfg){ syncNow(); loadPrivate(); }
 </script>
 </body>
