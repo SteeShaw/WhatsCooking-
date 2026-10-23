@@ -180,18 +180,16 @@ ol.method li::before{content:counter(s);flex:none;width:26px;height:26px;border-
 .srclink{margin-top:14px}
 
 /* ethereal, slowly drifting gradients coloured by each recipe */
-.grad{position:relative;overflow:hidden;isolation:isolate;background:linear-gradient(140deg,var(--g1) 0%,var(--g3) 45%,var(--g2) 100%)}
+.grad{position:relative;overflow:hidden;isolation:isolate;background:linear-gradient(140deg,var(--g1),var(--g2));background:linear-gradient(in oklch 140deg,var(--g1),var(--g2))}
 .grad::before,.grad::after{content:"";position:absolute;inset:-35%;z-index:-1;pointer-events:none}
 .grad::before{background:
-  radial-gradient(closest-side at 25% 28%,var(--g1),transparent 75%),
-  radial-gradient(closest-side at 78% 22%,var(--g2),transparent 75%),
-  radial-gradient(closest-side at 70% 75%,var(--g4),transparent 75%),
-  radial-gradient(closest-side at 22% 80%,var(--g3),transparent 75%);
+  radial-gradient(closest-side at 28% 30%,var(--g1),transparent 80%),
+  radial-gradient(closest-side at 74% 72%,var(--g2),transparent 80%);
   filter:blur(70px) saturate(1.35);animation:drift 22s ease-in-out infinite alternate;animation-delay:var(--d,0s)}
 .grad::after{background:
   radial-gradient(closest-side at 55% 45%,var(--g2),transparent 70%),
   radial-gradient(closest-side at 15% 30%,var(--g4),transparent 70%);
-  filter:blur(80px);opacity:.45;mix-blend-mode:screen;animation:drift2 30s ease-in-out infinite alternate;animation-delay:var(--d,0s)}
+  filter:blur(80px);opacity:0;mix-blend-mode:screen;display:none;animation:drift2 30s ease-in-out infinite alternate;animation-delay:var(--d,0s)}
 .tile.grad::before{filter:blur(14px) saturate(1.35)} .tile.grad::after{filter:blur(16px)}
 .progress i.grad::before{filter:blur(4px)} .progress i.grad::after{display:none}
 .dots i{overflow:hidden;position:relative;background:linear-gradient(135deg,var(--g1),var(--g3))}
@@ -582,13 +580,14 @@ function palette(r){
   const up = base >= 60 && base < 300;            // greens, teals, blues, violets head up through blue/purple
   const arc = (115 + (seed % 4) * 15) * (up ? 1 : -1); // reds, oranges, yellows head down through pink/magenta
   const at = t => base + arc * t;
-  const p = [hsl2hex(at(0), 92, 58), hsl2hex(at(1), 90, 60), hsl2hex(at(.38), 94, 60), hsl2hex(at(.7), 90, 62)];
+  const second = seed % 3 === 0 ? '#ffffff' : hsl2hex(at(.55), 92, 60);   // about a third of dinners fade to white
+  const p = [hsl2hex(at(0), 92, 58), second];
   return palCache[key] = p;
 }
 const lum = hex => { const n = parseInt(hex.slice(1),16), c = [n>>16, n>>8&255, n&255].map(v => { v/=255; return v<=.03928 ? v/12.92 : ((v+.055)/1.055)**2.4; }); return .2126*c[0]+.7152*c[1]+.0722*c[2]; };
 function gradStyle(r, i){
-  const g = palette(r);
-  const avg = g.reduce((a,h) => a + lum(h), 0) / g.length, dark = avg > .5;
+  const [a, b] = palette(r), g = [a, b, a, b];
+  const dark = (lum(a) + lum(b)) / 2 > .5;
   return `--c:${g[0]};--g1:${g[0]};--g2:${g[1]};--g3:${g[2]};--g4:${g[3]};--on:${dark ? '#14110d' : '#fff'};--off:${dark ? '#fff' : '#14110d'};--d:${-(i*3.7 % 17).toFixed(1)}s`;
 }
 const dayStyle = i => gradStyle(byId(S.plan[i]), i);
