@@ -124,6 +124,23 @@ ol.method li::before{content:counter(s);flex:none;width:26px;height:26px;border-
 .toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(8px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:99px;font-size:14px;font-weight:600;opacity:0;transition:.2s;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%)}
 @media (max-width:480px){.brand{margin-right:auto;font-size:17px}.tab{padding:5px 9px;font-size:14px}}
+
+/* lunch stickers */
+.slot{flex:none;display:grid;place-items:center;min-width:74px;height:34px}
+.lslot{font-size:12px;font-weight:700;color:var(--muted);border:1.5px dashed var(--line);border-radius:99px;padding:4px 10px;white-space:nowrap}
+.lslot:hover{color:var(--ink);border-color:var(--muted)}
+.sticker{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;background:#ffd23f;color:#111;
+  padding:6px 11px;border-radius:99px;transform:rotate(-7deg);box-shadow:0 2px 0 rgba(0,0,0,.18),0 6px 14px rgba(0,0,0,.12);
+  cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;white-space:nowrap}
+.sticker:active{cursor:grabbing}
+.sticker.float{position:fixed;z-index:50;pointer-events:none;transform:rotate(4deg) scale(1.12);box-shadow:0 10px 24px rgba(0,0,0,.25)}
+.row.drop,.hero.drop{outline:2px dashed var(--ink);outline-offset:4px;border-radius:14px}
+.hero.drop{border-radius:28px}
+.tray{display:flex;gap:16px;align-items:center}
+.tray .stack{position:relative;flex:none;width:86px;height:40px}
+.tray .stack .sticker{position:absolute;left:4px;top:6px}
+.tray .stack .sticker.under{transform:rotate(5deg);left:10px;top:4px;opacity:.6;pointer-events:none;box-shadow:none}
+.hero .sticker{margin-left:2px;cursor:default}
 </style>
 </head>
 <body>
@@ -202,7 +219,7 @@ const COL = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)'];
 // ---------- State ----------
 const DEF = {kcal:2500,protein:160,carbs:260,fat:85,share:30,people:1};
 let S = load() || {};
-S.settings = {...DEF, ...(S.settings||{})}; S.plan = S.plan||[]; S.locked = S.locked||[]; S.ticked = S.ticked||{}; S.cooked = S.cooked||[];
+S.settings = {...DEF, ...(S.settings||{})}; S.plan = S.plan||[]; S.locked = S.locked||[]; S.ticked = S.ticked||{}; S.cooked = S.cooked||[]; S.lunch = S.lunch||[];
 function load(){ try{ return JSON.parse(localStorage.getItem('wc')); }catch(e){ return null; } }
 function save(){ try{ localStorage.setItem('wc', JSON.stringify(S)); }catch(e){} }
 const $ = id => document.getElementById(id);
@@ -244,16 +261,16 @@ function fmt(q,u){
   if (u==='') return '× '+Math.ceil(q);
   return (Math.round(q*2)/2)+' '+u;
 }
-function portion(q,u,s,n){
-  if (u==='tsp'||u==='tbsp') return (q*n)+' '+u;
-  if (u==='g'||u==='ml') return Math.round(q*s*n/5)*5+' '+u;
-  const v=Math.round(q*s*n*4)/4, nice=v%1===0?v:v.toFixed(2).replace(/0$/,'');
+function portion(q,u,s,n,L=0){
+  if (u==='tsp'||u==='tbsp') return (q*(n+L))+' '+u;
+  if (u==='g'||u==='ml') return Math.round((q*s*n+q*L)/5)*5+' '+u;
+  const v=Math.round((q*s*n+q*L)*4)/4, nice=v%1===0?v:v.toFixed(2).replace(/0$/,'');
   return u===''?nice:nice+' '+u+(v>1?'s':'');
 }
 function shopping(){
   const n=S.settings.people, items={};
-  S.plan.forEach((id,di)=>{ const r=byId(id); if(!r) return; const s=scaleFor(r);
-    r.i.forEach(([name,q,u,a])=>{ const key=name+'|'+u, mult=(a==='S'||u==='tsp'||u==='tbsp')?n:n*s;
+  S.plan.forEach((id,di)=>{ const r=byId(id); if(!r) return; const s=scaleFor(r), L=S.lunch[di]?1:0;
+    r.i.forEach(([name,q,u,a])=>{ const key=name+'|'+u, mult=(a==='S'||u==='tsp'||u==='tbsp')?n+L:n*s+L;
       items[key]=items[key]||{name,u,a,q:0,days:new Set()}; items[key].q+=q*mult; items[key].days.add(di); }); });
   const g={}; Object.values(items).forEach(it=>(g[it.a]=g[it.a]||[]).push(it));
   Object.values(g).forEach(x=>x.sort((a,b)=>a.name.localeCompare(b.name))); return g;
@@ -268,6 +285,7 @@ function weekRange(){
   const M=x=>x.toLocaleDateString('en-GB',{month:'long'});
   return mon.getMonth()===fri.getMonth() ? `${mon.getDate()}–${fri.getDate()} ${M(fri)}` : `${mon.getDate()} ${M(mon).slice(0,3)} – ${fri.getDate()} ${M(fri).slice(0,3)}`;
 }
+const lunches = () => S.lunch.slice(0,5).filter(Boolean).length;
 function nextIndex(){ const i=S.cooked.findIndex((c,j)=>j<5&&!c); return i===-1?null:i; }
 
 // ---------- Views ----------
@@ -282,14 +300,14 @@ function viewWeek(){
 
   return `
   <h1>${weekRange()}</h1>
-  <div class="sub">${done} of 5 cooked · ${items} things to buy · ${S.settings.people} ${S.settings.people>1?'people':'person'}</div>
+  <div class="sub">${done} of 5 cooked · ${items} things to buy · ${S.settings.people} ${S.settings.people>1?'people':'person'}${lunches()?` + ${lunches()} lunch${lunches()>1?'es':''}`:''}</div>
   <div class="progress">${prog}</div>
   ${nx===null?`<div class="note">🎉 <b>All five cooked.</b> Pick next week when you're ready.</div>`:''}
   <div class="grid">
     <div>
-      <section class="hero ${nx===null?'done':''}" style="--c:${COL[hi]}">
+      <section class="hero ${nx===null?'done':''}" data-i="${hi}" style="--c:${COL[hi]}">
         <div class="num">${hi+1}</div>
-        <div class="eyebrow">${nx===null?'Last up':'Up next'} · ${DAYS[hi]} <span class="chip">${r.tag}</span>${Math.abs(m.s-1)>.04?`<span class="chip">${m.s.toFixed(2).replace(/0$/,'')}× portion</span>`:''}</div>
+        <div class="eyebrow">${nx===null?'Last up':'Up next'} · ${DAYS[hi]} <span class="chip">${r.tag}</span>${Math.abs(m.s-1)>.04?`<span class="chip">${m.s.toFixed(2).replace(/0$/,'')}× portion</span>`:''}${S.lunch[hi]?'<span class="sticker" data-from="'+hi+'">+ Lunch</span>':''}</div>
         <h2>${r.name}</h2>
         <div class="meta">${macroLine(m)}</div>
         <div class="mbars">${bar('P',m.p,t.p)}${bar('C',m.c,t.c)}${bar('F',m.f,t.f)}</div>
@@ -303,11 +321,16 @@ function viewWeek(){
     <div>
       <p class="label">The week</p>
       <div>${S.plan.map((id,i)=>{ const x=byId(id), mm=scaled(x);
-        return `<a class="row ${S.cooked[i]?'cooked':''} ${i===hi?'active':''}" href="#/recipe/${i}" style="--c:${COL[i]}">
+        return `<a class="row ${S.cooked[i]?'cooked':''} ${i===hi?'active':''}" data-i="${i}" href="#/recipe/${i}" style="--c:${COL[i]}">
           <div class="tile">${i+1}</div>
           <div class="rbody"><div class="rtitle">${x.name}${S.locked[i]?'<span class="lockdot">LOCKED</span>':''}</div>
           <div class="rmeta">${DAYS[i].slice(0,3)} · ≈${k0(mm.kcal)} kcal, ≈${k0(mm.p)}g protein</div></div>
+          <span class="slot" data-slot="${i}">${S.lunch[i]?`<span class="sticker" data-from="${i}">+ Lunch</span>`:'<span class="lslot">+ lunch</span>'}</span>
           <span class="chev">›</span></a>`; }).join('')}</div>
+      <div class="card tray" style="margin-top:12px">
+        <div class="stack"><span class="sticker under">+ Lunch</span><span class="sticker" data-from="tray">+ Lunch</span></div>
+        <div><b>Lunch for tomorrow</b><div class="small">Drag a sticker onto a dinner to cook an extra portion for the next day. Drag it off to remove. ${lunches()?`<b style="color:var(--ink)">${lunches()} this week.</b>`:''}</div></div>
+      </div>
       <div class="card" style="margin-top:16px">
         <div style="display:flex;justify-content:space-between;align-items:center"><b>Average dinner</b><a class="small" href="#/macros">Edit macros ›</a></div>
         <div class="stats">${stat('kcal',avg.kcal/5,t.kcal,'')}${stat('protein',avg.p/5,t.p,'g')}${stat('carbs',avg.c/5,t.c,'g')}${stat('fat',avg.f/5,t.f,'g')}</div>
@@ -323,19 +346,20 @@ function viewWeek(){
 
 function viewRecipe(i){
   const r=byId(S.plan[i]); if(!r) return viewWeek();
-  const m=scaled(r), n=S.settings.people;
+  const m=scaled(r), n=S.settings.people, L=S.lunch[i]?1:0;
   return `<a class="back" href="#/">‹ This week</a>
   <div style="--c:${COL[i]}">
     <div class="rhead"><div class="tile">${i+1}</div><div><div class="label" style="margin:2px 0 4px">${DAYS[i]} · ${r.tag}</div><h1>${r.name}</h1></div></div>
     <div class="sub" style="margin-top:0">${macroLine(m)} per portion${Math.abs(m.s-1)>.04?` · scaled ${m.s.toFixed(2).replace(/0$/,'')}× to hit your target`:''}</div>
     <div class="btns" style="margin:0 0 24px">
       <button class="pill" data-act="cook" data-i="${i}">${S.cooked[i]?'Cooked ✓':'Mark cooked'}</button>
+      <button class="pill ghost" data-act="lunch" data-i="${i}">${L?'Remove lunch portion':'+ Lunch portion'}</button>
       <button class="pill ghost" data-act="lock" data-i="${i}">${S.locked[i]?'Unlock':'Lock this dinner'}</button>
       <button class="pill ghost" data-act="swap" data-i="${i}" ${S.locked[i]?'disabled style="opacity:.4"':''}>Swap</button>
     </div>
     <div class="grid">
-      <div class="card"><b>Ingredients</b><span class="small"> · ${n} ${n>1?'people':'person'}</span>
-        ${r.i.map(([nm,q,u])=>`<div class="item" style="cursor:default"><span class="nm">${nm}</span><span class="q">${portion(q,u,m.s,n)}</span></div>`).join('')}
+      <div class="card"><b>Ingredients</b><span class="small"> · ${n} ${n>1?'people':'person'}${L?' + 1 lunch':''}</span>${L?' <span class="sticker" style="cursor:default">+ Lunch</span>':''}
+        ${r.i.map(([nm,q,u])=>`<div class="item" style="cursor:default"><span class="nm">${nm}</span><span class="q">${portion(q,u,m.s,n,L)}</span></div>`).join('')}
       </div>
       <div><p class="label">Method</p><ol class="method">${r.m.map(x=>`<li><span>${x}</span></li>`).join('')}</ol></div>
     </div>
@@ -345,7 +369,7 @@ function viewRecipe(i){
 function viewShop(){
   const g=shopping(), all=Object.values(g).flat().filter(x=>x.a!=='S'), got=all.filter(x=>S.ticked[x.name+'|'+x.u]).length;
   return `<h1>Shopping</h1>
-  <div class="sub">${got} of ${all.length} in the basket · for ${weekRange()}</div>
+  <div class="sub">${got} of ${all.length} in the basket · for ${weekRange()}${lunches()?` · includes ${lunches()} lunch${lunches()>1?'es':''}`:''}</div>
   <div class="btns" style="margin:0 0 24px"><button class="pill" data-act="copy">Copy list</button>${got?`<button class="pill ghost" data-act="untick">Untick all</button>`:''}</div>
   <div class="grid">
     <div>${['M','V'].filter(a=>g[a]).map(a=>aisle(a,g[a])).join('')}</div>
@@ -384,13 +408,19 @@ function route(){
 addEventListener('hashchange', ()=>{ route(); scrollTo(0,0); });
 
 // ---------- Events ----------
+let justDragged=false;
 $('app').addEventListener('click', e=>{
+  if (justDragged){ e.preventDefault(); justDragged=false; return; }
+  const slot=e.target.closest('[data-slot]');
+  if (slot){ e.preventDefault(); if(e.target.closest('.lslot')) setLunch(+slot.dataset.slot,true); return; }
+  if (e.target.closest('.sticker')){ e.preventDefault(); return; }
   const b=e.target.closest('[data-act]'); if(!b) return; e.preventDefault();
   const i=+b.dataset.i, a=b.dataset.act;
   if(a==='gen'){ generate(); toast('New week picked'); if(location.hash.includes('macros')) location.hash='#/'; }
   if(a==='swap') swap(i);
   if(a==='cook'){ S.cooked[i]=!S.cooked[i]; save(); route(); if(S.cooked[i]) toast(DAYS[i]+' cooked'); }
   if(a==='lock'){ S.locked[i]=!S.locked[i]; save(); route(); }
+  if(a==='lunch') setLunch(i,!S.lunch[i]);
   if(a==='untick'){ S.ticked={}; save(); route(); }
   if(a==='copy'){
     const g=shopping(), txt=['M','V','D','C'].filter(x=>g[x]).map(x=>A[x].toUpperCase()+'\n'+g[x].map(it=>`- ${it.name} ${fmt(it.q,it.u)}`).join('\n')).join('\n\n')+(g.S?'\n\nCHECK YOU HAVE\n'+g.S.map(x=>'- '+x.name).join('\n'):'');
@@ -405,6 +435,35 @@ $('app').addEventListener('input', e=>{
   const v=parseFloat(e.target.value); if(!isFinite(v)||v<=0) return;
   S.settings[id]=v; save(); const el=$('tgt'); if(el) el.innerHTML=tgt(targets());
 });
+function setLunch(i,on,quiet){ S.lunch[i]=on; save(); route(); if(!quiet) toast(on?`Lunch added to ${DAYS[i]}`:`Lunch removed from ${DAYS[i]}`); }
+
+let drag=null;
+$('app').addEventListener('pointerdown', e=>{
+  const st=e.target.closest('.sticker[data-from]'); if(!st || e.button>0) return;
+  e.preventDefault(); st.setPointerCapture?.(e.pointerId);
+  drag={from:st.dataset.from, x:e.clientX, y:e.clientY, moved:false, el:null, src:st, target:null};
+});
+addEventListener('pointermove', e=>{
+  if(!drag) return;
+  if(!drag.moved && Math.hypot(e.clientX-drag.x, e.clientY-drag.y) < 6) return;
+  if(!drag.moved){ drag.moved=true; drag.el=drag.src.cloneNode(true); drag.el.classList.add('float'); document.body.appendChild(drag.el); drag.src.style.opacity=.25; }
+  drag.el.style.left=(e.clientX-30)+'px'; drag.el.style.top=(e.clientY-16)+'px';
+  const over=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-i]');
+  if(drag.target && drag.target!==over) drag.target.classList.remove('drop');
+  drag.target=over||null; if(over) over.classList.add('drop');
+});
+function endDrag(e){
+  if(!drag) return; const d=drag; drag=null;
+  d.el?.remove(); d.src.style.opacity=''; d.target?.classList.remove('drop');
+  justDragged=true; setTimeout(()=>justDragged=false,350);
+  if(!d.moved){ if(d.from!=='tray') setLunch(+d.from,false); else toast('Drag me onto a dinner'); return; }
+  const to = d.target ? +d.target.dataset.i : null, from = d.from==='tray' ? null : +d.from;
+  if (to===null){ if(from!==null) setLunch(from,false); return; }
+  if (from!==null && from!==to) S.lunch[from]=false;
+  setLunch(to,true);
+}
+addEventListener('pointerup', endDrag); addEventListener('pointercancel', endDrag);
+
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),1600); }
 
 if (S.plan.length!==5 || S.plan.some(id=>!byId(id))) { S.locked=[]; S.cooked=[]; generate(); } else route();
