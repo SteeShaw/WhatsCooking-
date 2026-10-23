@@ -341,6 +341,19 @@ ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));colo
 .rhead{display:flex;align-items:flex-start;gap:12px}
 .lovedot{color:#e8366b}
 .plabel{margin:16px 0 0}
+/* breakfast & lunch bentos */
+.bentos{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.bento{background:var(--soft);border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.bhead{display:flex;justify-content:space-between;align-items:baseline}
+.bitems{display:flex;flex-wrap:wrap;gap:6px;flex:1;align-content:flex-start;min-height:28px}
+.bchip{display:inline-flex;align-items:center;gap:4px;background:var(--bg);border-radius:99px;padding:4px 6px 4px 11px;font-size:13px;font-weight:600;max-width:100%}
+.bchip button{color:var(--muted);font-size:11px;width:18px;height:18px;border-radius:99px;display:grid;place-items:center}
+.bchip button:hover{color:var(--ink);background:var(--soft)}
+.badd{display:flex;gap:6px}
+.bin{flex:1;min-width:0;border:0;background:var(--bg);border-radius:99px;padding:8px 12px;font-size:15px;outline:none;color:inherit;font-family:inherit}
+.bin:focus{box-shadow:0 0 0 2px var(--ink) inset}
+.bplus{flex:none;width:34px;height:34px;border-radius:99px;background:var(--ink);color:var(--bg);font-size:20px;font-weight:600;line-height:1}
+.ctag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);background:var(--soft);border-radius:99px;padding:2px 7px;vertical-align:2px}
 </style>
 </head>
 <body>
@@ -779,7 +792,8 @@ function rollover(){
   put('week', cur);
   DAYS.forEach((_,i) => { put('locked.'+i, false); put('lunch.'+i, false); });
   put('shopDone', false);
-  Object.entries(S.extras).forEach(([id,v]) => { if (v && v.done) put('extras.'+id, null); });
+  // breakfast & lunch items are bought every week: keep them, just untick; one-off added items go once bought
+  Object.entries(S.extras).forEach(([id,v]) => { if (!v) return; if (v.cat){ if (v.done) put('extras.'+id, {...v, done:false}); } else if (v.done) put('extras.'+id, null); });
   generate();
   toast('New week picked — last week is saved in Past weeks');
   return true;
@@ -836,6 +850,10 @@ function viewWeek(){
           <button class="lock ${S.locked[i]?'on':''}" data-act="lock" data-i="${i}" aria-pressed="${!!S.locked[i]}" aria-label="${S.locked[i]?'Unlock':'Lock'} ${DAYS[i]}" title="${S.locked[i]?'Locked — stays when you shuffle':'Lock to keep it when you shuffle'}">${LOCK_SVG(S.locked[i])}</button>
           <span class="slot" data-slot="${i}">${S.lunch[i]?`<span class="sticker" data-from="${i}">+ Lunch</span>`:'<span class="lslot">+ lunch</span>'}</span>
           </div></a>`; }).join('')}</div>
+      <div class="bentos">${['breakfast','lunch'].map(cat => { const its = extrasList().filter(([,v]) => v.cat === cat);
+        return `<section class="bento" data-cat="${cat}"><div class="bhead"><b>${cat==='breakfast'?'Breakfast':'Lunch'}</b>${its.length?`<span class="small">${its.length}</span>`:''}</div>
+          <div class="bitems">${its.map(([id,v]) => `<span class="bchip">${esc(v.t)}<button data-act="delx" data-id="${id}" aria-label="Remove ${esc(v.t)}">✕</button></span>`).join('') || `<span class="small">${cat==='breakfast'?'Oats, eggs, fruit…':'Wraps, salad, soup…'}</span>`}</div>
+          <div class="badd"><input class="bin" data-cat="${cat}" placeholder="Add for ${cat}" autocomplete="off" enterkeyhint="done"><button class="bplus" data-act="addcat" data-cat="${cat}" aria-label="Add to ${cat}">+</button></div></section>`; }).join('')}</div>
       <div class="card tray" style="margin-top:12px">
         <div class="stack"><span class="sticker under">+ Lunch</span><span class="sticker" data-from="tray">+ Lunch</span></div>
         <div><b>Lunch for tomorrow</b><div class="small">Drag a sticker onto a dinner to cook an extra portion for the next day. Drag it off to remove. ${lunches()?`<b style="color:var(--ink)">${lunches()} this week.</b>`:''}</div></div>
@@ -906,7 +924,7 @@ function viewShop(){
       const sub = it ? `${SHOP[it.shop||'A']} · ${it.u?`<a href="${it.u}" target="_blank" rel="noopener">${esc(it.n)}</a>`:esc(it.n)}${it.sz?' · '+esc(it.sz):''}${x.qty>1?` · ×${x.qty}`:''}`
                 : typeof v.p==='number' ? 'Your price' : v.m==='' ? 'No Aldi or Sainsbury\'s match — tap the price to add one' : 'Not checked yet — tap Check prices';
       return `<label class="item ${v.done?'done':''}"><input type="checkbox" data-extra="${id}" ${v.done?'checked':''}>
-        <span class="nm"><span class="pn">${esc(v.t)}</span><span class="pd">${sub}</span></span>
+        <span class="nm"><span class="pn">${esc(v.t)}${v.cat?` <span class="ctag">${v.cat}</span>`:''}</span><span class="pd">${sub}</span></span>
         ${it?`<button class="price alt" data-act="altx" data-id="${id}" title="Try another product">↻</button>`:''}
         <button class="price ${typeof v.p==='number'?'edited':''}" data-act="xprice" data-id="${id}">${x.cost!=null?gbp(x.cost):'£ –'}</button>
         <button class="price alt" data-act="delx" data-id="${id}" aria-label="Remove ${esc(v.t)}">✕</button></label>`; }).join('')}
@@ -1299,6 +1317,7 @@ $('app').addEventListener('click', e=>{
   if(a==='lunch') setLunch(i,!S.lunch[i]);
   if(a==='untick'){ untickAll(); Object.entries(S.extras).forEach(([id,v])=>{ if(v&&v.done) put('extras.'+id,{...v,done:false}); }); save(); route(); }
   if(a==='addx') addExtra();
+  if(a==='addcat') addExtra(b.dataset.cat);
   if(a==='delx'){ put('extras.'+b.dataset.id,null); save(); route(); }
   if(a==='checkx') checkExtras(false);
   if(a==='again') cookAgain(b.dataset.id);
@@ -1342,17 +1361,18 @@ $('app').addEventListener('click', e=>{
 
 });
 $('app').addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.id==='xtra'){ e.preventDefault(); addExtra(); return; }
+  if(e.key==='Enter' && e.target.classList.contains('bin')){ e.preventDefault(); addExtra(e.target.dataset.cat); return; }
   if((e.key==='Enter'||e.key===' ') && e.target.classList.contains('prow')){ e.preventDefault(); e.target.click(); return; }
   const t=e.target; if(e.key!=='Enter' || !t.closest('#rform') || t.tagName==='TEXTAREA') return; e.preventDefault();
   if(t.classList.contains('ing-n')) t.closest('.ing').querySelector('.ing-q').focus();
   else if(t.classList.contains('ing-q')){ const row=t.closest('.ing'), nx=row.nextElementSibling;
     if(nx) nx.querySelector('.ing-n').focus(); else { $('ings').insertAdjacentHTML('beforeend', ingRow('','','g')); $('ings').lastElementChild.querySelector('.ing-n').focus(); } }
 });
-function addExtra(){
-  const el=$('xtra'); const t=el && el.value.trim(); if(!t) return;
-  const v = matchExtra({t, done:false}), it = v.m ? byKey(v.m) : null;
+function addExtra(cat){
+  const el = cat ? document.querySelector(`.bin[data-cat="${cat}"]`) : $('xtra'); const t=el && el.value.trim(); if(!t) return;
+  const v = matchExtra({t, done:false, ...(cat ? {cat} : {})}), it = v.m ? byKey(v.m) : null;
   put('extras.'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), v); save(); route();
-  $('xtra')?.focus(); toast(it ? `Added ${t} — ${gbp(extraInfo(v).cost)} at ${SHOP[it.shop||'A']}` : `Added ${t} — no match, tap £ to price it`);
+  (cat ? document.querySelector(`.bin[data-cat="${cat}"]`) : $('xtra'))?.focus(); toast(it ? `Added ${t} — ${gbp(extraInfo(v).cost)} at ${SHOP[it.shop||'A']}` : `Added ${t} — no match, tap £ to price it`);
 }
 const extrasList = () => Object.entries(S.extras).filter(([,v])=>v && v.t);
 $('app').addEventListener('change', e=>{
