@@ -210,6 +210,36 @@ ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));colo
 .banner{border-radius:24px;aspect-ratio:16/7;margin:0 0 18px;overflow:hidden}
 .banner img{display:block;width:100%;height:100%;object-fit:cover;position:relative;z-index:1}
 @media (max-width:480px){.banner{aspect-ratio:4/3}.thumb{width:40px;height:40px}}
+
+/* hero without the big number */
+.hero{padding:26px 26px 26px}
+.hero-top{display:flex;gap:18px;align-items:flex-start;justify-content:space-between}
+.hero-head{min-width:0;flex:1}
+.hero .day{font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.85;margin-bottom:10px}
+.hero h2{font-size:clamp(34px,4.3vw,50px);line-height:.98;letter-spacing:-.035em;margin:0 0 14px}
+.hero .eyebrow{margin-bottom:14px}
+.hero-photo{position:static;flex:none;width:clamp(96px,22vw,150px);transform:rotate(6deg);margin:4px 2px 0 0}
+.lockbtn{padding:9px 12px;display:inline-grid;place-items:center}
+.lockbtn.on{background:var(--on,#fff);color:var(--off,#111)}
+/* week rows */
+.row{gap:14px;padding:12px 0}
+.row .tile{width:52px;height:52px;border-radius:14px}
+.row .tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;border-radius:inherit}
+.rday{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:1px}
+.rtitle{font-size:17px;line-height:1.2}
+.rmeta{margin-top:2px}
+.lock{flex:none;width:34px;height:34px;border-radius:99px;display:grid;place-items:center;color:var(--muted);border:1.5px solid var(--line);background:var(--bg)}
+.lock:hover{color:var(--ink);border-color:var(--muted)}
+.lock.on{color:#fff;background:var(--c);border-color:var(--c)}
+.row .slot{min-width:0}
+@media (max-width:480px){
+  .row{gap:10px}.row .tile{width:44px;height:44px;border-radius:12px}.rtitle{font-size:15px}
+  .row .slot .lslot{padding:4px 8px}.lock{width:30px;height:30px}
+  .hero{padding:22px}.hero h2{font-size:34px}.hero-photo{width:92px}
+}
+/* recipe page header without the tile */
+.rhead{display:block}
+.rhead .label{margin:0 0 6px}
 </style>
 </head>
 <body>
@@ -597,6 +627,9 @@ function gradStyle(r, i){
   const dark = (lum(a) + lum(b)) / 2 > .5;
   return `--c:${g[0]};--g1:${g[0]};--g2:${g[1]};--g3:${g[2]};--g4:${g[3]};--on:${dark ? '#14110d' : '#fff'};--off:${dark ? '#fff' : '#14110d'};--d:${-(i*3.7 % 17).toFixed(1)}s`;
 }
+const LOCK_SVG = on => on
+  ? '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M7 10V7a5 5 0 0 1 10 0v3h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/></svg>'
+  : '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M8 10V7a4 4 0 0 1 7.6-1.7M6 10h12a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z"/></svg>';
 const dayStyle = i => gradStyle(byId(S.plan[i]), i);
 
 // ---------- Helpers ----------
@@ -629,16 +662,21 @@ function viewWeek(){
   <div class="grid">
     <div>
       <section class="hero grad ${nx===null?'done':''}" data-i="${hi}" style="${dayStyle(hi)}">
-        ${imgTag(r,'hero-photo')}
-        <div class="num">${hi+1}</div>
-        <div class="eyebrow">${nx===null?'Last up':'Up next'} · ${DAYS[hi]} <span class="chip">${r.tag}</span>${Math.abs(m.s-1)>.04?`<span class="chip">${m.s.toFixed(2).replace(/0$/,'')}× portion</span>`:''}${S.lunch[hi]?'<span class="sticker" data-from="'+hi+'">+ Lunch</span>':''}</div>
-        <h2>${r.name}</h2>
+        <div class="hero-top">
+          <div class="hero-head">
+            <div class="day">${nx===null?'Last up':'Up next'} · ${DAYS[hi]}</div>
+            <h2>${r.name}</h2>
+            <div class="eyebrow"><span class="chip">${r.tag}</span>${r.mins?`<span class="chip">${r.mins} min</span>`:''}${Math.abs(m.s-1)>.04?`<span class="chip">${m.s.toFixed(2).replace(/0$/,'')}× portion</span>`:''}${S.lunch[hi]?'<span class="sticker" data-from="'+hi+'">+ Lunch</span>':''}</div>
+          </div>
+          ${imgTag(r,'hero-photo')}
+        </div>
         <div class="meta">${macroLine(m)}</div>
         <div class="mbars">${bar('P',m.p,t.p)}${bar('C',m.c,t.c)}${bar('F',m.f,t.f)}</div>
         <div class="btns">
           <a class="btn solid" href="#/recipe/${hi}">See recipe</a>
           <button class="btn" data-act="cook" data-i="${hi}">${S.cooked[hi]?'Cooked ✓':'Mark cooked'}</button>
           <button class="btn" data-act="swap" data-i="${hi}" ${S.locked[hi]?'disabled style="opacity:.4"':''}>Swap</button>
+          <button class="btn lockbtn ${S.locked[hi]?'on':''}" data-act="lock" data-i="${hi}" aria-pressed="${!!S.locked[hi]}" title="${S.locked[hi]?'Unlock':'Lock this dinner'}">${LOCK_SVG(S.locked[hi])}</button>
         </div>
       </section>
     </div>
@@ -646,9 +684,10 @@ function viewWeek(){
       <p class="label">The week</p>
       <div>${S.plan.map((id,i)=>{ const x=byId(id), mm=scaled(x);
         return `<a class="row ${S.cooked[i]?'cooked':''} ${i===hi?'active':''}" data-i="${i}" href="#/recipe/${i}" style="${dayStyle(i)}">
-          <div class="tile grad">${i+1}</div>
-          ${imgTag(x,'thumb')}<div class="rbody"><div class="rtitle">${x.name}${S.locked[i]?'<span class="lockdot">LOCKED</span>':''}</div>
-          <div class="rmeta">${DAYS[i].slice(0,3)} · ≈${k0(mm.kcal)} kcal, ≈${k0(mm.p)}g protein${x.mins?` · ${x.mins} min`:''}${x.by?` · ${x.by}`:''}</div></div>
+          <div class="tile grad">${imgTag(x,'')}</div>
+          <div class="rbody"><div class="rday">${DAYS[i]}</div><div class="rtitle">${x.name}</div>
+          <div class="rmeta">≈${k0(mm.kcal)} kcal · ${k0(mm.p)}g protein${x.mins?` · ${x.mins} min`:''}${x.by?` · ${x.by}`:''}</div></div>
+          <button class="lock ${S.locked[i]?'on':''}" data-act="lock" data-i="${i}" aria-pressed="${!!S.locked[i]}" aria-label="${S.locked[i]?'Unlock':'Lock'} ${DAYS[i]}" title="${S.locked[i]?'Locked — stays when you shuffle':'Lock to keep it when you shuffle'}">${LOCK_SVG(S.locked[i])}</button>
           <span class="slot" data-slot="${i}">${S.lunch[i]?`<span class="sticker" data-from="${i}">+ Lunch</span>`:'<span class="lslot">+ lunch</span>'}</span>
           <span class="chev">›</span></a>`; }).join('')}</div>
       <div class="card tray" style="margin-top:12px">
@@ -660,7 +699,7 @@ function viewWeek(){
         <div class="stats">${stat('kcal',avg.kcal/5,t.kcal,'')}${stat('protein',avg.p/5,t.p,'g')}${stat('carbs',avg.c/5,t.c,'g')}${stat('fat',avg.f/5,t.f,'g')}</div>
       </div>
       <div class="card small" style="display:flex;justify-content:space-between;align-items:center;gap:12px">
-        <span>Not feeling it? Reshuffle everything you haven't locked.</span>
+        <span>Not feeling it? Reshuffle everything you haven't locked <span style="display:inline-flex;vertical-align:-3px">${LOCK_SVG(true)}</span>.</span>
         <button class="pill" data-act="gen">New week</button>
       </div>
       <p class="small" style="margin-top:14px">● Saved on this device · macros are estimates</p>
@@ -674,7 +713,7 @@ function viewRecipe(i){
   return `<a class="back" href="#/">‹ This week</a>
   <div style="${dayStyle(i)}">
     ${photoOf(r) ? `<div class="banner grad">${imgTag(r,'')}</div>` : ''}
-    <div class="rhead"><div class="tile grad">${i+1}</div><div><div class="label" style="margin:2px 0 4px">${DAYS[i]} · ${r.tag}${r.mins?` · ${r.mins} min`:''}</div><h1>${r.name}</h1></div></div>
+    <div class="rhead"><div><div class="label" style="margin:2px 0 4px">${DAYS[i]} · ${r.tag}${r.mins?` · ${r.mins} min`:''}</div><h1>${r.name}</h1></div></div>
     <div class="sub" style="margin-top:0">${macroLine(m)} per portion${r.est?' (estimated)':''}${Math.abs(m.s-1)>.04?` · scaled ${m.s.toFixed(2).replace(/0$/,'')}× to hit your target`:''}</div>
     <div class="btns" style="margin:0 0 24px">
       <button class="pill" data-act="cook" data-i="${i}">${S.cooked[i]?'Cooked ✓':'Mark cooked'}</button>
@@ -783,7 +822,7 @@ $('app').addEventListener('click', e=>{
   if(a==='gen'){ generate(); toast('New week picked'); if(location.hash.includes('macros')) location.hash='#/'; }
   if(a==='swap') swap(i);
   if(a==='cook'){ put('cooked.'+i,!S.cooked[i]); save(); route(); if(S.cooked[i]) toast(DAYS[i]+' cooked'); }
-  if(a==='lock'){ put('locked.'+i,!S.locked[i]); save(); route(); }
+  if(a==='lock'){ put('locked.'+i,!S.locked[i]); save(); route(); toast(S.locked[i] ? `${DAYS[i]} locked — it stays when you shuffle` : `${DAYS[i]} unlocked`); }
   if(a==='lunch') setLunch(i,!S.lunch[i]);
   if(a==='untick'){ untickAll(); Object.entries(S.extras).forEach(([id,v])=>{ if(v&&v.done) put('extras.'+id,{...v,done:false}); }); save(); route(); }
   if(a==='addx') addExtra();
