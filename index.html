@@ -717,13 +717,24 @@ const macroLine = m => `≈${k0(m.kcal)} kcal, ≈${k0(m.p)}g protein, ${k0(m.c)
 const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const dayOf = k => { const [y,m,d] = k.split('-').map(Number); return new Date(y, m-1, d); };
 function mondayOf(d){ const m = new Date(d.getFullYear(), d.getMonth(), d.getDate()); m.setDate(m.getDate() - (m.getDay()+6)%7); return m; }
-const thisWeek = () => iso(mondayOf(new Date()));
+// weeks run Sunday to Sunday: a week is keyed by its Sunday, and its dinners are Monday–Friday after it
+function sundayOf(d){ const m = new Date(d.getFullYear(), d.getMonth(), d.getDate()); m.setDate(m.getDate() - m.getDay()); return m; }
+const thisWeek = () => iso(sundayOf(new Date()));
+// older versions keyed weeks by Monday: move those to the Sunday before
+function migrateWeeks(){
+  let moved = false;
+  if (S.week && dayOf(S.week).getDay() === 1){ put('week', iso(addDays(dayOf(S.week), -1)), S._mt.week || 0); moved = true; }
+  Object.entries(S.history).forEach(([k, v]) => { if (!v || dayOf(k).getDay() !== 1) return;
+    const sun = iso(addDays(dayOf(k), -1)), ts = S._mt['history.'+k] || 0;
+    if (!S.history[sun]) put('history.'+sun, v, ts); put('history.'+k, null, ts); moved = true; });
+  return moved;
+}
 const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
 function weekRange(key){
-  const mon = key ? dayOf(key) : mondayOf(new Date());
-  const fri = addDays(mon, 4);
+  const sun = key ? dayOf(key) : sundayOf(new Date());
+  const end = addDays(sun, 7);
   const M=x=>x.toLocaleDateString('en-GB',{month:'long'});
-  return mon.getMonth()===fri.getMonth() ? `${mon.getDate()}–${fri.getDate()} ${M(fri)}` : `${mon.getDate()} ${M(mon).slice(0,3)} – ${fri.getDate()} ${M(fri).slice(0,3)}`;
+  return sun.getMonth()===end.getMonth() ? `${sun.getDate()}–${end.getDate()} ${M(end)}` : `${sun.getDate()} ${M(sun).slice(0,3)} – ${end.getDate()} ${M(end).slice(0,3)}`;
 }
 const lunches = () => S.lunch.slice(0,5).filter(Boolean).length;
 // ---------- Weekly archive ----------
@@ -921,7 +932,7 @@ function viewArchive(ym){
   const weeks = []; for (let mon = mondayOf(first); mon <= last; mon = addDays(mon, 7)) weeks.push(mon);
   const saved = Object.values(S.history).filter(Boolean), cookedCount = saved.reduce((a,w) => a + (w.cooked||[]).filter(Boolean).length, 0);
   const cell = (mon, i) => {
-    const d = addDays(mon, i), key = iso(mon), w = weekData(key), id = w && w.plan[i], inMonth = d.getMonth() === m-1;
+    const d = addDays(mon, i), key = iso(addDays(mon, -1)), w = weekData(key), id = w && w.plan[i], inMonth = d.getMonth() === m-1;
     const cls = `cday ${inMonth?'':'out'} ${iso(d)===today?'today':''}`;
     if (!id) return `<div class="${cls} empty"><span class="dnum">${d.getDate()}</span></div>`;
     const r = byId(id), name = (r && !r.hidden ? r.name : (w.names||[])[i]) || 'Dinner';
@@ -930,7 +941,7 @@ function viewArchive(ym){
       <span class="sw grad">${imgTag(r,'')}</span><span class="dname">${esc(name)}</span></a>`;
   };
   return `<h1>Past weeks</h1>
-  <div class="sub">${saved.length ? `${saved.length} week${saved.length>1?'s':''} saved · ${cookedCount} dinners cooked` : 'Each week is saved here automatically when a new one starts on Monday.'}</div>
+  <div class="sub">${saved.length ? `${saved.length} week${saved.length>1?'s':''} saved · ${cookedCount} dinners cooked` : 'Each week is saved here automatically when a new one starts on Sunday.'}</div>
   <div class="calnav"><a class="pill ghost" href="#/archive/${prev}">‹</a><b>${first.toLocaleDateString('en-GB',{month:'long', year:'numeric'})}</b><a class="pill ghost" href="#/archive/${next}">›</a></div>
   <div class="cal">
     ${['Mon','Tue','Wed','Thu','Fri'].map(d => `<div class="chead">${d}</div>`).join('')}
@@ -941,7 +952,7 @@ function viewArchive(ym){
 function viewPast(key, i){
   if (!key || key === (S.week || thisWeek())) return viewRecipe(i);
   const w = S.history[key]; if (!w) return viewArchive();
-  const r = byId(w.plan[i]), d = addDays(dayOf(key), i);
+  const r = byId(w.plan[i]), d = addDays(dayOf(key), i + 1);
   if (!r || r.hidden) return `<a class="back" href="#/archive/${key.slice(0,7)}">‹ Past weeks</a><h1>${esc((w.names||[])[i]||'Dinner')}</h1><div class="sub">This recipe isn't available on this device — turn on sync to load your private recipes.</div>`;
   const m = scaled(r);
   return `<a class="back" href="#/archive/${key.slice(0,7)}">‹ Past weeks</a>
@@ -959,7 +970,7 @@ function viewPast(key, i){
 }
 // put a past dinner back into this week: the next day that isn't cooked or locked
 function cookAgain(id){
-  const todayIdx = Math.min(4, (new Date().getDay()+6)%7), open = j => !S.cooked[j] && !S.locked[j];
+  const wd = new Date().getDay(), todayIdx = wd === 0 ? 0 : Math.min(4, wd - 1), open = j => !S.cooked[j] && !S.locked[j];
   let j = [0,1,2,3,4].find(k => k >= todayIdx && open(k)); if (j === undefined) j = [0,1,2,3,4].find(open);
   if (j === undefined){ toast('Every night this week is cooked or locked'); return; }
   const plan = [...S.plan]; plan[j] = id; put('plan', plan); put('cooked.'+j, false); untickAll(); save();
@@ -1423,7 +1434,7 @@ async function syncNow(){
       else if (r.status===404){ SY.sha=null; const now=Date.now(); allPaths().forEach(p=>{ if(S._mt[p]==null || S._mt[p]===0) S._mt[p]=now; }); }
       else if (r.status===401||r.status===403){ setSync('auth'); return; }
       else throw new Error('GET '+r.status);
-      if (remote && mergeIn(remote)){ save(false); const f=document.activeElement; if(!(f && f.tagName==='INPUT') && !$('rform')) route(); }
+      if (remote && mergeIn(remote)){ migrateWeeks(); save(false); const f=document.activeElement; if(!(f && f.tagName==='INPUT') && !$('rform')) route(); }
       if (remote && !needsPush(remote)){ setSync('ok'); return; }
       const w = await gh('PUT', { message:'Sync '+new Date().toISOString(), content:b64e(JSON.stringify(S)), ...(SY.sha?{sha:SY.sha}:{}) });
       if (w.status===200||w.status===201){ SY.sha=(await w.json()).content.sha; setSync('ok'); return; }
@@ -1448,6 +1459,7 @@ setInterval(()=>{ if(SY.cfg && !document.hidden) syncNow(); }, 15000);
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) return; if(SY.cfg){ syncNow(); loadPrivate(); } else rollover(); });
 addEventListener('online', ()=>{ if(SY.cfg) syncNow(); });
 
+if (migrateWeeks()) save();
 if (S.plan.length!==5 || S.plan.some(id=>!byId(id))) { S.locked=[]; S.cooked=[]; generate(true); } else route();
 if (!SY.cfg) rollover();
 if (SY.cfg){ syncNow(); loadPrivate(); }
