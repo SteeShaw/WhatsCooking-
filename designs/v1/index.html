@@ -1,0 +1,1610 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="WhatsCooking">
+<link rel="apple-touch-icon" href="../../icons/icon-180.png?v=1">
+<link rel="icon" type="image/png" sizes="192x192" href="../../icons/icon-192.png?v=1">
+<link rel="manifest" href="../../manifest.json">
+<title>WhatsCooking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fff; --ink:#0b0b0b; --muted:#6b6b6b; --soft:#f3f3f1; --line:#e8e8e6;
+  --c1:#2b4cf5; --c2:#ef2f6b; --c3:#0e9a5c; --c4:#f5a400; --c5:#7a3cf0;
+  --tint:#fdf0d5; --ok:#0e9a5c; --warn:#d9480f;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#0b0b0b; --ink:#f5f5f3; --muted:#9a9a96; --soft:#1a1a19; --line:#262624; --tint:#2a2210; }
+}
+:root[data-theme="dark"]{ --bg:#0b0b0b; --ink:#f5f5f3; --muted:#9a9a96; --soft:#1a1a19; --line:#262624; --tint:#2a2210; }
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{margin:0;color:var(--ink);font:17px/1.45 "Schibsted Grotesk",-apple-system,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1040px;margin:0 auto;padding:20px 16px calc(48px + env(safe-area-inset-bottom))}
+button,input{font:inherit;color:inherit}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;border:0;background:none}
+.muted{color:var(--muted)}
+
+/* nav */
+nav{display:flex;align-items:center;gap:12px;margin-bottom:28px;position:relative;z-index:40}
+.brand{font-weight:800;font-size:19px;letter-spacing:-.02em;margin-right:auto}
+.mode{position:relative}
+.modebtn{display:inline-flex;align-items:center;gap:8px;padding:8px 14px 8px 16px;border-radius:99px;background:var(--soft);font-size:15px;font-weight:700;white-space:nowrap}
+.modebtn:hover{background:color-mix(in srgb,var(--soft) 85%,var(--ink) 8%)}
+.modebtn svg{transition:transform .2s}
+.mode.open .modebtn svg{transform:rotate(180deg)}
+.menu{position:absolute;right:0;top:calc(100% + 8px);min-width:250px;padding:6px;border-radius:22px;background:var(--bg);border:1px solid var(--line);box-shadow:0 18px 50px -12px rgba(0,0,0,.25);
+  opacity:0;transform:translateY(-6px) scale(.98);transform-origin:top right;pointer-events:none;visibility:hidden;transition:opacity .16s,transform .16s,visibility 0s .16s}
+.mode.open .menu{opacity:1;transform:none;pointer-events:auto;visibility:visible;transition:opacity .16s,transform .16s}
+.tab{display:flex;flex-direction:column;gap:1px;padding:10px 14px;border-radius:16px;color:var(--ink)}
+.tab b{font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tab span{font-size:13px;color:var(--muted)}
+.tab:hover{background:var(--soft)}
+.tab.on{background:var(--soft)}
+.tab.on b::after{content:"";width:8px;height:8px;border-radius:99px;background:var(--ink)}
+
+h1{font-size:clamp(44px,8vw,68px);font-weight:800;letter-spacing:-.035em;line-height:1;margin:0}
+.sub{font-size:15px;color:var(--muted);margin:8px 0 14px}
+.progress{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;max-width:520px;margin-bottom:24px}
+.progress i{height:4px;border-radius:99px;background:var(--line)}
+
+.note{background:var(--tint);border-radius:18px;padding:14px 18px;font-size:15px;margin-bottom:14px}
+.note b{font-weight:700}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 32px;align-items:start}
+@media (max-width:820px){.grid{grid-template-columns:1fr}}
+
+/* hero */
+.hero{background:var(--c);color:var(--on,#fff);border-radius:28px;padding:24px 24px 26px;position:relative;overflow:hidden}
+.hero .num{font-size:clamp(200px,30vw,280px);font-weight:900;line-height:.8;letter-spacing:-.06em;margin:4px 0 14px -6px}
+.hero .eyebrow{display:flex;gap:8px;align-items:center;font-size:14px;font-weight:700}
+.chip{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.22)}
+.hero h2{font-size:clamp(34px,4.6vw,44px);font-weight:800;letter-spacing:-.03em;line-height:1.02;margin:8px 0 10px}
+.hero .meta{font-size:14px;opacity:.9}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+.btn{padding:10px 18px;border-radius:99px;font-size:15px;font-weight:700;border:2px solid color-mix(in srgb,var(--on,#fff) 55%,transparent);color:var(--on,#fff);backdrop-filter:blur(6px)}
+.btn:hover{border-color:#fff}
+.btn.solid{background:var(--on,#fff);color:var(--off,#14110d);border-color:var(--on,#fff)}
+.hero.done{background:var(--soft);color:var(--ink)}
+.hero.done .btn{color:var(--ink);border-color:var(--line)}
+.hero.done .btn.solid{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* macro bars inside hero */
+.mbars{display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;align-items:center;font-size:13px;margin-top:16px}
+.mbar{height:6px;border-radius:99px;background:rgba(255,255,255,.25);overflow:hidden}
+.mbar i{display:block;height:100%;background:#fff;border-radius:99px}
+.hero.done .mbar{background:var(--line)} .hero.done .mbar i{background:var(--ink)}
+
+/* week list */
+.label{font-size:14px;font-weight:600;color:var(--muted);margin:0 0 8px}
+.row{display:flex;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer;width:100%;text-align:left}
+.row:last-child{border-bottom:0}
+.tile{flex:none;width:44px;height:44px;border-radius:12px;background:var(--c);color:var(--on,#fff);display:grid;place-items:center;font-weight:800;font-size:22px}
+.row.cooked .tile{background:var(--soft);color:var(--muted)}
+.row.cooked .rtitle{text-decoration:line-through;text-decoration-thickness:2px;color:var(--muted)}
+.row.active .tile{box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--c)}
+.rbody{flex:1;min-width:0}
+.rtitle{font-weight:700;font-size:16px;line-height:1.25}
+.rmeta{font-size:13px;color:var(--muted)}
+.chev{color:var(--muted);font-size:20px}
+.lockdot{font-size:11px;font-weight:700;color:var(--muted);margin-left:6px}
+
+.card{background:var(--soft);border-radius:20px;padding:16px 18px}
+.card + .card{margin-top:12px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+.stat b{display:block;font-size:24px;font-weight:800;letter-spacing:-.02em}
+.stat span{font-size:12px;color:var(--muted)}
+.stat.off b{color:var(--warn)}
+.small{font-size:14px;color:var(--muted)}
+.small p{margin:0 0 6px}
+.pill{white-space:nowrap;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:99px;background:var(--ink);color:var(--bg);font-weight:700;font-size:14px}
+.pill.ghost{background:var(--soft);color:var(--ink)}
+
+/* recipe view */
+.back{font-weight:600;font-size:15px;color:var(--muted);margin-bottom:12px;display:inline-block}
+.rhead{display:flex;gap:16px;align-items:flex-start;margin-bottom:16px}
+.rhead .tile{width:64px;height:64px;font-size:34px;border-radius:16px}
+.rhead h1{font-size:clamp(34px,5.5vw,52px)}
+ol.method{padding-left:0;list-style:none;counter-reset:s;margin:0}
+ol.method li{counter-increment:s;display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+ol.method li::before{content:counter(s);flex:none;width:26px;height:26px;border-radius:99px;background:var(--c);color:#fff;font-weight:800;font-size:14px;display:grid;place-items:center}
+
+/* shopping */
+.aisle{margin-bottom:22px}
+.aisle h3{font-size:15px;font-weight:800;margin:0 0 2px;display:flex;justify-content:space-between}
+.item{display:flex;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.item input{appearance:none;flex:none;width:22px;height:22px;border-radius:99px;border:2px solid var(--line);margin:0;display:grid;place-items:center;cursor:pointer}
+.item input:checked{background:var(--ok);border-color:var(--ok)}
+.item input:checked::after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:translateY(-1px) rotate(45deg)}
+.item .nm{flex:1}
+.item .q{color:var(--muted);font-size:15px;white-space:nowrap}
+.item.done .nm{color:var(--muted);text-decoration:line-through}
+.dots{display:flex;gap:3px}
+.dots i{width:8px;height:8px;border-radius:3px;background:var(--c)}
+
+/* macros form */
+.fields{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media (max-width:560px){.fields{grid-template-columns:1fr 1fr}}
+.field{background:var(--soft);border-radius:18px;padding:12px 14px}
+.field span{font-size:13px;font-weight:600;color:var(--muted)}
+.field input{display:block;width:100%;border:0;background:transparent;font-size:30px;font-weight:800;letter-spacing:-.03em;padding:0;outline:none}
+.field:focus-within{box-shadow:0 0 0 2px var(--ink) inset}
+
+.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(8px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:99px;font-size:14px;font-weight:600;opacity:0;transition:.2s;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%)}
+@media (max-width:480px){.sl-text{font-size:14px;padding:0 58px}.brand{font-size:18px}.modebtn{font-size:14px}}
+
+/* lunch stickers */
+.slot{flex:none;display:grid;place-items:center;min-width:74px;height:34px}
+.lslot{font-size:12px;font-weight:700;color:var(--muted);border:1.5px dashed var(--line);border-radius:99px;padding:4px 10px;white-space:nowrap}
+.lslot:hover{color:var(--ink);border-color:var(--muted)}
+.sticker{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;background:#ffd23f;color:#111;
+  padding:6px 11px;border-radius:99px;transform:rotate(-7deg);box-shadow:0 2px 0 rgba(0,0,0,.18),0 6px 14px rgba(0,0,0,.12);
+  cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;white-space:nowrap}
+.sticker:active{cursor:grabbing}
+.sticker.float{position:fixed;z-index:50;pointer-events:none;transform:rotate(4deg) scale(1.12);box-shadow:0 10px 24px rgba(0,0,0,.25)}
+.row.drop,.hero.drop{outline:2px dashed var(--ink);outline-offset:4px;border-radius:14px}
+.hero.drop{border-radius:28px}
+.tray{display:flex;gap:16px;align-items:center}
+.tray .stack{position:relative;flex:none;width:86px;height:40px}
+.tray .stack .sticker{position:absolute;left:4px;top:6px}
+.tray .stack .sticker.under{transform:rotate(5deg);left:10px;top:4px;opacity:.6;pointer-events:none;box-shadow:none}
+.hero .sticker{margin-left:2px;cursor:default}
+
+.shop-sec{margin-bottom:28px}
+.shop-sec .shophead{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid var(--ink);margin-bottom:12px;padding-bottom:6px}
+.shop-sec h2{font-size:30px;font-weight:800;letter-spacing:-.03em;margin:0}
+.subtotal{font-size:22px;font-weight:800}
+.nm{display:flex;flex-direction:column;min-width:0}
+.pn{font-weight:600;line-height:1.25}
+.pn a:hover{text-decoration:underline}
+.pd{font-size:13px;color:var(--muted)}
+.price{font-family:inherit;font-weight:700;font-size:15px;padding:4px 8px;border-radius:8px}
+.price:hover{background:var(--soft)}
+.price.edited{background:#fff3c4;color:#111}
+.totals .stats{grid-template-columns:repeat(3,1fr)}
+
+.extras{margin-bottom:28px}
+.addrow{display:flex;gap:8px;margin:10px 0 4px}
+.addrow input{flex:1;min-width:0;border:0;background:var(--bg);border-radius:99px;padding:10px 16px;font-size:16px;outline:none}
+.addrow input:focus{box-shadow:0 0 0 2px var(--ink) inset}
+.extras .item:last-child{border-bottom:0}
+.sync{margin-top:16px}
+.sync .field{background:var(--bg);margin:10px 0}
+.card .pill.ghost{background:var(--bg)}
+.sync .field input{font-size:16px;font-weight:500;letter-spacing:0;padding-top:2px}
+.syncbadge[hidden]{display:none}
+.syncbadge{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap}
+.syncbadge::before{content:"";width:8px;height:8px;border-radius:99px;background:var(--dot,#9a9a96)}
+.syncbadge[data-s="ok"]{--dot:#0e9a5c}
+.syncbadge[data-s="syncing"]{--dot:#f5a400}
+.syncbadge[data-s="offline"],.syncbadge[data-s="auth"]{--dot:#d9480f}
+@media (max-width:480px){.syncbadge{font-size:0;gap:0}}
+
+.xhead{display:flex;justify-content:space-between;align-items:baseline}
+.subx{font-weight:800}
+.price.alt{color:var(--muted);font-weight:600;padding:4px 6px}
+.price.alt:hover{color:var(--ink)}
+.extras .pd a:hover{text-decoration:underline}
+.srclink{margin-top:14px}
+
+/* ethereal, slowly drifting gradients coloured by each recipe */
+.grad{position:relative;overflow:hidden;isolation:isolate;background:linear-gradient(140deg,var(--g1),var(--g2));background:linear-gradient(in oklch 140deg,var(--g1),var(--g2))}
+.grad::before,.grad::after{content:"";position:absolute;inset:-35%;z-index:-1;pointer-events:none}
+.grad::before{background:
+  radial-gradient(closest-side at 28% 30%,var(--g1),transparent 80%),
+  radial-gradient(closest-side at 74% 72%,var(--g2),transparent 80%);
+  filter:blur(70px) saturate(1.35);animation:drift 22s ease-in-out infinite alternate;animation-delay:var(--d,0s)}
+.grad::after{background:
+  radial-gradient(closest-side at 55% 45%,var(--g2),transparent 70%),
+  radial-gradient(closest-side at 15% 30%,var(--g4),transparent 70%);
+  filter:blur(80px);opacity:0;mix-blend-mode:screen;display:none;animation:drift2 30s ease-in-out infinite alternate;animation-delay:var(--d,0s)}
+.tile.grad::before{filter:blur(14px) saturate(1.35)} .tile.grad::after{filter:blur(16px)}
+.progress i.grad::before{filter:blur(4px)} .progress i.grad::after{display:none}
+.dots i{overflow:hidden;position:relative;background:linear-gradient(135deg,var(--g1),var(--g3))}
+.hero.grad{box-shadow:0 18px 40px -18px color-mix(in srgb,var(--g2) 70%,transparent)}
+.hero.grad .num{color:var(--on,#fff);opacity:.92;text-shadow:0 2px 30px color-mix(in srgb,var(--g1) 50%,transparent)}
+.hero.grad .chip{background:color-mix(in srgb,var(--on,#fff) 18%,transparent)}
+.hero.grad .mbar{background:color-mix(in srgb,var(--on,#fff) 22%,transparent)} .hero.grad .mbar i{background:var(--on,#fff)}
+.hero.done.grad::before,.hero.done.grad::after{opacity:.18}
+.row.cooked .tile.grad::before,.row.cooked .tile.grad::after{opacity:.25;filter:grayscale(1) blur(14px)}
+ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));color:var(--on,#fff)}
+@keyframes drift{0%{transform:translate(-8%,-6%) rotate(0deg) scale(1)}50%{transform:translate(6%,5%) rotate(35deg) scale(1.18)}100%{transform:translate(-4%,7%) rotate(-18deg) scale(1.06)}}
+@keyframes drift2{0%{transform:translate(6%,4%) rotate(0deg)}100%{transform:translate(-7%,-6%) rotate(-40deg) scale(1.2)}}
+@media (prefers-reduced-motion: reduce){.grad::before,.grad::after{animation:none}}
+
+.hero-photo{position:absolute;top:22px;right:22px;width:clamp(110px,24vw,170px);aspect-ratio:1;object-fit:cover;border-radius:50%;
+  border:4px solid color-mix(in srgb,var(--on,#fff) 85%,transparent);box-shadow:0 14px 34px -10px rgba(0,0,0,.35);transform:rotate(6deg)}
+.thumb{flex:none;width:44px;height:44px;border-radius:12px;object-fit:cover;margin-left:-4px}
+.banner{border-radius:24px;aspect-ratio:16/7;margin:0 0 18px;overflow:hidden}
+.banner img{display:block;width:100%;height:100%;object-fit:cover;position:relative;z-index:1}
+@media (max-width:480px){.banner{aspect-ratio:4/3}.thumb{width:40px;height:40px}}
+
+/* hero without the big number */
+.hero{padding:26px 26px 26px}
+.hero-top{display:flex;gap:18px;align-items:flex-start;justify-content:space-between}
+.hero-head{min-width:0;flex:1}
+.hero .day{font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.85;margin-bottom:10px}
+.hero h2{font-size:clamp(34px,4.3vw,50px);line-height:.98;letter-spacing:-.035em;margin:0 0 14px}
+.hero .eyebrow{margin-bottom:14px}
+.hero-photo{position:static;flex:none;width:clamp(96px,22vw,150px);transform:rotate(6deg);margin:4px 2px 0 0}
+.lockbtn{padding:9px 12px;display:inline-grid;place-items:center}
+.lockbtn.on{background:var(--on,#fff);color:var(--off,#111)}
+/* week rows */
+.row{gap:14px;padding:12px 0}
+.row .tile{width:52px;height:52px;border-radius:14px}
+.row .tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;border-radius:inherit}
+.rday{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:1px}
+.rtitle{font-size:17px;line-height:1.2}
+.rmeta{margin-top:2px}
+.lock{flex:none;width:34px;height:34px;border-radius:99px;display:grid;place-items:center;color:var(--muted);border:1.5px solid var(--line);background:var(--bg)}
+.lock:hover{color:var(--ink);border-color:var(--muted)}
+.lock.on{color:#fff;background:var(--c);border-color:var(--c)}
+.row .slot{min-width:0}
+@media (max-width:480px){
+  .row{gap:10px}.row .tile{width:44px;height:44px;border-radius:12px}.rtitle{font-size:15px}
+  .row .slot .lslot{padding:4px 8px}.lock{width:30px;height:30px}
+  .hero{padding:22px}.hero h2{font-size:34px}.hero-photo{width:92px}
+}
+/* recipe page header without the tile */
+.rhead{display:block}
+.rhead .label{margin:0 0 6px}
+
+.calnav{display:flex;align-items:center;justify-content:space-between;max-width:420px;margin:6px 0 14px}
+.calnav b{font-size:20px;letter-spacing:-.02em}
+.calnav .pill{padding:6px 14px;font-size:18px}
+.cal{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.chead{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:0 4px}
+.cday{position:relative;display:flex;flex-direction:column;gap:6px;min-height:132px;padding:8px;border-radius:16px;background:var(--soft);overflow:hidden}
+.cday.empty{background:transparent;border:1.5px dashed var(--line);min-height:40px}
+.cday.out{opacity:.45}
+.cday.today{box-shadow:0 0 0 2px var(--ink) inset}
+.dnum{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700}
+.tick{font-size:11px;color:#fff;background:#0e9a5c;border-radius:99px;width:16px;height:16px;display:grid;place-items:center}
+.ldot{display:inline-block;width:9px;height:9px;border-radius:99px;background:#ffd23f;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
+.sw{display:block;width:100%;aspect-ratio:4/3;border-radius:10px}
+.sw img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
+.dname{font-size:13px;font-weight:600;line-height:1.2;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.cday:not(.empty):hover{background:color-mix(in srgb,var(--soft) 80%,var(--ink) 6%)}
+@media (max-width:560px){.cal{gap:5px}.cday{min-height:92px;padding:5px;border-radius:12px;gap:4px}.dname{font-size:10.5px;-webkit-line-clamp:2}.dnum{font-size:11px}.sw{border-radius:8px}}
+
+/* my recipes */
+.minebtn{padding:6px 12px;font-size:13px}
+@media (max-width:480px){.minebtn{padding:5px 10px;font-size:12px}}
+#rform .field input,#rform .field select{display:block;width:100%;border:0;background:transparent;outline:none;padding:2px 0 0;font-size:18px;font-weight:600;letter-spacing:0;color:inherit;font-family:inherit}
+#rform .tfield{display:block;margin-bottom:10px}
+#rform .tfield #rf-name{font-size:24px;font-weight:800;letter-spacing:-.02em}
+#rform{max-width:780px}
+#rform .field select{appearance:none;-webkit-appearance:none;cursor:pointer;text-transform:capitalize;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%236b6b6b' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 2px center}
+.fields.three{grid-template-columns:2fr 1fr 1fr;margin-bottom:16px}
+.fields.four{grid-template-columns:repeat(4,1fr);margin-top:12px}
+.mfield{background:var(--bg)!important;padding:10px 12px!important}
+#rform .mfield input{font-size:22px;font-weight:800}
+.ingcard .xhead,.card .xhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.ing{display:grid;grid-template-columns:minmax(0,1fr) 70px 78px 30px;gap:6px;margin-top:8px;align-items:center}
+.ing input,.ing select,.rf-text{border:0;background:var(--bg);border-radius:12px;padding:10px 12px;font-size:16px;outline:none;min-width:0;width:100%;color:inherit;font-family:inherit}
+.ing select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:6px;text-align:center}
+.ing input:focus,.ing select:focus,.rf-text:focus{box-shadow:0 0 0 2px var(--ink) inset}
+.ing-x{color:var(--muted);font-size:15px;border-radius:99px;height:30px}
+.ing-x:hover{color:var(--ink);background:var(--bg)}
+.rf-text{display:block;background:var(--soft);border-radius:18px;padding:14px 16px;resize:vertical;line-height:1.5}
+.item.check{border:0;padding:14px 2px 0}
+.pill.danger{color:#c62d2d}
+@media (max-width:560px){#rform .tfield #rf-name{font-size:20px}.fields.four{grid-template-columns:1fr 1fr}.fields.three{grid-template-columns:1fr 1fr}.fields.three .field:first-child{grid-column:1/-1}
+  .ing{grid-template-columns:minmax(0,1fr) 58px 66px 26px;gap:5px}.ing input,.ing select{padding:9px 9px}}
+/* row actions + chooser */
+.acts{flex:none;display:flex;align-items:center;gap:6px}
+.ract{flex:none;height:34px;min-width:34px;padding:0 9px;border-radius:99px;display:inline-flex;align-items:center;justify-content:center;gap:6px;color:var(--muted);border:1.5px solid var(--line);background:var(--bg);font-size:13px;font-weight:700}
+.ract span{display:none}
+.ract:hover{color:var(--ink);border-color:var(--muted)}
+.ract:disabled{opacity:.35;cursor:default}
+@media (max-width:1000px){
+  .row:not(.prow){flex-wrap:wrap;row-gap:10px}
+  .acts{width:100%;padding-left:66px}
+  .ract span{display:inline}
+}
+@media (max-width:480px){.acts{padding-left:54px;gap:5px}.ract{height:30px;padding:0 10px;font-size:12px}}
+.pickbar input{background:var(--soft)!important}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 8px}
+.fchip{padding:6px 12px;border-radius:99px;background:var(--soft);font-size:13px;font-weight:700;text-transform:capitalize}
+.fchip.on{background:var(--ink);color:var(--bg)}
+.prow{background:none;border-left:0;border-right:0;border-top:0;font:inherit;color:inherit}
+.prow.active{background:var(--soft);border-radius:14px;padding-left:10px;padding-right:10px}
+.prow .rday b{color:var(--ink)}
+
+/* shop done slider */
+.slidelock{position:relative;height:58px;border-radius:99px;background:var(--soft);margin:14px 0 0;overflow:hidden;--v:0;transition:background .25s}
+.slidelock::before{content:"";position:absolute;top:0;bottom:0;left:0;width:calc(54px + (100% - 58px) * var(--v) / 100);background:var(--ok);opacity:.22;border-radius:inherit;pointer-events:none}
+.slidelock.on::before{opacity:0}
+.sl-text{position:absolute;inset:0;display:grid;place-items:center;font-weight:700;font-size:15px;white-space:nowrap;color:var(--muted);pointer-events:none;padding:0 66px;text-align:center;line-height:1.2}
+.slidelock input{position:absolute;top:4px;left:4px;width:calc(100% - 8px);height:50px;margin:0;-webkit-appearance:none;appearance:none;background:transparent;cursor:grab;touch-action:pan-y}
+.slidelock input:active{cursor:grabbing}
+.slidelock input::-webkit-slider-runnable-track{height:50px;background:transparent}
+.slidelock input::-moz-range-track{height:50px;background:transparent}
+.slidelock input::-webkit-slider-thumb{-webkit-appearance:none;width:50px;height:50px;border-radius:99px;border:0;background:var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E") center/22px no-repeat;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.slidelock input::-moz-range-thumb{width:50px;height:50px;border-radius:99px;border:0;background:var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E") center/22px no-repeat}
+.slidelock.on{background:var(--ok)}
+.slidelock.on .sl-text{color:#fff}
+.slidelock.on input::-webkit-slider-thumb{background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%230e9a5c' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/22px no-repeat}
+.slidelock.on input::-moz-range-thumb{background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%230e9a5c' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/22px no-repeat}
+.shopbody{transition:opacity .25s,filter .25s}
+.shopbody.locked{opacity:.4;filter:grayscale(1);pointer-events:none;user-select:none}
+/* loved */
+.heart{flex:none;width:36px;height:36px;border-radius:99px;display:grid;place-items:center;color:var(--muted);transition:transform .15s,color .15s}
+.heart:hover{color:#e8366b}
+.heart.on{color:#e8366b}
+.heart:active{transform:scale(.85)}
+.heart.big{width:44px;height:44px;background:var(--soft);margin-left:auto}
+.heart.big svg{width:24px;height:24px}
+.rhead{display:flex;align-items:flex-start;gap:12px}
+.lovedot{color:#e8366b}
+.plabel{margin:16px 0 0}
+/* breakfast & lunch bentos */
+.bentos{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.bento{background:var(--soft);border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.bhead{display:flex;justify-content:space-between;align-items:baseline}
+.bitems{display:flex;flex-wrap:wrap;gap:6px;flex:1;align-content:flex-start;min-height:28px}
+.bchip{display:inline-flex;align-items:center;gap:4px;background:var(--bg);border-radius:99px;padding:4px 6px 4px 11px;font-size:13px;font-weight:600;max-width:100%}
+.bchip button{color:var(--muted);font-size:11px;width:18px;height:18px;border-radius:99px;display:grid;place-items:center}
+.bchip button:hover{color:var(--ink);background:var(--soft)}
+.badd{display:flex;gap:6px}
+.bin{flex:1;min-width:0;border:0;background:var(--bg);border-radius:99px;padding:8px 12px;font-size:15px;outline:none;color:inherit;font-family:inherit}
+.bin:focus{box-shadow:0 0 0 2px var(--ink) inset}
+.bplus{flex:none;width:34px;height:34px;border-radius:99px;background:var(--ink);color:var(--bg);font-size:20px;font-weight:600;line-height:1}
+.ctag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);background:var(--soft);border-radius:99px;padding:2px 7px;vertical-align:2px}
+/* dessert bento */
+.bento.dessert{grid-column:1/-1}
+.dlist{display:flex;flex-direction:column;gap:8px}
+.drow{display:flex;align-items:center;gap:12px;background:var(--bg);border-radius:14px;padding:8px}
+.drow .tile{width:40px;height:40px;border-radius:10px;position:relative;overflow:hidden}
+.drow .tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
+.drow .rbody{display:flex;flex-direction:column;flex:1;min-width:0}
+.drow .rtitle{font-size:15px}
+.bx{flex:none;width:28px;height:28px;border-radius:99px;color:var(--muted);font-size:12px}
+.bx:hover{background:var(--soft);color:var(--ink)}
+.dpick{align-self:flex-start}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a class="brand" href="#/">WhatsCooking</a>
+    <a class="syncbadge" id="syncbadge" href="#/macros" hidden></a>
+    <div class="mode">
+      <button class="modebtn" id="modebtn" aria-haspopup="true" aria-expanded="false" aria-controls="menu"><span id="modelabel">This week</span>
+        <svg viewBox="0 0 12 8" width="11" height="8" aria-hidden="true"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="menu" id="menu" role="menu">
+        <a class="tab" role="menuitem" href="#/" data-r="week"><b>This week</b><span>Your five dinners</span></a>
+        <a class="tab" role="menuitem" href="#/shop" data-r="shop"><b>Shopping</b><span>List and prices</span></a>
+        <a class="tab" role="menuitem" href="#/mine" data-r="mine"><b>My recipes</b><span>Build your own</span></a>
+        <a class="tab" role="menuitem" href="#/archive" data-r="archive"><b>Past weeks</b><span>Calendar of what you cooked</span></a>
+        <a class="tab" role="menuitem" href="#/macros" data-r="macros"><b>Macros</b><span>Targets and household sync</span></a>
+      </div>
+    </div>
+  </nav>
+  <main id="app"></main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const A = {M:'Meat & fish', V:'Fruit & veg', D:'Dairy & eggs', C:'Cupboard', S:'Staples'};
+const R = [
+ {id:'fajita',name:'Chicken fajita rice bowls',tag:'chicken',kcal:640,p:58,c:72,f:10,
+  i:[['Chicken breast',200,'g','M'],['Basmati rice',75,'g','C'],['Peppers',1,'','V'],['Red onion',0.5,'','V'],['Greek yogurt (0%)',50,'g','D'],['Lime',0.5,'','V'],['Fajita seasoning',1,'tbsp','S']],
+  m:['Slice chicken, peppers and onion; toss with seasoning.','Cook rice. Fry chicken and veg in a hot pan for 8–10 min.','Serve over rice with yogurt and a squeeze of lime.']},
+ {id:'chilli',name:'Beef chilli & rice',tag:'beef',kcal:720,p:52,c:85,f:15,
+  i:[['Lean beef mince (5%)',175,'g','M'],['Kidney beans',0.5,'tin','C'],['Chopped tomatoes',0.5,'tin','C'],['Onion',0.5,'','V'],['Basmati rice',75,'g','C'],['Chilli powder',1,'tsp','S'],['Garlic',1,'clove','V']],
+  m:['Brown mince with onion and garlic.','Add chilli powder, tomatoes and beans; simmer 20 min.','Serve with rice.']},
+ {id:'salmon',name:'Lemon salmon, new potatoes & greens',tag:'fish',kcal:620,p:36,c:50,f:28,
+  i:[['Salmon fillet',1,'','M'],['New potatoes',250,'g','V'],['Tenderstem broccoli',100,'g','V'],['Lemon',0.5,'','V'],['Olive oil',1,'tsp','S']],
+  m:['Boil potatoes 15 min.','Roast salmon at 200°C for 12–14 min with lemon.','Steam broccoli and serve together.']},
+ {id:'meatball',name:'Turkey meatball pasta',tag:'turkey',kcal:720,p:58,c:82,f:15,
+  i:[['Turkey mince',175,'g','M'],['Pasta',90,'g','C'],['Passata',200,'g','C'],['Garlic',2,'clove','V'],['Parmesan',15,'g','D'],['Dried oregano',1,'tsp','S']],
+  m:['Roll seasoned mince into meatballs and brown.','Add passata, garlic and oregano; simmer 15 min.','Toss with cooked pasta and top with parmesan.']},
+ {id:'tikka',name:'Chicken tikka & spinach rice',tag:'chicken',kcal:660,p:60,c:70,f:12,
+  i:[['Chicken breast',200,'g','M'],['Greek yogurt (0%)',60,'g','D'],['Tikka paste',1,'tbsp','C'],['Basmati rice',75,'g','C'],['Spinach',50,'g','V'],['Onion',0.5,'','V']],
+  m:['Marinate chicken in yogurt and tikka paste.','Grill or air-fry 15 min. Fry onion, wilt spinach.','Stir spinach through rice and serve with chicken.']},
+ {id:'prawn',name:'Garlic prawn stir-fry noodles',tag:'fish',kcal:600,p:45,c:72,f:12,
+  i:[['King prawns',200,'g','M'],['Egg noodles',75,'g','C'],['Stir-fry veg',150,'g','V'],['Soy sauce',1,'tbsp','S'],['Sesame oil',1,'tsp','S'],['Garlic',2,'clove','V'],['Ginger',1,'tsp','V']],
+  m:['Cook noodles and drain.','Stir-fry garlic, ginger and veg 3 min, add prawns 3 min.','Toss in noodles, soy and sesame oil.']},
+ {id:'steak',name:'Steak & sweet potato wedges',tag:'beef',kcal:730,p:56,c:62,f:26,
+  i:[['Sirloin steak',225,'g','M'],['Sweet potato',300,'g','V'],['Salad leaves',50,'g','V'],['Olive oil',1,'tsp','S'],['Smoked paprika',1,'tsp','S']],
+  m:['Cut wedges, toss with oil and paprika, roast at 200°C for 30 min.','Sear steak to your liking, rest 5 min.','Slice and serve with wedges and leaves.']},
+ {id:'cod',name:'Cod & chorizo traybake',tag:'fish',kcal:580,p:48,c:50,f:16,
+  i:[['Cod fillet',200,'g','M'],['Chorizo',30,'g','M'],['New potatoes',250,'g','V'],['Cherry tomatoes',100,'g','V'],['Olive oil',1,'tsp','S']],
+  m:['Roast halved potatoes and chorizo at 200°C for 20 min.','Add tomatoes and cod, roast 12 min more.','Spoon the chorizo oil over the fish to serve.']},
+ {id:'paella',name:'Chicken & chorizo rice',tag:'chicken',kcal:720,p:50,c:78,f:20,
+  i:[['Chicken thighs (skinless)',180,'g','M'],['Chorizo',30,'g','M'],['Paella or risotto rice',75,'g','C'],['Frozen peas',60,'g','C'],['Peppers',1,'','V'],['Chicken stock cube',0.5,'','C'],['Smoked paprika',1,'tsp','S']],
+  m:['Brown chicken and chorizo, add pepper.','Stir in rice, paprika and 250ml stock per portion.','Simmer 18 min, add peas for the last 3.']},
+ {id:'pork',name:'Honey soy pork & rice',tag:'pork',kcal:650,p:55,c:75,f:10,
+  i:[['Pork tenderloin',200,'g','M'],['Basmati rice',75,'g','C'],['Pak choi',1,'','V'],['Soy sauce',1,'tbsp','S'],['Honey',1,'tsp','S'],['Garlic',1,'clove','V']],
+  m:['Slice pork thinly; mix soy, honey and garlic.','Stir-fry pork 5 min, add pak choi and sauce.','Serve over rice.']},
+ {id:'dal',name:'Red lentil & chickpea dal',tag:'veg',kcal:650,p:32,c:92,f:14,
+  i:[['Red lentils',80,'g','C'],['Chickpeas',0.5,'tin','C'],['Light coconut milk',100,'ml','C'],['Spinach',50,'g','V'],['Onion',0.5,'','V'],['Basmati rice',50,'g','C'],['Curry powder',1,'tbsp','S']],
+  m:['Fry onion with curry powder.','Add lentils, coconut milk and 250ml water; simmer 20 min.','Stir in chickpeas and spinach; serve with rice.']},
+ {id:'greek',name:'Greek chicken traybake',tag:'chicken',kcal:650,p:60,c:52,f:18,
+  i:[['Chicken breast',200,'g','M'],['New potatoes',250,'g','V'],['Red onion',0.5,'','V'],['Cherry tomatoes',100,'g','V'],['Feta',30,'g','D'],['Olive oil',1,'tsp','S'],['Dried oregano',1,'tsp','S']],
+  m:['Toss potatoes, onion and oil; roast at 200°C for 15 min.','Add chicken, tomatoes and oregano; roast 20 min.','Crumble feta over to serve.']},
+ {id:'burrito',name:'Turkey burrito bowl',tag:'turkey',kcal:720,p:58,c:90,f:10,
+  i:[['Turkey mince',175,'g','M'],['Basmati rice',75,'g','C'],['Black beans',0.5,'tin','C'],['Sweetcorn',50,'g','C'],['Salsa',50,'g','C'],['Greek yogurt (0%)',40,'g','D'],['Fajita seasoning',1,'tbsp','S']],
+  m:['Brown mince with seasoning.','Warm beans and sweetcorn.','Build bowls with rice, mince, beans, salsa and yogurt.']},
+ {id:'tuna',name:'Tuna sweetcorn pasta bake',tag:'fish',kcal:700,p:55,c:80,f:14,
+  i:[['Tinned tuna',1.5,'tin','C'],['Pasta',90,'g','C'],['Sweetcorn',50,'g','C'],['Passata',150,'g','C'],['Lighter cheddar',25,'g','D']],
+  m:['Cook pasta until just underdone.','Mix with tuna, sweetcorn and passata in a dish.','Top with cheese; bake at 200°C for 15 min.']},
+ {id:'teriyaki',name:'Teriyaki salmon & edamame rice',tag:'fish',kcal:690,p:45,c:72,f:22,
+  i:[['Salmon fillet',1,'','M'],['Basmati rice',75,'g','C'],['Edamame beans',60,'g','C'],['Teriyaki sauce',1,'tbsp','S'],['Spring onions',2,'','V']],
+  m:['Brush salmon with teriyaki; bake at 200°C for 12 min.','Cook rice, add edamame for the last 3 min.','Serve with sliced spring onions.']},
+ {id:'beefbroc',name:'Beef & broccoli',tag:'beef',kcal:680,p:55,c:72,f:16,
+  i:[['Lean beef strips',200,'g','M'],['Broccoli',150,'g','V'],['Basmati rice',75,'g','C'],['Oyster sauce',1,'tbsp','S'],['Soy sauce',1,'tbsp','S'],['Garlic',1,'clove','V']],
+  m:['Sear beef strips in a very hot pan; set aside.','Stir-fry broccoli and garlic 4 min.','Return beef, add sauces, serve over rice.']},
+ {id:'pesto',name:'Chicken pesto pasta',tag:'chicken',kcal:720,p:56,c:70,f:22,
+  i:[['Chicken breast',175,'g','M'],['Pasta',90,'g','C'],['Green pesto',15,'g','C'],['Cherry tomatoes',100,'g','V'],['Spinach',40,'g','V']],
+  m:['Cook pasta. Pan-fry sliced chicken 8 min.','Add tomatoes and spinach until wilted.','Stir through pasta and pesto.']},
+ {id:'halloumi',name:'Halloumi, chickpea & veg couscous',tag:'veg',kcal:720,p:35,c:80,f:26,
+  i:[['Halloumi (light)',80,'g','D'],['Couscous',75,'g','C'],['Chickpeas',0.5,'tin','C'],['Courgette',0.5,'','V'],['Peppers',1,'','V'],['Lemon',0.5,'','V']],
+  m:['Roast chopped veg and chickpeas at 200°C for 20 min.','Make couscous with boiling water, fluff with lemon.','Fry halloumi slices and serve on top.']},
+];
+// ---------- Shop products (prices checked 23 Oct 2026) ----------
+// packs: [size in the recipe's unit, price £, label]. perKg = sold by weight.
+const PRICED = '23 Oct 2026';
+const AL = 'https://www.aldi.co.uk/product/';
+const P = {
+ 'Chicken breast':           {s:'A', n:'Ashfields Chicken Breast Fillets', packs:[[300,2.29,'300g','ashfields-chicken-breast-fillets-2-pack-000000000000384633'],[650,4.69,'650g','ashfields-chicken-breast-fillets-000000000000383730'],[1000,6.69,'1kg','ashfields-chicken-breast-fillets-000000000000387924'],[2000,12.29,'2kg','ashfields-chicken-breast-fillets-000000000000386210']], u:AL+'ashfields-chicken-breast-fillets-000000000000383730'},
+ 'Chicken thighs (skinless)':{s:'A', n:'Ashfields Chicken Thigh Fillets', packs:[[600,4.39,'600g','ashfields-chicken-thigh-fillets-000000000000416054'],[900,5.39,'900g','ashfields-chicken-thigh-fillets-000000000000383807']], u:AL+'ashfields-chicken-thigh-fillets-000000000000416054'},
+ 'Turkey mince':             {s:'A', n:'Ashfields Extra Lean Turkey Mince 2%', packs:[[500,3.99,'500g']], u:AL+'ashfields-british-extra-lean-turkey-mince-2-fat-000000000000387741'},
+ 'Lean beef mince (5%)':     {s:'A', n:'Ashfields Lean Beef Steak Mince 5%', packs:[[250,2.55,'250g','ashfields-british-lean-beef-steak-mince-5-fat-000000000000575273'],[500,5.05,'500g','ashfields-british-lean-beef-steak-mince-5-fat-000000000000575278'],[750,7.49,'750g','ashfields-british-lean-beef-steak-mince-5-fat-000000000000575288']], u:AL+'ashfields-british-lean-beef-steak-mince-5-fat-000000000000575278'},
+ 'Sirloin steak':            {s:'A', n:'Ashfields Sirloin Steak 30 Day Matured', packs:[[227,6.29,'227g','ashfields-100-british-sirloin-steak-30-day-matured-000000000000382071'],[195,4.49,'195g (21 day)','ashfields-british-sirloin-steak-21-day-matured-000000000000382068']], u:AL+'ashfields-100-british-sirloin-steak-30-day-matured-000000000000382071'},
+ 'Pork tenderloin':          {s:'A', n:'Ashfields Lean Pork Fillet', perKg:6.95, u:AL+'ashfields-british-lean-pork-fillet-000000000000386133'},
+ 'Salmon fillet':            {s:'A', n:'The Fishmonger Boneless Salmon Fillets', packs:[[2,3.59,'2 pack','the-fishmonger-boneless-salmon-fillets-2-pack-000000000000381995'],[4,6.85,'4 pack','the-fishmonger-boneless-salmon-fillets-4-pack-000000000000525810']], u:AL+'the-fishmonger-boneless-salmon-fillets-4-pack-000000000000525810'},
+ 'Cod fillet':               {s:'A', n:'Specially Selected Cod Loins', packs:[[260,5.49,'2 × 130g']], u:AL+'specially-selected-skinless-boneless-cod-loins-2-pack-000000000000387371'},
+ 'King prawns':              {s:'A', n:'Specially Selected Raw Peeled Argentinian Prawns (frozen)', packs:[[250,3.89,'250g']], u:AL+'specially-selected-raw-peeled-argentinian-prawns-000000000457636002'},
+ 'Tinned tuna':              {s:'A', n:'The Fishmonger Tuna Chunks in Spring Water', packs:[[1,0.65,'145g tin']], u:AL+'the-fishmonger-tuna-chunks-in-spring-water-000000000000227567'},
+ 'Lean beef strips':         {s:'S', n:"Sainsbury's Stir Fry Beef", packs:[[350,6.25,'350g']]},
+ 'Chorizo':                  {s:'S', n:"Sainsbury's Chorizo Ring Mild", packs:[[225,2.60,'225g']]},
+
+ 'Peppers':                  {s:'A', n:"Nature's Pick Mixed Peppers", packs:[[3,1.75,'3 pack']], u:AL+'nature-s-pick-mixed-peppers-000000000000275392'},
+ 'Onion':                    {s:'A', n:"Nature's Pick Brown Onions", packs:[[6,0.59,'1kg (≈6)']], u:AL+'nature-s-pick-brown-onions-000000000000339777'},
+ 'Garlic':                   {s:'A', n:"Nature's Pick Garlic", packs:[[40,0.59,'4 bulbs']], u:AL+'nature-s-pick-garlic-000000000000273810'},
+ 'New potatoes':             {s:'A', n:"Nature's Pick British Baby Potatoes", packs:[[1000,0.99,'1kg']], u:AL+'nature-s-pick-british-baby-potatoes-000000000000339748'},
+ 'Sweet potato':             {s:'A', n:"Nature's Pick Sweet Potato", packs:[[300,0.69,'1 (≈300g)']], u:AL+'nature-s-pick-sweet-potato-000000000000272476'},
+ 'Broccoli':                 {s:'A', n:"Nature's Pick British Broccoli", packs:[[350,0.86,'1 head (≈350g)']], u:AL+'nature-s-pick-british-broccoli-000000000000339776'},
+ 'Spinach':                  {s:'A', n:"Nature's Pick Baby Spinach", packs:[[240,1.09,'240g']], u:AL+'nature-s-pick-baby-spinach-000000000000339750'},
+ 'Salad leaves':             {s:'A', n:"Nature's Pick Rocket & Baby Leaf", packs:[[90,0.99,'90g']], u:AL+'nature-s-pick-rocket-baby-leaf-salad-000000000000339755'},
+ 'Cherry tomatoes':          {s:'A', n:"Nature's Pick Cherry Tomatoes", packs:[[330,0.95,'330g']], u:AL+'nature-s-pick-cherry-tomatoes-000000000000275529'},
+ 'Ginger':                   {s:'A', n:"Nature's Pick Ginger", packs:[[40,0.99,'125g root']], u:AL+'nature-s-pick-ginger-000000000000266261'},
+ 'Stir-fry veg':             {s:'A', n:'Ready, Set…Cook! Oriental Style Stir Fry', packs:[[320,0.99,'320g','ready-set-cook-oriental-style-stir-fry-000000000334802001'],[600,1.29,'600g (Sweet & Crunchy)','ready-set-cook-sweet-crunchy-stir-fry-000000000339863']], u:AL+'ready-set-cook-oriental-style-stir-fry-000000000334802001'},
+ 'Lemon':                    {s:'A', n:'Everyday Essentials Wonky Lemons', packs:[[4,0.89,'4 pack']], u:AL+'everyday-essentials-wonky-lemons-000000000000268496'},
+ 'Lime':                     {s:'A', n:"Nature's Pick Limes", packs:[[5,1.15,'5 pack']], u:AL+'nature-s-pick-limes-000000000000285988'},
+ 'Red onion':                {s:'S', n:"Sainsbury's Red Onions", packs:[[3,0.95,'3 pack']]},
+ 'Tenderstem broccoli':      {s:'S', n:"Sainsbury's Tenderstem Broccoli", packs:[[200,1.60,'200g'],[330,2.00,'330g']]},
+ 'Courgette':                {s:'S', n:"Sainsbury's Courgettes", packs:[[2,1.45,'500g (≈2)']]},
+ 'Spring onions':            {s:'S', n:"Sainsbury's Spring Onions", packs:[[8,0.65,'bunch']]},
+ 'Pak choi':                 {s:'S', n:"Sainsbury's Pak Choi", packs:[[2,1.55,'250g (≈2)']]},
+
+ 'Greek yogurt (0%)':        {s:'A', n:'Brooklea Fat Free Greek Style Yogurt', packs:[[500,0.95,'500g']], u:AL+'brooklea-fat-free-greek-style-yogurt-000000000422093'},
+ 'Feta':                     {s:'A', n:'Emporium Greek Feta', packs:[[200,1.69,'200g']], u:AL+'emporium-greek-feta-000000000000557625'},
+ 'Halloumi (light)':         {s:'A', n:'Emporium Halloumi (regular — no light version)', packs:[[225,1.99,'225g']], u:AL+'emporium-halloumi-plain-225g-000000000000612513'},
+ 'Parmesan':                 {s:'A', n:'Specially Selected Parmigiano Reggiano', packs:[[170,3.29,'170g']], u:AL+'specially-selected-parmigiano-reggiano-pdo-000000000000504638'},
+ 'Lighter cheddar':          {s:'S', n:"Sainsbury's Lighter Mature Cheese", packs:[[400,2.95,'400g']]},
+
+ 'Basmati rice':             {s:'A', n:'Worldwide Foods Basmati Rice', packs:[[1000,1.79,'1kg']], u:AL+'worldwide-foods-basmati-rice-000000000000262344'},
+ 'Pasta':                    {s:'A', n:'Cucina Penne Pasta', packs:[[500,0.69,'500g','cucina-penne-pasta-500g-000000000000308638'],[1000,1.19,'1kg fusilli','cucina-fusilli-pasta-1kg-000000000000308461']], u:AL+'cucina-penne-pasta-500g-000000000000308638'},
+ 'Red lentils':              {s:'A', n:'Worldwide Foods Red Lentils', packs:[[500,0.89,'500g']], u:AL+'worldwide-foods-red-lentils-000000000000336258'},
+ 'Egg noodles':              {s:'A', n:'Ready, Set…Cook! Egg Noodles (fresh, 410g)', packs:[[205,1.09,'410g fresh']], u:AL+'ready-set-cook-egg-noodles-000000000000339840'},
+ 'Chopped tomatoes':         {s:'A', n:'Cucina Chopped Tomatoes', packs:[[1,0.45,'400g tin']], u:AL+'cucina-chopped-tomatoes-in-a-rich-tomato-juice-000000000000278588'},
+ 'Kidney beans':             {s:'A', n:'Four Seasons Red Kidney Beans', packs:[[0.6,0.39,'240g tin']], u:AL+'four-seasons-red-kidney-beans-in-water-000000000000284569'},
+ 'Sweetcorn':                {s:'A', n:'Four Seasons Supersweet Sweetcorn', packs:[[200,0.55,'285g tin']], u:AL+'four-seasons-supersweet-sweetcorn-in-water-000000000000274512'},
+ 'Frozen peas':              {s:'A', n:'Specially Selected Petits Pois (frozen)', packs:[[700,1.09,'700g']], u:AL+'specially-selected-petits-pois-000000000000365781'},
+ 'Couscous':                 {s:'S', n:"Sainsbury's Cous Cous", packs:[[500,1.30,'500g']]},
+ 'Paella or risotto rice':   {s:'S', n:"Sainsbury's Spanish Paella Rice", packs:[[500,2.55,'500g']]},
+ 'Passata':                  {s:'S', n:"Sainsbury's Passata", packs:[[500,0.60,'500g']]},
+ 'Black beans':              {s:'S', n:"Sainsbury's Black Beans in Water", packs:[[1,0.45,'400g tin']]},
+ 'Chickpeas':                {s:'S', n:"Sainsbury's Chickpeas in Water", packs:[[1,0.41,'400g tin']]},
+ 'Light coconut milk':       {s:'S', n:"Sainsbury's Coconut Milk Light", packs:[[400,0.75,'400ml']]},
+ 'Chicken stock cube':       {s:'S', n:"Sainsbury's Chicken Stock Cubes", packs:[[10,1.10,'10 pack']]},
+ 'Green pesto':              {s:'S', n:"Sainsbury's Green Pesto", packs:[[190,0.89,'190g jar']]},
+ 'Tikka paste':              {s:'S', n:"Sainsbury's Fragrant Tikka Curry Paste", packs:[[13,2.15,'200g jar']]},
+ 'Salsa':                    {s:'S', n:"Sainsbury's Mild Salsa", packs:[[200,1.35,'200g']]},
+ 'Edamame beans':            {s:'S', n:"Sainsbury's Edamame Beans (frozen)", packs:[[500,2.88,'500g']]},
+};
+const SHOP = {A:'Aldi', S:"Sainsbury's"};
+// Aldi everyday range, prices checked 23 Oct 2026: [name, brand, size, £, product slug, aisle]
+const CAT = [["UHT Semi Skimmed Milk","Cowbelle","1 l",0.95,"cowbelle-uht-semi-skimmed-milk-000000000000416563","D"],["Semi Skimmed Milk 1.7% Fat","Cowbelle","3.408 l",2.4,"cowbelle-semi-skimmed-milk-1-7-fat-000000000000416713","D"],["Semi Skimmed Milk 1.7% Fat","Cowbelle","2.272 l",1.65,"cowbelle-semi-skimmed-milk-1-7-fat-000000000000416770","D"],["Whole Milk 3.6% Fat","Cowbelle","2.272 l",1.65,"cowbelle-whole-milk-3-6-fat-000000000000416772","D"],["Skimmed Milk <0.5% Fat","Cowbelle","2.272 l",1.65,"cowbelle-skimmed-milk-0-5-fat-000000000000416864","D"],["Filtered British Semi Skimmed Milk","Cowbelle","2 l",1.69,"cowbelle-filtered-british-semi-skimmed-milk-000000000000417584","D"],["UHT Unsweetened Almond Drink","Actileaf","1 l",0.99,"actileaf-uht-unsweetened-almond-drink-000000000000417610","D"],["UHT Unsweetened Soya Drink","Actileaf","1 l",0.85,"actileaf-uht-unsweetened-soya-drink-000000000000417612","D"],["Barista Style Oat Drink","Actileaf","1 l",1.09,"actileaf-barista-style-oat-drink-000000000000417675","D"],["Lactose Free Milk","Cowbelle","1 l",0.99,"cowbelle-lactose-free-milk-000000000000422329","D"],["Organic Semi Skimmed Milk 1.7% Fat","Cowbelle","2.272 l",2.09,"cowbelle-organic-semi-skimmed-milk-1-7-fat-000000000000423466","D"],["Chocolate Milk","Cowbelle","1 l",0.95,"cowbelle-chocolate-milk-000000000000543221","D"],["British Semi Skimmed Milk 1.7% Fat","Cowbelle","1.136 l",0.85,"cowbelle-british-semi-skimmed-milk-1-7-fat-000000000417494001","D"],["British Whole Milk 3.7% Fat","Cowbelle","1.136 l",0.85,"cowbelle-british-whole-milk-3-7-fat-000000000417493001","D"],["No Sugars Oat Drink","Actileaf","1 l",1.09,"actileaf-no-sugars-oat-drink-000000000000633294","D"],["Chocolate Flavoured Protein Milkshake","Cowbelle","",0.99,"cowbelle-chocolate-flavoured-protein-milkshake-000000000613392001","D"],["British Salted Butter","Cowbelle","250 g",1.85,"cowbelle-british-salted-butter-250g-000000000000416554","D"],["British Unsalted Butter","Cowbelle","250 g",1.85,"cowbelle-british-unsalted-butter-000000000000416555","D"],["Fresh British Single Cream","Cowbelle","300 ml",1.09,"cowbelle-fresh-british-single-cream-000000000000416440","D"],["Fresh British Double Cream","Cowbelle","300 ml",1.29,"cowbelle-fresh-british-double-cream-000000000000416559","D"],["Valley Spreadable","Greenvale","500 g",1.99,"greenvale-valley-spreadable-000000000000421214","D"],["Slightly Salted Spreadable Butter","Nordpak","500 g",2.15,"nordpak-slightly-salted-spreadable-butter-000000000000423841","D"],["Lighter Spreadable Butter","Nordpak","500 g",2.15,"nordpak-lighter-spreadable-butter-000000000000423842","D"],["Olive Spread","Greenvale","500 g",1.25,"greenvale-olive-spread-000000000523435001","D"],["Light Olive Spread","Greenvale","500 g",1.25,"greenvale-light-olive-spread-000000000523435002","D"],["Ready Rolled Puff Pastry","The Pantry","320 g",0.99,"the-pantry-ready-rolled-puff-pastry-000000000524778001","D"],["Authentic Greek Yogurt","Brooklea","1 kg",3.69,"brooklea-authentic-greek-yogurt-000000000656970001","D"],["Crème Fraîche","Cowbelle","300 ml",0.75,"cowbelle-creme-fraiche-000000000752537001","D"],["Reduced Fat Crème Fraîche","Cowbelle","300 ml",0.75,"cowbelle-reduced-fat-creme-fraiche-000000000752537002","D"],["Original Real Dairy Whipped Cream","Cowbelle","250 ml",1.49,"cowbelle-original-real-dairy-whipped-cream-000000000270155001","D"],["British Large Free Range Eggs 6 Pack","Merevale","6",1.69,"merevale-british-large-free-range-eggs-6-pack-000000000000416688","D"],["British Medium Free Range Eggs 6 Pack","Merevale","6",1.49,"merevale-british-medium-free-range-eggs-6-pack-000000000000416701","D"],["British Large Free Range Eggs 12 Pack","Merevale","12",2.89,"merevale-british-large-free-range-eggs-12-pack-000000000000417009","D"],["British Medium Free Range Eggs 12 Pack","Merevale","12",2.49,"merevale-british-medium-free-range-eggs-12-pack-000000000000417633","D"],["British Free Range Mixed Weight Eggs 15 Pack","Merevale","15",2.85,"merevale-british-free-range-mixed-weight-eggs-15-pack-000000000000417635","D"],["Free Range Eggs 6 Pack","Merevale","6",0.99,"merevale-free-range-eggs-6-pack-000000000000548465","D"],["Burrata","Specially Selected","150 g",2.39,"specially-selected-burrata-150g-000000000000724615","D"],["British Mature Cheddar Cheese","Emporium","400 g",2.45,"emporium-british-mature-cheddar-cheese-000000000000522537","D"],["British Mild Cheddar Cheese","Emporium","400 g",2.45,"emporium-british-mild-cheddar-cheese-000000000000423477","D"],["British Extra Mature Cheddar Cheese","Emporium","400 g",2.45,"emporium-british-extra-mature-cheddar-cheese-000000000000522620","D"],["British Mature White Cheddar Cheese","Everyday Essentials","900 g",4.85,"everyday-essentials-british-mature-white-cheddar-cheese-000000000000495240","D"],["Grated Mozzarella","Emporium","250 g",1.89,"emporium-grated-mozzarella-000000000000280873","D"],["Grated Mature Cheddar","Emporium","250 g",1.89,"emporium-grated-mature-cheddar-000000000000416860","D"],["Mild Cheddar Slices 10 Pack","Everyday Essentials","200 g",1.25,"everyday-essentials-mild-cheddar-slices-10-pack-000000000000416893","D"],["Cheese Singles 15 Pack","Everyday Essentials","225 g",0.83,"everyday-essentials-cheese-singles-15-pack-000000000000494377","D"],["Italian Grana Padano","Emporium","",2.75,"emporium-italian-grana-padano-000000000000284856","D"],["Mascarpone","Emporium","250 g",1.79,"emporium-mascarpone-000000000000625797","D"],["Classic Mozzarella","Everyday Essentials","125 g",0.55,"everyday-essentials-classic-mozzarella-000000000283052001","D"],["Light Mozzarella","Everyday Essentials","125 g",0.55,"everyday-essentials-light-mozzarella-000000000283052002","D"],["Cheese Triangles 8 Pack","Emporium","8",0.99,"emporium-cheese-triangles-8-pack-000000000282123001","D"],["Light Cheese Slices 8 Pack","Emporium","200 g",0.99,"emporium-light-cheese-slices-8-pack-000000000282227002","D"],["Cheese 'a' Peel 4 Pack","Emporium","80 g",0.99,"emporium-cheese-a-peel-4-pack-000000000000546314","D"],["Fat Free Natural Yogurt","Everyday Essentials","500 g",0.55,"everyday-essentials-fat-free-natural-yogurt-000000000000416735","D"],["Full Fat Greek Style Yogurt","Brooklea","",1.49,"brooklea-full-fat-greek-style-yogurt-000000000422258002","D"],["Fat Free Strawberry Yogurt","Brooklea","450 g",0.79,"brooklea-fat-free-strawberry-yogurt-000000000417006002","D"],["Fat Free Vanilla Yogurt","Brooklea","450 g",0.79,"brooklea-fat-free-vanilla-yogurt-000000000417006003","D"],["Low Fat Red Fruits Yogurt 6 Pack","Brooklea","750 g",0.99,"brooklea-low-fat-red-fruits-yogurt-6-pack-000000000421650001","D"],["Fruit Yogurt Squidgy Pouches 4 Pack","Brooklea","320 g",0.99,"brooklea-fruit-yogurt-squidgy-pouches-4-pack-000000000000422948","D"],["Strawberry Protein Yogurt","Brooklea","",0.75,"brooklea-strawberry-protein-yogurt-000000000422420004","D"],["Strawberry Fromage Frais 6 Pack","Brooklea","282 g",0.75,"brooklea-little-delights-strawberry-apricot-and-raspberry-fromage-frais-6-pack-000000000000416478","D"],["Medium Sliced White Bread","Village Bakery","800 g",0.55,"village-bakery-medium-sliced-white-bread-000000000383372001","B"],["Medium Sliced Wholemeal Bread","Everyday Essentials","800 g",0.55,"everyday-essentials-medium-sliced-wholemeal-bread-000000000383372002","B"],["Both In One Medium Sliced Loaf","Village Bakery","800 g",0.75,"village-bakery-both-in-one-medium-sliced-loaf-000000000000382210","B"],["White Toastie Sliced Loaf","Village Bakery","800 g",0.75,"village-bakery-white-toastie-sliced-loaf-000000000000382252","B"],["Wholemeal Sliced Loaf","Village Bakery","800 g",0.75,"village-bakery-wholemeal-sliced-loaf-000000000000382253","B"],["Soft White Farmhouse Sliced Loaf","Village Bakery","800 g",0.89,"village-bakery-soft-white-farmhouse-sliced-loaf-000000000000387989","B"],["Super Seeded Farmhouse Sliced Loaf","Specially Selected","800 g",0.99,"specially-selected-super-seeded-farmhouse-sliced-loaf-000000000000382180","B"],["Seeded Sourdough Sliced Loaf","Specially Selected","500 g",1.89,"specially-selected-seeded-sourdough-sliced-loaf-000000000000583461","B"],["White Sourdough Loaf","Specially Selected","500 g",1.59,"specially-selected-white-sourdough-loaf-000000000000695384","B"],["Protein Sourdough","Specially Selected","500 g",1.99,"specially-selected-protein-sourdough-000000000000695112","B"],["Fruit Loaf","Village Bakery","400 g",1.29,"village-bakery-fruit-loaf-000000000000382995","B"],["Malt Loaf","Village Bakery","280 g",0.99,"village-bakery-so-malty-malt-loaf-000000000000492158","B"],["Toastie Thick Sliced Soft White Bread","Warburtons","800 g",1.4,"warburtons-toastie-thick-sliced-soft-white-bread-000000000000382462","B"],["50/50 Medium Loaf","Kingsmill","800 g",1.05,"kingsmill-50-50-medium-loaf-000000000000382645","B"],["Soft White Medium Sliced Loaf","Hovis","800 g",1.25,"hovis-soft-white-medium-sliced-loaf-000000000000385119","B"],["Plain Naan Breads","Bilash","2",0.69,"bilash-plain-naan-breads-000000000000383275","B"],["Garlic & Coriander Naan Breads","Bilash","2",0.69,"bilash-garlic-coriander-naan-breads-000000000000383276","B"],["White Tortilla Wraps","Village Bakery","8",0.99,"village-bakery-white-tortilla-wraps-000000000000383422","B"],["Tortilla Protein Wrap 6 Pack","Village Bakery","6",0.99,"village-bakery-tortilla-protein-wrap-6-pack-000000000000683580","B"],["Both In One Tortilla Wraps","Village Bakery","8",0.99,"village-bakery-both-in-one-tortilla-wraps-000000000383421001","B"],["White Pitta Bread","Village Bakery","6",0.5,"village-bakery-white-pitta-bread-000000000000517387","B"],["Wholemeal Pittas 6 Pack","Village Bakery","6",0.5,"village-bakery-wholemeal-pittas-6-pack-000000000000517423","B"],["Greek Flatbreads","Village Bakery","4",1.49,"village-bakery-greek-flatbreads-000000000000640392","B"],["Kiwis","Nature's Pick","6",1.19,"nature-s-pick-kiwis-000000000000263719","V"],["Ripe & Ready Hass Avocados","Nature's Pick","2",1.39,"nature-s-pick-ripe-ready-hass-avocados-000000000000264102","V"],["Large Mango","Nature's Pick","",0.88,"nature-s-pick-large-mango-000000000000264487","V"],["Galia Melon","Nature's Pick","",1.79,"nature-s-pick-galia-melon-000000000000265489","V"],["Watermelon","Nature's Pick","",2.69,"nature-s-pick-watermelon-000000000000265497","V"],["White Seedless Grapes","Nature's Pick","500 g",1.89,"nature-s-pick-white-seedless-grapes-000000000000266267","V"],["Seedless Red Grapes","Nature's Pick","500 g",1.89,"nature-s-pick-seedless-red-grapes-000000000000266293","V"],["Wonky Easy Peelers","Everyday Essentials","600 g",1.19,"everyday-essentials-wonky-easy-peelers-000000000000266362","V"],["Mini Easy Peelers","Nature's Pick","500 g",0.95,"nature-s-pick-mini-easy-peelers-000000000000271757","V"],["Oranges","Nature's Pick","5",1.39,"nature-s-pick-oranges-000000000000266773","V"],["Bananas","Nature's Pick","5",0.78,"nature-s-pick-bananas-000000000000267180","V"],["Banana","Nature's Pick","",0.16,"nature-s-pick-banana-000000000000267186","V"],["Wonky Lemons","Everyday Essentials","4",0.89,"everyday-essentials-wonky-lemons-000000000000268496","V"],["Pink Lady Apples","Nature's Pick","6",2.85,"nature-s-pick-pink-lady-apples-000000000000271500","V"],["Ripe & Ready Conference Pears","Nature's Pick","4",1.85,"nature-s-pick-ripe-ready-conference-pears-000000000000272944","V"],["Blueberries","Nature's Pick","150 g",1.69,"nature-s-pick-blueberries-000000000000276890","V"],["Wonky Blueberries","Everyday Essentials","125 g",1.29,"everyday-essentials-wonky-blueberries-000000000000276894","V"],["Nectarines","Nature's Pick","4",1.29,"nature-s-pick-nectarines-000000000000283413","V"],["Limes","Nature's Pick","5",1.15,"nature-s-pick-limes-000000000000285988","V"],["Plums","Nature's Pick","",1.09,"nature-s-pick-ripen-at-home-plums-000000000000286177","V"],["Cucumber","Nature's Pick","",0.99,"nature-s-pick-cucumber-000000000000273659","V"],["Baby Plum Tomatoes","Everyday Essentials","250 g",0.62,"everyday-essentials-baby-plum-tomatoes-000000000000275259","V"],["Vine Ripened Tomatoes","Nature's Pick","500 g",1.29,"nature-s-pick-vine-ripened-tomatoes-000000000000275557","V"],["Salad Tomatoes","Nature's Pick","",0.99,"nature-s-pick-salad-tomatoes-000000000000275569","V"],["Red Pepper","Nature's Pick","",0.7,"nature-s-pick-red-pepper-000000000000275192","V"],["Asparagus Tips","Nature's Pick","100 g",1.4,"nature-s-pick-asparagus-tips-000000000000297166","V"],["British Cauliflower","Nature's Pick","",1.18,"nature-s-pick-british-cauliflower-000000000000334794","V"],["Baby Corn","Nature's Pick","145 g",1.09,"nature-s-pick-baby-corn-000000000000339754","V"],["Baking Potato","Nature's Pick","",0.24,"nature-s-pick-baking-potato-000000000000339756","V"],["British Baking Potatoes","Nature's Pick","4",0.79,"nature-s-pick-british-baking-potatoes-000000000000339758","V"],["Cooked Beetroot","Nature's Pick","500 g",0.66,"nature-s-pick-cooked-beetroot-000000000000339762","V"],["Bistro Salad","Nature's Pick","160 g",0.89,"nature-s-pick-bistro-salad-000000000000339763","V"],["Brussels Sprouts","Nature's Pick","500 g",0.89,"nature-s-pick-brussels-sprouts-000000000000339779","V"],["Porridge Oats","Everyday Essentials","1 kg",0.85,"everyday-essentials-porridge-oats-000000000000337387","C"],["Corn Flakes Cereal","Harvest Morn","",0.99,"harvest-morn-corn-flakes-cereal-000000000000307683","C"],["Bran Flakes","Harvest Morn","750 g",1.29,"harvest-morn-bran-flakes-000000000000307696","C"],["Fruit & Fibre Cereal","Harvest Morn","750 g",1.39,"harvest-morn-fruit-fibre-cereal-000000000000306518","C"],["Wheat Bisks 36 Pack","Harvest Morn","36",2.19,"harvest-morn-wheat-bisks-36-pack-000000000000337432","C"],["Bitesize Wheat Shreds","Harvest Morn","500 g",1.79,"harvest-morn-bitesize-wheat-shreds-000000000000308525","C"],["Crisp Rice Cereal","Harvest Morn","375 g",0.89,"harvest-morn-crisp-rice-cereal-000000000000308552","C"],["Honey Nut Crunchy Cornflakes","Harvest Morn","500 g",0.99,"harvest-morn-honey-nut-crunchy-cornflakes-000000000000307688","C"],["Frosted Flakes Cereal","Harvest Morn","500 g",0.95,"harvest-morn-frosted-flakes-cereal-000000000000478536","C"],["Choco Pillows Cereal","Harvest Morn","500 g",1.15,"harvest-morn-choco-pillows-cereal-000000000000308010","C"],["Crunchy Oats & Honey Granola Bars 5 Pack","Harvest Morn","210 g",1.49,"harvest-morn-crunchy-oats-honey-granola-bars-5-pack-000000000304025001","C"],["Strawberry Cereal Bars 6 Pack","Harvest Morn","222 g",1.15,"harvest-morn-strawberry-fruit-grain-cereal-bars-6-pack-000000000297963001","C"],["Digestive Biscuits","Belmont","400 g",0.59,"belmont-digestive-biscuits-000000000000383279","C"],["Milk Chocolate Digestives","Belmont","300 g",0.99,"belmont-milk-chocolate-digestives-000000000000381903","C"],["Rich Tea Biscuits","Belmont","300 g",0.49,"belmont-rich-tea-biscuits-000000000000383259","C"],["Custard Creams","Belmont","300 g",0.45,"belmont-custard-creams-000000000000388132","C"],["Ginger Nuts","Belmont","300 g",0.59,"belmont-ginger-nuts-000000000000382265","C"],["Choc Chip Cookies","Belmont","200 g",0.69,"belmont-choc-chip-cookies-000000000000382583","C"],["Jaffa Cakes","Belmont","300 g",1.69,"belmont-jaffa-cakes-000000000000383346","C"],["Crumbly Oaties","Belmont","300 g",0.55,"belmont-crumbly-oaties-000000000000383309","C"],["Lightly Salted Crackers","Savour Bakes","200 g",0.99,"savour-bakes-lightly-salted-savoury-crackers-000000000000382084","C"],["Breadsticks","Savour Bakes","125 g",0.49,"savour-bakes-original-grissini-breadsticks-000000000000384741","C"],["Lightly Salted Tortilla Chips","Everyday Essentials","200 g",0.57,"everyday-essentials-lightly-salted-tortilla-chips-000000000000382586","C"],["Ready Salted Crisps 6 Pack","Snackrite","6",0.85,"snackrite-ready-salted-crisps-6-pack-000000000000383345","C"],["Cheese & Onion Crisps 6 Pack","Snackrite","6",0.85,"snackrite-cheese-onion-crisps-6-pack-000000000000383347","C"],["Variety Crisps 30 Pack","Snackrite","30",3.99,"snackrite-variety-crisps-30-pack-000000000000383389","C"],["Hoops Multipack","Snackrite","150 g",1.09,"snackrite-hoops-multipack-000000000000726839","C"],["Sweet Popcorn Share Bag","Snackrite","",0.99,"snackrite-sweet-popcorn-share-bag-000000000386330001","C"],["Prawn Crackers","Snackrite","",1.15,"snackrite-prawn-crackers-000000000386003001","C"],["Mini Poppadoms","Snackrite","",1.15,"snackrite-mini-poppadoms-000000000386003002","C"],["Gummy Mix","Dominion","",0.49,"dominion-gummy-mix-000000000561480002","C"],["Milk Chocolate Mini Tablets 5 Pack","Choceur","5",2.69,"choceur-milk-chocolate-mini-tablets-5-pack-000000000294729003","C"],["Milk Chocolate Wafer Bars 9 Pack","Belmont","9",1.25,"belmont-milk-chocolate-wafer-bars-9-pack-000000000000386406","C"],["Squeezy Honey","Grandessa","454 g",1.39,"grandessa-squeezy-honey-000000000000672171","C"],["Clear Honey","Everyday Essentials","454 g",0.99,"everyday-essentials-clear-honey-000000000000680177","C"],["Strawberry Jam","Everyday Essentials","454 g",0.49,"everyday-essentials-strawberry-jam-000000000000335836","C"],["Seedless Raspberry Jam","Grandessa","454 g",0.99,"grandessa-seedless-raspberry-jam-000000000335825004","C"],["Thick Cut Orange Marmalade","Grandessa","",0.89,"grandessa-thick-cut-orange-marmalade-000000000336740002","C"],["Smooth Peanut Butter","Grandessa","",0.95,"grandessa-smooth-peanut-butter-000000000283841001","C"],["Crunchy Peanut Butter","Grandessa","",0.95,"grandessa-crunchy-peanut-butter-000000000283841002","C"],["Chocolate Hazelnut Spread","Everyday Essentials","750 g",2.15,"everyday-essentials-chocolate-hazelnut-spread-000000000000608697","C"],["Golden Syrup","The Pantry","750 g",1.49,"the-pantry-golden-syrup-000000000000535710","C"],["Yeast Extract","Grandessa","240 g",2.19,"grandessa-mighty-yeast-extract-000000000000336065","C"],["Maple Syrup","Specially Selected","250 ml",3.99,"specially-selected-maple-syrup-000000000000263232","C"],["Tuna Chunks In Brine","Everyday Essentials","145 g",0.59,"everyday-essentials-tuna-chunks-in-brine-000000000000227713","C"],["Tuna Chunks In Water 4 Pack","The Fishmonger","4",2.49,"the-fishmonger-tuna-chunks-in-water-4-pack-000000000000227587","C"],["Tuna Chunks In Sunflower Oil","The Fishmonger","102 g",0.63,"the-fishmonger-tuna-chunks-in-sunflower-oil-000000000000227660","C"],["Mackerel Fillets in Tomato Sauce","The Fishmonger","88 g",1.09,"the-fishmonger-mackerel-fillets-in-tomato-sauce-000000000000201731","C"],["Chopped Tomatoes","Everyday Essentials","400 g",0.43,"everyday-essentials-chopped-tomatoes-in-tomato-juice-000000000000278702","C"],["Peeled Plum Tomatoes","Everyday Essentials","400 g",0.43,"everyday-essentials-peeled-plum-tomatoes-in-tomato-juice-000000000000278692","C"],["Garden Peas in Water","Everyday Essentials","185 g",0.28,"everyday-essentials-garden-peas-in-water-000000000000335577","C"],["Marrowfat Peas","Four Seasons","300 g",0.39,"four-seasons-marrowfat-peas-000000000000335551","C"],["Mushy Peas","Four Seasons","300 g",0.39,"four-seasons-mushy-peas-000000000000335811","C"],["New Potatoes in Water","Four Seasons","345 g",0.89,"four-seasons-new-potatoes-in-water-000000000000335552","C"],["Sliced Carrots in Water","Four Seasons","300 g",0.47,"four-seasons-sliced-carrots-in-water-000000000000335759","C"],["Green Sliced Jalapeños","The Deli","110 g",0.39,"the-deli-green-sliced-jalapenos-000000000000335578","C"],["Corned Beef","Bramwells","340 g",2.19,"bramwells-corned-beef-000000000000335581","C"],["Cream of Tomato Soup","Bramwells","400 g",0.59,"bramwells-cream-of-tomato-soup-000000000000335747","C"],["Sage & Onion Stuffing Mix","Quixo","170 g",0.45,"quixo-sage-onion-stuffing-mix-000000000000335902","C"],["Spaghetti","Everyday Essentials","500 g",0.28,"everyday-essentials-spaghetti-pasta-500g-000000000000306030","C"],["Lasagne Sheets","Cucina","500 g",0.75,"cucina-lasagne-sheets-000000000000305855","C"],["Macaroni Pasta","Cucina","500 g",0.69,"cucina-macaroni-pasta-500g-000000000000308242","C"],["Orzo Pasta","Cucina","500 g",0.85,"cucina-orzo-pasta-000000000000596280","C"],["Egg Tagliatelle","Specially Selected","500 g",1.39,"specially-selected-egg-tagliatelle-000000000000476098","C"],["Long Grain White Rice","Everyday Essentials","",0.52,"everyday-essentials-long-grain-white-rice-000000000000337400","C"],["Easy Cook Long Grain Rice","Worldwide Foods","1 kg",1.25,"worldwide-foods-easy-cook-long-grain-rice-000000000000459326","C"],["Basmati Rice Pouch","Worldwide Foods","250 g",0.55,"worldwide-foods-basmati-rice-pouch-000000000000334608","C"],["Pilau Rice Pouch","Worldwide Foods","250 g",0.55,"worldwide-foods-pilau-rice-000000000000653690","C"],["Egg Fried Rice Pouch","Worldwide Foods","250 g",0.55,"worldwide-foods-ready-to-heat-egg-fried-rice-000000000000653709","C"],["Chicken Flavour Savoury Rice","Make In Minutes","120 g",0.59,"make-in-minutes-chicken-flavour-savoury-rice-000000000336231001","C"],["Sunflower Oil","Solesta","",1.45,"solesta-sunflower-oil-000000000000198481","C"],["Vegetable Oil","Solesta","",1.45,"solesta-vegetable-oil-000000000000335872","C"],["Extra Virgin Olive Oil","Solesta","1 l",5.99,"solesta-extra-virgin-olive-oil-000000000000488795","C"],["Olive Oil","Solesta","1 l",5.29,"solesta-olive-oil-000000000000511100","C"],["Real Mayonnaise","Bramwells","",0.89,"bramwells-real-mayonnaise-000000000279901001","C"],["Light Mayonnaise","Bramwells","",0.89,"bramwells-light-mayonnaise-000000000279901002","C"],["Tomato Ketchup","Bramwells","550 g",0.89,"bramwells-tomato-ketchup-000000000000575453","C"],["BBQ Sauce","Bramwells","460 g",0.85,"bramwells-bbq-sauce-000000000000540095","C"],["Squeezy Brown Sauce","Bramwells","",0.99,"bramwells-squeezy-brown-sauce-000000000000335837","C"],["Sweet Chilli Sauce","Asia Specialities","",1.89,"asia-specialities-sweet-chilli-sauce-000000000000335798","C"],["Worcester Sauce","Bramwells","150 ml",1.09,"bramwells-worcester-sauce-000000000000687863","C"],["Light Soy Sauce","Asia Specialities","",0.55,"asia-specialities-light-soy-sauce-000000000334630002","C"],["Balsamic Vinegar","The Deli","",1.49,"the-deli-balsamic-vinegar-of-modena-000000000000335643","C"],["Bolognese Pasta Sauce","Cucina","500 g",0.79,"cucina-bolognese-pasta-sauce-000000000000463818","C"],["Chicken Stock Cubes","Bramwells","120 g",0.69,"bramwells-chicken-stock-cubes-000000000000633943","C"],["Squeezy Salad Cream","Bramwells","",0.89,"bramwells-squeezy-salad-cream-000000000279911001","C"],["Mint Sauce","Bramwells","",0.59,"bramwells-mint-sauce-000000000000335842","C"],["Bramley Apple Sauce","Bramwells","270 g",0.65,"bramwells-bramley-apple-sauce-000000000000335744","C"],["Classic Fajita Kit","Fiesta","",1.59,"fiesta-classic-fajita-kit-000000000335704001","C"],["Red Label Tea Bags 160 Pack","Diplomat","160",1.65,"diplomat-red-label-tea-bags-160-pack-000000000000336120","K"],["Gold Label Tea Bags 80 Pack","Diplomat","80",1.45,"diplomat-gold-label-tea-bags-80-pack-000000000000336121","K"],["Decaf Tea Bags 80 Pack","Diplomat","80",1.39,"diplomat-decaf-tea-bags-80-pack-000000000000336122","K"],["Peppermint Tea Bags 40 Pack","Diplomat","40",1.35,"diplomat-soothing-refreshing-peppermint-infusion-bags-40-pack-000000000335850001","K"],["Green Tea 40 Pack","Diplomat","40",0.65,"diplomat-light-delicate-pure-green-tea-40-pack-000000000513395001","K"],["English Breakfast Tea 50 Pack","Specially Selected","50",0.99,"specially-selected-rich-smooth-english-breakfast-fine-tea-50-pack-000000000336126002","K"],["Yorkshire Tea Bags 210 Pack","Taylors Of Harrogate","210",6.39,"taylors-of-harrogate-yorkshire-tea-bags-210-pack-000000000000336578","K"],["PG Tips Original Tea Bags 210 Pack","Pg Tips","210",4.99,"pg-tips-original-tea-bags-210-pack-000000000000543038","K"],["Instant Coffee","Barissimo","200 g",2.65,"barissimo-instant-coffee-000000000000634319","K"],["Decaf Instant Coffee","Barissimo","100 g",2.99,"barissimo-decaf-instant-coffee-000000000583357003","K"],["Colombian Coffee Beans","Specially Selected","227 g",2.99,"specially-selected-colombian-coffee-beans-227g-000000000531571002","K"],["Lungo Coffee Pods","Barissimo","",2.79,"barissimo-lungo-coffee-pods-000000000000550236","K"],["Nescafe Original Instant Coffee","Nescafe","300 g",6.49,"nescafe-original-instant-coffee-000000000000504866","K"],["Nescafe Gold Pouch","Nescafe","150 g",4.75,"nescafe-nescafe-gold-pouch-150g-000000000000709025","K"],["Smooth Orange Juice","The Juice Company","1 l",1.15,"the-juice-company-smooth-orange-juice-000000000000335749","K"],["Apple Juice","The Juice Company","1 l",0.99,"the-juice-company-apple-juice-000000000000335750","K"],["Pure Pressed Orange Juice with Bits","The Juice Company","1 l",1.59,"the-juice-company-100-pure-pressed-orange-juice-with-bits-000000000000521968","K"],["Diet Lemonade","Everyday Essentials","2 l",0.39,"everyday-essentials-diet-lemonade-000000000000335791","K"],["zX Cola","Vive","2 l",0.49,"vive-zx-cola-000000000000336282","K"],["Cola 6 Pack","Vive","6",1.69,"vive-cola-6-pack-000000000000568917","K"],["Diet Cola 6 Pack","Vive","6",1.69,"vive-diet-cola-6-pack-000000000000569810","K"],["Orange Squash","Sun Quench","1.5 l",0.89,"sun-quench-double-strength-orange-squash-000000000336000002","K"],["Apple & Blackcurrant Squash","Sun Quench","1.5 l",0.89,"sun-quench-double-strength-apple-blackcurrant-squash-000000000336000001","K"],["Still Spring Water 12 Pack","Aqua Vale","12",1.69,"aqua-vale-still-spring-water-12-pack-000000000000335782","K"],["Sparkling Water 6 Pack","Aqua Vale","6",1.19,"aqua-vale-sparkling-water-6-pack-000000000000335926","K"],["Still Spring Water 5L","Aqua V","5 l",1.39,"aqua-v-still-spring-water-000000000000336554","K"],["Premium Toilet Paper 12 Pack","Saxon","12",4.99,"saxon-premium-toilet-paper-12-pack-000000000000632047","H"],["Standard Toilet Paper 6 Pack","Saxon","6",2.49,"saxon-standard-toilet-paper-6-pack-000000000000632066","H"],["Luxury Toilet Paper 9 Pack","Saxon","9",2.59,"saxon-luxury-toilet-paper-9-pack-000000000000648642","H"],["Quilted Toilet Paper 9 Pack","Saxon","9",2.99,"saxon-quilted-toilet-paper-9-pack-000000000000648727","H"],["Luxury Toilet Paper 4 Pack","Saxon","4",1.39,"saxon-luxury-toilet-paper-4-pack-000000000000632078","H"],["Facial Tissues","Saxon","",0.79,"saxon-everyday-3-ply-facial-tissue-000000000000632125","H"],["Jumbo Kitchen Towel","Everyday Essentials","",1.15,"everyday-essentials-jumbo-kitchen-towel-000000000000648594","H"],["Standard Kitchen Towel 2 Pack","Power Force","2",1.49,"power-force-standard-kitchen-towel-2-pack-000000000000648580","H"],["Toilet Tissue Wipes","Saxon","40",0.43,"saxon-toilet-tissue-wipes-000000000481023001","H"],["All Purpose Cloths","Power Force","",0.85,"power-force-all-purpose-cloths-000000000000343917","H"],["Microfibre Cloths","Power Force","",1.49,"power-force-microfibre-cloths-000000000000346572","H"],["Non Scratch Sponge Scourers","Power Force","",0.75,"power-force-non-scratch-sponge-scourer-000000000619073001","H"],["Refuse Sacks (Bin Bags) 70L","Everyday Essentials","40",1.25,"everyday-essentials-refuse-sacks-70-litres-000000000000616838","H"],["Heavy Duty Bin Bags 85L","Power Force","10",1.45,"power-force-heavy-duty-refuse-sack-85-litres-000000000000547781","H"],["Tie Handle Bin Bags 75L","Power Force","",1.99,"power-force-tie-handle-75-litre-refuse-sacks-000000000652349001","H"],["Tie Handle Swing Bin Liners","Power Force","",0.99,"power-force-tie-handle-swing-bin-liners-000000000654429001","H"],["Compostable Caddy Liners","Power Force","",1.45,"power-force-compostable-caddy-liners-10-litres-000000000000616094","H"],["Thick Bleach","Power Force","",0.69,"power-force-thick-bleach-000000000343234001","H"],["Toilet Gel","Power Force","750 ml",0.59,"power-force-pine-toilet-gel-000000000000634553","H"],["Toilet Blocks","Power Force","",0.95,"power-force-toilet-blocks-000000000564238001","H"],["Surface Cleaner Spray","Power Force","",0.79,"power-force-surface-cleaners-000000000541528001","H"],["Bathroom Cleaner Spray","Power Force","",0.79,"power-force-bathroom-cleaners-000000000491241001","H"],["Multi Kitchen Cleaner","Power Force","",0.79,"power-force-multi-kitchen-cleaner-000000000547430001","H"],["Antibacterial Surface Wipes","Power Force","",0.89,"power-force-antibacterial-fresh-surface-wipes-000000000563052001","H"],["Antibacterial Floor Wipes","Power Force","",0.89,"power-force-antibacterial-apple-floor-wipes-000000000346631001","H"],["Disinfectant","Power Force","",0.69,"power-force-concentrated-disinfectant-000000000345071001","H"],["Sink & Drain Unblocker","Power Force","",1.39,"power-force-sink-drain-unblocker-000000000000348267","H"],["Polish","Power Force","",0.85,"power-force-polish-000000000545073002","H"],["Viakal","Viakal","500 ml",2.79,"viakal-viakal-000000000000576886","H"],["Washing Up Liquid","Power Force","1 l",1.09,"power-force-washing-up-liquid-000000000000505664","H"],["Fairy Washing Up Liquid","Fairy","320 ml",0.89,"fairy-washing-up-liquid-000000000000540616","H"],["All in One Dishwasher Tablets","Power Force","",2.89,"power-force-all-in-one-dishwasher-tablets-lemon-000000000000483849","H"],["Dishwasher Salt","Power Force","2 kg",1.49,"power-force-dishwasher-salt-000000000000546370","H"],["Rinse Aid","Power Force","1 l",1.99,"power-force-rinse-aid-000000000000694046","H"],["Washing Machine Cleaner","Magnum","250 ml",0.95,"magnum-aldi-washing-machine-cleaner-000000000546394001","H"],["Laundry Capsules","Almat","",2.95,"almat-laundry-capsules-000000000512180001","H"],["Bio Laundry Detergent","Almat","",1.75,"almat-bio-laundry-detergent-000000000520781001","H"],["Laundry Gel","Almat","720 ml",1.99,"almat-laundry-gel-000000000530011001","H"],["Washing Powder","Almat","2 kg",3.89,"almat-washing-powder-000000000555564001","H"],["Fabric Conditioner","Almat So Soft","1.05 l",1.79,"almat-so-soft-premium-fabric-conditioner-000000000521781001","H"],["Kitchen Foil","Everyday Essentials","20 m",1.09,"everyday-essentials-wrapping-foil-20m-000000000000397904","H"],["Baking Paper","Power Force","30",1.49,"power-force-baking-paper-30-sheets-000000000000619282","H"],["Zip Seal Food Bags","Power Force","",1.39,"power-force-zip-seal-small-food-bags-000000000619974001","H"],["Freezer Bags","Power Force","",1.29,"power-force-small-freezer-bag-roll-000000000624038001","H"],["Smoked Back Bacon 10 Pack","Oakhurst","300 g",1.49,"oakhurst-smoked-back-bacon-10-pack-000000000000399795","M"],["Unsmoked Back Bacon 10 Pack","Oakhurst","300 g",1.49,"oakhurst-unsmoked-back-bacon-10-pack-000000000000399849","M"],["Smoked Back Bacon 16 Pack","Oakhurst","500 g",2.39,"oakhurst-smoked-back-bacon-16-pack-000000000000619583","M"],["Lean Smoked Bacon 8 Pack","Oakhurst","8",1.89,"oakhurst-lean-smoked-bacon-8-pack-000000000386279001","M"],["Smoked Streaky Bacon 14 Pack","Oakhurst","14",2.29,"oakhurst-smoked-streaky-bacon-14-pack-000000000384652001","M"],["Smoked Bacon Lardons","Oakhurst","",1.69,"oakhurst-smoked-bacon-lardons-000000000386241001","M"],["Smoked Turkey Rashers","Oakhurst","150 g",1.89,"oakhurst-smoked-turkey-rashers-150g-000000000381942001","M"],["Pork Sausages 6 Pack","Specially Selected","400 g",2.29,"specially-selected-pork-sausages-6-pack-000000000000386876","M"],["Skinny Pork Sausages 6 Pack","Specially Selected","400 g",2.29,"specially-selected-skinny-pork-sausages-6-pack-000000000000387651","M"],["Pork Sausages 10 Pack","Specially Selected","667 g",3.49,"specially-selected-pork-sausages-10-pack-000000000000452227","M"],["Irish Style Pork Sausages","Ashfields","410 g",1.29,"ashfields-irish-style-pork-sausages-000000000000600040","M"],["Lincolnshire Pork Sausages 6 Pack","Specially Selected","6",2.29,"specially-selected-lincolnshire-pork-sausages-6-pack-000000000388151001","M"],["Chicken Wings","Ashfields","1 kg",2.09,"ashfields-chicken-wings-000000000000382085","M"],["Chicken Drumsticks","Ashfields","1 kg",2.15,"ashfields-chicken-drumsticks-000000000000382102","M"],["Chicken Thighs","Ashfields","1 kg",2.95,"ashfields-chicken-thighs-000000000000382103","M"],["Medium Whole Chicken","Ashfields","1.55 kg",4.15,"ashfields-medium-whole-chicken-000000000000591840","M"],["Diced Chicken Breast","Ashfields","400 g",2.99,"ashfields-diced-chicken-breast-000000000000384368","M"],["Chicken Breast Mini Fillets","Ashfields","400 g",2.99,"ashfields-chicken-breast-mini-fillets-000000000000386160","M"],["Turkey Mince 7% Fat","Ashfields","500 g",2.99,"ashfields-british-turkey-mince-7-fat-000000000000386144","M"],["Pork Loin Steaks","Ashfields","480 g",2.99,"ashfields-british-pork-loin-steaks-000000000000382106","M"],["Cooked & Peeled King Prawns","The Fishmonger","150 g",2.49,"the-fishmonger-cooked-peeled-king-prawns-000000000384648","M"],["French Fries","Four Seasons","1 kg",1.25,"four-seasons-french-fries-000000000000271960","F"],["Straight Cut Chips","Four Seasons","1.5 kg",1.65,"four-seasons-straight-cut-chips-000000000000370564","F"],["Homestyle Straight Cut Chips","Four Seasons","1 kg",1.29,"four-seasons-homestyle-straight-cut-chips-000000000000365691","F"],["Steak Cut Chips","Four Seasons","1.5 kg",1.99,"four-seasons-steak-cut-chips-000000000000365692","F"],["Crinkle Cut Fries","Four Seasons","1.5 kg",1.99,"four-seasons-crinkle-cut-fries-000000000000271951","F"],["Sweet Potato Fries","Four Seasons","",1.99,"four-seasons-sweet-potato-fries-000000000000271030","F"],["Potato Wedges","Four Seasons","750 g",1.29,"four-seasons-lightly-spiced-potato-wedges-000000000000272038","F"],["Curly Fries","Four Seasons","650 g",1.39,"four-seasons-curly-fries-000000000000272097","F"],["Hash Browns","Four Seasons","750 g",1.75,"four-seasons-hash-browns-000000000000270164","F"],["Potato Waffles 12 Pack","Four Seasons","12",1.39,"four-seasons-potato-waffles-12-pack-000000000000371255","F"],["Roast Potatoes","Four Seasons","",1.09,"four-seasons-roast-potatoes-000000000593059001","F"],["Mashed Potato","Four Seasons","",1.19,"four-seasons-mashed-potato-000000000000371171","F"],["Garden Peas (frozen)","Four Seasons","",1.09,"four-seasons-garden-peas-000000000000366805","F"],["Sweetcorn (frozen)","Four Seasons","1 kg",1.49,"four-seasons-sweetcorn-000000000000262686","F"],["Premium Toothbrush 2 Pack","Dentitex","2",0.99,"dentitex-premium-toothbrush-000000000487374001","T"],["Shower Gel","Lacura","500 ml",0.99,"lacura-shower-gel-000000000343177001","T"],["Value Vanilla Shower Gel","Lacura","300 ml",0.39,"lacura-value-vanilla-shower-gel-000000000277680003","T"],["Men's Shower Gel","Lacura For Men","300 ml",0.85,"lacura-for-men-men-s-shower-gel-000000000347811002","T"],["Original Source Shower Gel","Original Source","500 ml",1.69,"original-source-shower-gel-000000000491889001","T"],["Antibacterial Handwash","Lacura","500 ml",0.47,"lacura-antibacterial-handwash-000000000463567004","T"],["Handwash Almond Milk","Lacura","500 ml",0.44,"lacura-value-handwash-almond-milk-000000000308170002","T"],["Shampoo & Conditioner","Lacura","500 ml",1.89,"lacura-replenish-shampoo-conditioner-000000000620700001","T"],["Bar Soap","Imperial Leather","360 g",1.89,"imperial-leather-imperial-leather-bar-soap-000000000000724653","T"],["Bath Soak","Lacura","750 ml",0.99,"lacura-herbal-bath-soak-000000000343626002","T"],["Soft Scoop Vanilla Ice Cream","Gianni's","",1.49,"gianni-s-soft-scoop-vanilla-ice-cream-000000000000371098","F"],["Cornish Ice Cream","Gianni's","2 l",3.29,"gianni-s-cornish-ice-cream-000000000000365131","F"],["Chocolate Brownie Ice Cream","Gianni's","500 ml",1.99,"gianni-s-chocolate-brownie-ice-cream-000000297599001","F"],["Cookie Dough Ice Cream","Gianni's","500 ml",1.99,"gianni-s-cookie-dough-ice-cream-000000297599002","F"],["Vanilla Ice Cream Cones 6 Pack","Gianni's","6",1.85,"gianni-s-vanilla-ice-cream-cones-6-pack-000000000000533572","F"],["Mini Chocolate Lollies","Gianni's","",2.19,"gianni-s-mini-chocolate-lolly-000000000000298055","F"],["Ice Cubes","Gianni's","2 kg",1.09,"gianni-s-ice-cubes-000000000000472233","F"],["All Butter Croissants 8 Pack (frozen)","Bon Appetit!","8",2.79,"bon-appetit-bake-from-frozen-all-butter-croissants-8-pack-000000367456001","F"],["Pains Au Chocolat 6 Pack (frozen)","Village Bakery","6",2.79,"village-bakery-bake-from-frozen-all-butter-pains-au-chocolat-6-pack-000000367456002","F"],["Garlic Baguettes 2 Pack","Carlos","2",0.85,"carlos-garlic-baguettes-2-pack-000000000000365447","F"],["Garlic Bread Slices 10 Pack","Carlos","10",1.05,"carlos-garlic-bread-slices-10-pack-000000000000371366","F"],["Stonebaked Cheese Pizza","Carlos","330 g",1.49,"carlos-stonebaked-cheese-pizza-000000000000698969","F"],["Stonebaked Pepperoni Pizza","Carlos","330 g",1.49,"carlos-stonebaked-pepperoni-pizza-000000000000698996","F"],["Deep Pan Pepperoni Pizza","Carlos","",1.49,"carlos-deep-pan-pepperoni-pizza-000000000434282002","F"],["Cheese & Tomato Pizza","Everyday Essentials","",1.1,"everyday-essentials-cheese-tomato-pizza-000000000457212004","F"],["Pepperoni Pizza","Everyday Essentials","",1.1,"everyday-essentials-pepperoni-pizza-000000000457212003","F"],["Takeaway Pepperoni Pizza","Carlos","",2.79,"carlos-takeaway-classic-crust-pepperoni-pizza-000000000371200001","F"]];
+
+// Sainsbury's fallback range (prices checked 23 Oct 2026): [name, size, £, aisle]
+const CAT_S = [["Sainsbury's House Pinot Noir Red Wine","750 ml",4.5,"Drinks"],["Sainsbury's House Malbec Red Wine","750 ml",5.5,"Drinks"],["Sainsbury's Liebfraumilch White Wine","750 ml",3.85,"Drinks"],["Sainsbury's House Pinot Grigio White Wine","750 ml",5.25,"Drinks"],["Foster's Lager Beer Cans","4",4.0,"Drinks"],["Carlsberg Danish Pilsner Lager Cans","18",10.0,"Drinks"],["Sainsbury's Prosecco Frizzante","750 ml",5.29,"Drinks"],["Sainsbury's Toothpaste","100 ml",0.55,"Toiletries"],["Sainsbury's Everyday Sensitive Toothpaste","100 ml",1.0,"Toiletries"],["The Collection Anti-Perspirant Deodorant for Women","250 ml",1.25,"Toiletries"],["Men Advanced Anti-Perspirant Deodorant","250 ml",1.3,"Toiletries"],["Sainsbury's Everyday Coconut Shampoo","500 ml",0.79,"Toiletries"],["Sainsbury's Anti Dandruff 2 in 1 Shampoo","500 ml",1.4,"Toiletries"],["Sainsbury's Everyday 2 Blade Disposable Razors","10",1.3,"Toiletries"],["Sainsbury's Paracetamol 500mg Tablets","16",0.35,"Toiletries"],["Sainsbury's Little Ones Nappies Size 4","48",2.85,"Baby"],["Sainsbury's Little Ones Nappies Size 5","40",2.85,"Baby"],["Sainsbury's Little Ones Nappies Size 6","30",2.85,"Baby"],["Sainsbury's Cat Food Pouches Meat in Jelly","12",2.59,"Pet"],["Sainsbury's Dry Cat Food with Chicken","2 kg",2.69,"Pet"],["Sainsbury's Wet Dog Food Meaty Selection in Gravy","12",2.99,"Pet"],["Sainsbury's Dry Dog Food Chicken & Vegetables","3 kg",2.99,"Pet"],["Sainsbury's Houmous","200 g",1.35,"Deli"],["Sainsbury's Creamy Classic Houmous","315 g",1.75,"Deli"],["Sainsbury's Cooked Ham Slices","115 g",1.1,"Deli"],["Sainsbury's Wafer Thin Cooked Ham","400 g",2.5,"Deli"],["Sainsbury's Cooked Chicken Slices","115 g",0.89,"Deli"],["Sainsbury's Deli-Style Coleslaw","300 g",1.0,"Deli"],["Sainsbury's Soured Cream","300 ml",1.0,"Dairy"],["All Things Natural Cottage Cheese","240 g",1.85,"Dairy"],["Sainsbury's Light Soft Cheese (cream cheese)","250 g",1.65,"Dairy"],["Cauldron Extra Firm Tofu","200 g",1.25,"Chilled"],["Sainsbury's Crumpets","6",0.45,"Bakery"],["Sainsbury's Plain Bagels","5",0.99,"Bakery"],["Sainsbury's Roasted & Salted Mixed Nuts","60 g",1.05,"Cupboard"],["Sainsbury's Chopped Mixed Nuts","200 g",1.95,"Cupboard"],["Sainsbury's Dark Chocolate","180 g",2.0,"Cupboard"],["Sainsbury's Frozen Sliced Mixed Peppers","500 g",0.99,"Frozen"],["Sainsbury's Frozen Broccoli & Cauliflower Florets","900 g",1.5,"Frozen"],["Sainsbury's Fresh Coriander","30 g",0.55,"Fresh herbs"],["Sainsbury's Fresh Flat Leaf Parsley","30 g",0.5,"Fresh herbs"],["Sainsbury's Fresh Basil","30 g",0.5,"Fresh herbs"],["Sainsbury's Fresh Mint","30 g",0.5,"Fresh herbs"],["Sainsbury's Fresh Dill","20 g",0.6,"Fresh herbs"],["Sainsbury's Harissa Paste","90 g",1.95,"Cupboard"],["Sainsbury's Yellowfin Tuna Steaks x2","220 g",4.72,"Fish"],["Sainsbury's Cannellini Beans in Water","400g tin",0.45,"Cupboard"],["Sainsbury's Butter Beans in Water","400g tin",0.45,"Cupboard"],["Sainsbury's Sugar Snap Peas","200 g",1.7,"Veg"],["Sainsbury's Cavolo Nero (kale)","200 g",1.35,"Veg"],["Sainsbury's Savoy Cabbage","",0.77,"Veg"],["Sainsbury's White Cabbage","",0.89,"Veg"],["Sainsbury's Red Chillies","65 g",0.55,"Veg"],["Tilda Wholegrain Basmati & Quinoa Pouch","250 g",1.25,"Cupboard"],["Sainsbury's White Baby Button Mushrooms","200 g",1.2,"Veg"],["Sainsbury's Carrots","1 kg",0.69,"Veg"],["Sainsbury's Carrots 500g","500 g",0.44,"Veg"],["Sainsbury's Leeks","500 g",1.37,"Veg"],["Sainsbury's Strawberries","250 g",2.75,"Fruit"],["Sainsbury's Anchovy Fillets in Olive Oil","50 g",1.45,"Cupboard"],["Sainsbury's Aubergine","1",1.05,"Veg"],["Sainsbury's Beansprouts","300 g",0.85,"Veg"],["Sainsbury's Stock Cubes, Beef","10",1.1,"Cupboard"],["Knorr Vegetable Stock Cubes","8",2.0,"Cupboard"],["Sainsbury's Panko Breadcrumbs","100 g",1.4,"Cupboard"],["Sainsbury's Non Pareilles Capers in Brine","100 g",1.9,"Cupboard"],["Sainsbury's Celery","1",0.74,"Veg"],["Capsicana Smoky Chipotle Paste","60 g",1.65,"Cupboard"],["Sainsbury's Italian Cubetti Di Pancetta","200 g",2.85,"Meat"],["Sainsbury's Fennel","1",1.25,"Veg"],["Sainsbury's Potato Gnocchi","500 g",1.5,"Cupboard"],["Blue Dragon Gochujang Korean Chilli Paste","135 g",2.6,"Cupboard"],["Sainsbury's Green Beans","300 g",1.16,"Veg"],["Sainsbury's 20% Fat Lamb Mince","500 g",7.0,"Meat"],["Sainsbury's Little Gem Lettuce","1",0.77,"Veg"],["Sainsbury's Miso Paste","100 g",1.9,"Cupboard"],["Yutaka Sushi Nori Roasted Seaweed Sheets","5",2.0,"Cupboard"],["Sainsbury's British Pork Mince 5% Fat","500 g",2.49,"Meat"],["Sainsbury's Pumpkin Seeds","100 g",1.2,"Cupboard"],["Sainsbury's Radish","240 g",0.56,"Veg"],["Sainsbury's Raisins, Seedless","500 g",2.35,"Cupboard"],["Sainsbury's Pesto, Red","190 g",0.89,"Cupboard"],["Sainsbury's Rice Noodles","250 g",1.0,"Cupboard"],["Sainsbury's Ricotta Cheese","250 g",1.47,"Dairy"],["Karyatis Roasted Red Peppers","350 g",2.95,"Cupboard"],["Sainsbury's British Smoked Mackerel Fillets","140 g",3.75,"Fish"],["Sainsbury's Sundried Tomatoes","100 g",1.8,"Cupboard"],["Yutaka Sushi Rice","500 g",2.2,"Cupboard"],["Sainsbury's Tahini","300 g",3.0,"Cupboard"],["Blue Dragon Thai Red Curry Paste","170 g",2.45,"Cupboard"],["Sainsbury's Udon Noodles x2","600 g",1.1,"Cupboard"],["Merchant Gourmet Puy Lentils","250 g",2.15,"Cupboard"],["Sainsbury's British Chicken Mince 6% Fat","500 g",3.0,"Meat"],["Sainsbury's Pomegranate Seeds","80 g",1.5,"Fruit"],["Sainsbury's Cocoa Powder","250 g",3.35,"Cupboard"],["Sainsbury's Deglet Nour Dates","200 g",2.5,"Cupboard"],["Sainsbury's Desiccated Coconut","250 g",2.7,"Cupboard"],["Carnation Sweetened Condensed Milk","397 g",1.75,"Cupboard"],["Sainsbury's Fresh Custard","500 g",2.4,"Dairy"],["Sainsbury's Raspberries","150 g",2.25,"Fruit"],["Sainsbury's Frozen Dark Sweet Cherries","300 g",3.6,"Frozen"],["Sainsbury's Frozen Strawberries & Blueberries","360 g",3.6,"Frozen"],["Sainsbury's Chia Seeds","150 g",1.85,"Cupboard"],["Sainsbury's Brioche Burger Buns","4",1.05,"Bakery"],["Pip & Nut Smooth Almond Butter","170 g",3.5,"Cupboard"],["Sainsbury's Pro Fit Lean Vanilla Whey Powder","500 g",13.0,"Cupboard"]];
+
+// ---------- Matching added items to Aldi products ----------
+const STOP = new Set(['and','the','of','a','an','some','pack','packs','x','for','with','in','fresh','british']);
+const VARIANT = ['jam','conserve','naan','cereal','bars','crisps','chocolate','strawberry','banana','flavoured','flavour','milkshake','protein','organic','lactose','uht','mini','light','lighter','decaf','diet','zero','sparkling','value','kids','baby','fudge','cheesy','spiced','loaded','limited'];
+const SYN = [[/\bbin ?bags?\b|\bbin liners?\b|\brubbish bags?\b/,'refuse sacks bin bags'],[/\b(loo|toilet) ?rolls?\b|\bloo paper\b/,'toilet paper'],[/\bkitchen ?rolls?\b/,'kitchen towel'],
+  [/\bwashing up\b(?! liquid)/,'washing up liquid'],[/\bcoke\b/,'cola'],[/\bfizzy water\b/,'sparkling water'],[/\boj\b/,'orange juice'],[/\byoghurts?\b/,'yogurt'],[/\bspuds?\b/,'potato'],
+  [/\bclingfilm\b|\bcling film\b|\bsandwich bags?\b/,'food bags'],[/\btissues\b/,'facial tissues'],[/\bdish(washer)? tabs?\b/,'dishwasher tablets'],[/\bwashing powder\b/,'washing powder'],[/\bsquash\b/,'squash'],[/\bloaf\b/,'bread loaf'],[/\b(oat|soya|soy|almond) milk\b/,'$1 drink'],[/\bsoy drink\b/,'soya drink']];
+const PREF = {'milk':'Semi Skimmed Milk 1.7% Fat|2.272 l','semi skimmed milk':'Semi Skimmed Milk 1.7% Fat|2.272 l','whole milk':'Whole Milk 3.6% Fat|2.272 l','bread':'Medium Sliced White Bread|800 g',
+  'eggs':'British Large Free Range Eggs 6 Pack|6','egg':'British Large Free Range Eggs 6 Pack|6','butter':'British Salted Butter|250 g','cheese':'British Mature Cheddar Cheese|400 g','cheddar':'British Mature Cheddar Cheese|400 g',
+  'banana':'Bananas|5','apple':'Pink Lady Apples|6','tea':'Red Label Tea Bags 160 Pack|160','tea bags':'Red Label Tea Bags 160 Pack|160','coffee':'Instant Coffee|200 g','juice':'Smooth Orange Juice|1 l','orange juice':'Smooth Orange Juice|1 l',
+  'water':'Still Spring Water 12 Pack|12','crisps':'Ready Salted Crisps 6 Pack|6','chips':'French Fries|1 kg','pizza':'Stonebaked Cheese Pizza|330 g','ice cream':'Soft Scoop Vanilla Ice Cream|','yogurt':'Fat Free Natural Yogurt|500 g',
+  'refuse sacks bin bags':'Refuse Sacks (Bin Bags) 70L|40','toilet paper':'Standard Toilet Paper 6 Pack|6','kitchen towel':'Jumbo Kitchen Towel|','washing up liquid':'Washing Up Liquid|1 l','cola':'Cola 6 Pack|6',
+  'bacon':'Smoked Back Bacon 10 Pack|300 g','sausage':'Pork Sausages 6 Pack|400 g','potato':'British Baking Potatoes|4','tomato':'Salad Tomatoes|','onion':"Nature's Pick Brown Onions|1kg (≈6)",'cucumber':'Cucumber|',
+  'wrap':'White Tortilla Wraps|8','pitta':'White Pitta Bread|6','oat':'Porridge Oats|1 kg','porridge':'Porridge Oats|1 kg','cereal':'Corn Flakes Cereal|','jam':'Strawberry Jam|454 g','peanut butter':'Smooth Peanut Butter|',
+  'honey':'Clear Honey|454 g','biscuit':'Digestive Biscuits|400 g','ketchup':'Tomato Ketchup|550 g','mayo':'Real Mayonnaise|','mayonnaise':'Real Mayonnaise|','shower gel':'Shower Gel|500 ml','hand wash':'Antibacterial Handwash|500 ml',
+  'toothbrush':'Premium Toothbrush 2 Pack|2','bleach':'Thick Bleach|','foil':'Kitchen Foil|20 m','grape':'Seedless Red Grapes|500 g','blueberry':'Blueberries|150 g','avocado':'Ripe & Ready Hass Avocados|2','orange':'Oranges|5','pear':'Ripe & Ready Conference Pears|4','mozzarella':'Classic Mozzarella|125 g','oat drink':'Barista Style Oat Drink|1 l','mince':'Ashfields Lean Beef Steak Mince 5%|500g','beef mince':'Ashfields Lean Beef Steak Mince 5%|500g','pasta':'Cucina Penne Pasta|500g','rice':'Worldwide Foods Basmati Rice|1kg','pepper':"Nature's Pick Mixed Peppers|3 pack",'chicken breast':'Ashfields Chicken Breast Fillets|650g','chicken':'Ashfields Chicken Breast Fillets|650g','salmon':'The Fishmonger Boneless Salmon Fillets|2 pack'};
+function sing(w){ if(w.length<=3) return w; if(w.endsWith('ies')) return w.slice(0,-3)+'y'; if(w.endsWith('oes')) return w.slice(0,-2); if(w.endsWith('s') && !w.endsWith('ss')) return w.slice(0,-1); return w; }
+const toks = t => String(t).toLowerCase().replace(/[^a-z0-9%.]+/g,' ').trim().split(/\s+/).filter(Boolean).map(sing);
+const CATX = (()=>{
+  const out = CAT.map(([n,b,sz,pr,sl,a]) => ({ n: b && !n.toLowerCase().includes(b.toLowerCase().split(' ')[0]) ? b+' '+n : n, base:n, sz, pr, u: sl?AL+sl:'', a, shop:'A' }));
+  Object.values(P).forEach(p => { if(p.s==='A' && p.packs) p.packs.forEach(([,pr,l]) => out.push({ n:p.n, base:p.n, sz:l, pr, u:p.u, a:'R', shop:'A' })); });
+  CAT_S.forEach(([n,sz,pr,a]) => out.push({ n, base:n.replace(/^Sainsbury's /,''), sz, pr, u:'', a:'S-'+a, shop:'S' }));
+  out.forEach(o => { o.key = o.base+'|'+o.sz; o.t = toks(o.n); o.tb = toks(o.base); });
+  return out;
+})();
+const byKey = k => CATX.find(o => o.key === k);
+function parseItem(text){
+  let t = String(text).trim().toLowerCase(), qty = 1;
+  const m = t.match(/^(\d+)\s*(x|×)?\s+(.*)$/) || t.match(/^(.*?)\s*(x|×)\s*(\d+)$/);
+  if (m){ if (/^\d+$/.test(m[1])) { qty = +m[1]; t = m[3]; } else { qty = +m[3]; t = m[1]; } }
+  SYN.forEach(([re,to]) => { t = t.replace(re, to); });
+  return { q: t.replace(/\s+/g,' ').trim(), qty: Math.max(1, Math.min(qty, 50)) };
+}
+function candidates(text){
+  const { q } = parseItem(text), qt = toks(q).filter(w => !STOP.has(w)); if (!qt.length) return [];
+  const res = [];
+  CATX.forEach(o => {
+    let exact = 0;
+    for (const w of qt){ if (o.t.includes(w)) { exact++; continue; }
+      if (!o.t.some(x => x.length>=3 && x.startsWith(w))) return; }
+    const variants = VARIANT.filter(v => o.t.includes(v) && !qt.includes(v)).length;
+    res.push({ o, sc: exact*10 - variants*6 - Math.max(0, o.tb.length - qt.length) });
+  });
+  const best = sh => Math.max(-99, ...res.filter(r => r.o.shop === sh).map(r => r.sc));
+  const keep = best('A') >= best('S') - 2 && res.some(r => r.o.shop === 'A') ? 'A' : 'S';
+  for (let k = res.length - 1; k >= 0; k--) if (res[k].o.shop !== keep) res.splice(k, 1);
+  res.sort((a,b) => b.sc - a.sc || a.o.pr - b.o.pr);
+  const uniq = []; res.forEach(r => { if (!uniq.some(u => u.key === r.o.key)) uniq.push(r.o); });
+  const pref = PREF[toks(q).filter(w=>!STOP.has(w)).join(' ')] || PREF[q];
+  const pi = pref ? uniq.findIndex(o => o.key === pref) : -1;
+  if (pi > 0) uniq.unshift(uniq.splice(pi,1)[0]);
+  else if (pi < 0 && pref && byKey(pref)) uniq.unshift(byKey(pref));
+  const { qty } = parseItem(text);
+  if (qty >= 5){ const fit = uniq.findIndex(o => /^\d+$/.test(o.sz) && +o.sz === qty); if (fit > 0) uniq.unshift(uniq.splice(fit,1)[0]); }
+  // keep alternatives in the same aisle as the best match (milk → other milks, not almond hand wash)
+  if (uniq.length){ const aisle = g => g === 'R' ? 'X' : g, home = aisle(uniq[0].a);
+    const rest = uniq.slice(1), same = rest.filter(o => aisle(o.a) === home || o.a === 'R');
+    return [uniq[0], ...(same.length ? same : rest)].slice(0,8); }
+  return uniq;
+}
+// how many to buy: a big number on a counted pack ("12 eggs") means items, not packs
+function packsFor(it, qty){ return (qty >= 5 && it && /^\d+$/.test(it.sz) && +it.sz > 1) ? Math.ceil(qty / +it.sz) : qty; }
+function matchExtra(v){ const c = candidates(v.t); return { ...v, m: c.length ? c[0].key : '' }; }
+function extraInfo(v){
+  const it = v.m ? byKey(v.m) : null, qty = packsFor(it, parseItem(v.t).qty);
+  const unit = typeof v.p === 'number' ? v.p : it ? it.pr : null;
+  return { it, qty, cost: unit == null ? null : unit*qty };
+}
+function checkExtras(force){
+  let priced = 0, total = 0;
+  extrasList().forEach(([id,v]) => { total++;
+    if (force || v.m === undefined || (v.m && !byKey(v.m))) put('extras.'+id, matchExtra(v));
+    if (extraInfo(S.extras[id]).cost != null) priced++; });
+  save(); route(); toast(total ? `Priced ${priced} of ${total} added item${total>1?'s':''}` : 'Nothing added yet');
+}
+
+
+// Cheapest way to cover `need` from the pack sizes (single size, or big packs + one smaller top-up)
+function bestPacks(key, need){
+  const p = P[key]; if (!p) return null;
+  if (p.perKg){ const price = priceOf(key, 'kg', p.perKg); return {buy:[{label:`≈${Math.round(need/10)*10}g by weight`, n:1}], cost: need/1000*price, perKg:true}; }
+  const packs = p.packs.map(([size,price,label]) => ({size, label, price: priceOf(key, label, price)}));
+  let best = null;
+  const consider = (buy) => { const cost = buy.reduce((a,b)=>a+b.n*b.price,0), got = buy.reduce((a,b)=>a+b.n*b.size,0);
+    if (!best || cost < best.cost - 1e-9 || (Math.abs(cost-best.cost)<1e-9 && got < best.got)) best = {buy:buy.filter(b=>b.n), cost, got}; };
+  packs.forEach(a => consider([{...a, n:Math.max(1,Math.ceil(need/a.size - 1e-9))}]));
+  packs.forEach(big => packs.forEach(small => { if (small.size >= big.size) return;
+    const nb = Math.floor(need/big.size), rem = need - nb*big.size; if (!nb || rem <= 0) return;
+    consider([{...big, n:nb}, {...small, n:Math.ceil(rem/small.size - 1e-9)}]); }));
+  return best;
+}
+function priceOf(key, label, base){ const o = S.prices && S.prices[key+'|'+label]; return (typeof o === 'number' && o >= 0) ? o : base; }
+const gbp = v => '£' + v.toFixed(2);
+
+// Aldi recipes (aldi.co.uk/recipes) — ingredients per portion, macros estimated from typical values
+const R_ALDI = [{"id":"aldi-cajun-chicken-pasta","name":"Creamy Cajun Chicken Pasta","tag":"chicken","kcal":620,"p":33,"c":63,"f":26,"mins":20,"i":[["Pasta",75,"g","C"],["Chicken breast",80,"g","M"],["Peppers",0.5,"","V"],["Onion",0.25,"","V"],["Cajun seasoning",0,"","S"],["Olive oil",1,"tsp","S"],["Garlic",0.5,"clove","V"],["Double cream",37.5,"ml","D"],["Chicken stock cube",0.125,"","C"],["Parmesan",7.5,"g","D"]],"m":["Boil the fusilli. Dust sliced chicken in Cajun seasoning and fry until golden and cooked; set aside.","Soften onion and peppers in the same pan with garlic and the rest of the spice, then add stock, cream and Parmesan.","Return the chicken and drained pasta, toss to coat and season."],"src":"https://www.aldi.co.uk/recipes/courses/mains/creamy-cajun-chicken-pasta","by":"Aldi","est":true},{"id":"aldi-chargrilled-chicken-couscous","name":"Chargrilled Chicken with Salsa & Fruity Couscous","tag":"chicken","kcal":570,"p":45,"c":47,"f":21,"mins":30,"i":[["Chicken breast",150,"g","M"],["Balsamic vinegar",0,"","S"],["Couscous",44,"g","C"],["Olive oil",2,"tsp","S"],["Avocado",0.25,"","V"],["Tomatoes",60,"g","V"],["Fresh herbs",5,"g","V"],["Raisins",12,"g","C"],["Pumpkin seeds",8,"g","C"]],"m":["Marinate the chicken in balsamic for 5 min; soak the couscous in just-boiled water for 10 min.","Fry the chicken 10–12 min, turning once; mix avocado, tomato, a little oil and coriander into a salsa.","Fluff the couscous with oil, raisins, pumpkin seeds and coriander and top with chicken and salsa."],"src":"https://www.aldi.co.uk/recipes/team-gb/chargrilled-chicken-with-salsa-fruity-couscous","by":"Aldi","est":true},{"id":"aldi-herb-crusted-salmon","name":"Herb-Crusted Salmon with Roast Tomatoes","tag":"fish","kcal":610,"p":38,"c":46,"f":29,"mins":45,"i":[["Salmon fillet",1,"","M"],["Cherry tomatoes",125,"g","V"],["Chopped tomatoes",0.125,"tin","C"],["Bread",0.5,"slice","C"],["Olive oil",1.5,"tsp","S"],["Parmesan",5,"g","D"],["Fresh herbs",3,"g","V"],["New potatoes",200,"g","V"]],"m":["Roast cherry and tinned tomatoes with a pinch of sugar and basil at 200°C for 15 min; boil the new potatoes.","Blitz stale bread with oil, Parmesan and basil and press onto the salmon.","Bake the salmon on the tray for 10 min until crisp; serve over the tomatoes with potatoes."],"src":"https://www.aldi.co.uk/recipes/team-gb/herb-crusted-salmon-with-tomatoes","by":"Aldi","est":true},{"id":"aldi-stir-fried-beef-veg","name":"Stir-Fried Beef with Crunchy Veg & Noodles","tag":"beef","kcal":460,"p":34,"c":45,"f":16,"mins":20,"i":[["Sirloin steak",125,"g","M"],["Honey",1,"tbsp","S"],["Soy sauce",1,"tbsp","S"],["Cucumber",0.125,"","V"],["Carrots",0.5,"","V"],["Spring onions",2,"","V"],["Ginger",1,"tsp","V"],["Fresh chilli",0.25,"","V"],["Egg noodles",75,"g","C"],["Sesame oil",2,"tsp","S"]],"m":["Whisk vinegar, honey, soy and a splash of sherry; slice the cucumber, carrots and radishes thinly.","Slice the steak thinly, dust in cornflour and flash-fry with chilli and ginger for a minute.","Stir-fry spring onions and veg, then toss everything with the noodles, coriander and sauce for 30 seconds."],"src":"https://www.aldi.co.uk/recipes/team-gb/stir-fried-beef-with-vegetables","by":"Aldi","est":true},{"id":"aldi-turkey-meatballs-tomato","name":"Turkey Meatballs in Rich Tomato & Herb Sauce","tag":"turkey","kcal":570,"p":40,"c":79,"f":10,"mins":30,"i":[["Turkey mince",125,"g","M"],["Bread",0.5,"slice","C"],["Spring onions",1,"","V"],["Smoked paprika",0,"","S"],["Fresh herbs",8,"g","V"],["Olive oil",1.5,"tsp","S"],["Onion",0.25,"","V"],["Chopped tomatoes",0.5,"tin","C"],["Tomato purée",0,"","S"],["Basmati rice",75,"g","C"]],"m":["Blitz stale bread into crumbs and mix with turkey, spring onion, paprika and parsley; roll into small balls.","Brown the meatballs gently for about 20 min; soften onion, add tomatoes and purée and simmer 10 min. Cook the rice.","Stir the meatballs and remaining parsley into the sauce and serve over rice."],"src":"https://www.aldi.co.uk/recipes/team-gb/turkey-meatballs-in-rich-tomato-herb-sauce","by":"Aldi","est":true},{"id":"aldi-asian-beef-cabbage","name":"Asian Beef & Cabbage Stir-Fry","tag":"beef","kcal":550,"p":39,"c":67,"f":13,"mins":30,"i":[["Sirloin steak",140,"g","M"],["Cabbage",100,"g","V"],["Red onion",0.25,"","V"],["Fresh chilli",0.25,"","V"],["Garlic",0.75,"clove","V"],["Ginger",1.5,"tsp","V"],["Soy sauce",1,"tbsp","S"],["Olive oil",1.5,"tsp","S"],["Basmati rice",75,"g","C"]],"m":["Slice the steak thinly, trim and season; shred the cabbage and slice onion, chilli, garlic and ginger. Cook the rice.","Sear the steak in a very hot wok, then stir-fry onion, cabbage, garlic and chilli for 5 min, adding ginger at the end.","Add soy and lime juice, toss for a few minutes and serve over rice."],"src":"https://www.aldi.co.uk/recipes/collections/family-meals/asian-beef-and-cabbage-stirfry","by":"Aldi","est":true},{"id":"aldi-cottage-pie","name":"Cottage Pie","tag":"beef","kcal":370,"p":26,"c":55,"f":6,"mins":60,"i":[["Lean beef mince (5%)",88,"g","M"],["Potatoes",250,"g","V"],["Onion",0.25,"","V"],["Carrots",0.25,"","V"],["Courgette",0.25,"","V"],["Green beans",25,"g","V"],["Sweetcorn",12,"g","C"],["Gravy granules",0,"","S"]],"m":["Boil the potatoes for 20 min and mash with pepper.","Brown the mince, add onion, carrot, courgette, beans, herbs and water and simmer 20 min; stir in sweetcorn and gravy granules.","Top the mince with mash in a hot dish and grill until golden."],"src":"https://www.aldi.co.uk/recipes/collections/family-meals/cottage-pie","by":"Aldi","est":true},{"id":"aldi-crunchy-quinoa-chicken-salad","name":"Crunchy Quinoa & Chicken Salad","tag":"chicken","kcal":590,"p":49,"c":36,"f":27,"mins":45,"i":[["Chicken thighs (skinless)",180,"g","M"],["Garlic",0.75,"clove","V"],["Lemon",0.125,"","V"],["Quinoa pouch (cooked)",62,"g","C"],["Kale",50,"g","V"],["Spring onions",2,"","V"],["Cannellini beans",0.5,"tin","C"],["Jalapeños",30,"g","C"],["Greek yogurt (0%)",17.5,"g","D"],["Fresh herbs",7.5,"g","V"],["Olive oil",3,"tsp","S"]],"m":["Marinate the thighs in garlic, lemon, oregano and oil; roast the cooked quinoa at 200°C until crisp.","Wilt the cavolo nero and toss with spring onions and beans; blitz jalapeños, brine, yoghurt and parsley into a dressing.","Pan-fry the chicken 10–15 min, slice and serve on the salad with dressing and crispy quinoa."],"src":"https://www.aldi.co.uk/recipes/aldi-mob/courses/mains/crunchy-quinoa-and-chicken-salad","by":"Aldi","est":true},{"id":"aldi-salmon-skewers-peanut","name":"Lime Salmon Skewers with Peanut Dip & Noodles","tag":"fish","kcal":820,"p":37,"c":50,"f":51,"mins":35,"i":[["Salmon fillet",1,"","M"],["Fresh herbs",8,"g","V"],["Lime",0.5,"","V"],["Sugar",0,"","S"],["Olive oil",2,"tsp","S"],["Onion",0.25,"","V"],["Ginger",0.75,"tsp","V"],["Garlic",0.5,"clove","V"],["Peanut butter",2,"tbsp","C"],["Spring onions",0.75,"","V"],["Instant noodles",1,"","C"]],"m":["Cube the salmon, thread onto skewers and coat in mint, lime zest, sugar, pepper and oil.","Soften onion, ginger, garlic and chilli, then stir in vinegar, peanut butter, herbs and water to make a dip.","Cook the skewers 3–4 min a side in a hot pan or on the barbecue and serve with noodles and the dip."],"src":"https://www.aldi.co.uk/recipes/collections/family-meals/grilled-salmon-skewers-with-lime","by":"Aldi","est":true},{"id":"aldi-mediterranean-fish-bake","name":"Mediterranean Fish Bake with New Potatoes","tag":"fish","kcal":400,"p":29,"c":43,"f":10,"mins":40,"i":[["Cod fillet",130,"g","M"],["Chopped tomatoes",0.25,"tin","C"],["Red onion",0.5,"","V"],["Peppers",0.25,"","V"],["Black olives",5,"","C"],["Lime",0.25,"","V"],["Fresh herbs",2,"g","V"],["Garlic",0.5,"clove","V"],["White wine",17.5,"ml","C"],["Olive oil",1.5,"tsp","S"],["New potatoes",200,"g","V"]],"m":["Soften the onion in oil, then add garlic and pepper; heat the oven to 200°C and boil the new potatoes.","Crush in the tomatoes with lime, wine, olives, basil and spices and simmer 10 min.","Spoon the sauce over the fish and bake 15 min; serve with the potatoes."],"src":"https://www.aldi.co.uk/recipes/collections/family-meals/mediterranean-fish-bake","by":"Aldi","est":true},{"id":"aldi-thai-tuna-stir-fry","name":"Thai Tuna Stir-Fry with Rice","tag":"fish","kcal":520,"p":34,"c":75,"f":9,"mins":20,"i":[["Tuna steak",110,"g","M"],["Lime",0.25,"","V"],["Honey",0.75,"tsp","S"],["Ginger",1,"tsp","V"],["Olive oil",1.5,"tsp","S"],["Tomatoes",50,"g","V"],["Spring onions",1,"","V"],["Fresh chilli",0.25,"","V"],["Fresh herbs",4,"g","V"],["Basmati rice",90,"g","C"]],"m":["Marinate the tuna in sherry, lime, honey and ginger (up to an hour); cook the rice.","Sear the drained tuna in very hot oil for 2–3 min.","Add the marinade, tomatoes, spring onion and chilli for a couple of minutes, toss in the herbs and serve with rice."],"src":"https://www.aldi.co.uk/recipes/courses/mains/thai-tuna-stirfry","by":"Aldi","est":true}];
+R.push(...R_ALDI);
+const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday'];
+const COL = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)'];
+
+// ---------- State ----------
+const DEF = {kcal:2500,protein:160,carbs:260,fat:85,share:30,people:1};
+let S = norm(load());
+function norm(x){ x = x || {};
+  x.settings = {...DEF, ...(x.settings||{})}; x.plan = x.plan||[]; x.locked = x.locked||[]; x.ticked = x.ticked||{}; x.cooked = x.cooked||[]; x.lunch = x.lunch||[]; x.prices = x.prices||{}; x.extras = x.extras||{}; x.history = x.history||{}; x.mine = x.mine||{}; x.loved = x.loved||{}; x.sweets = x.sweets||{}; x._mt = x._mt||{};
+  return x; }
+function load(){ try{ return JSON.parse(localStorage.getItem('wc')); }catch(e){ return null; } }
+function save(push=true){ try{ lastSaved = JSON.stringify(S); localStorage.setItem('wc', lastSaved); }catch(e){} if(push) queuePush(); }
+// Every change goes through put() so each piece carries its own timestamp — that's what lets two phones merge cleanly.
+function getP(o,path){ const i=path.indexOf('.'); if(i<0) return o[path]; const t=o[path.slice(0,i)]; return t==null?undefined:t[path.slice(i+1)]; }
+function setP(o,path,v){ const i=path.indexOf('.'); if(i<0){ o[path]=v; return; } o[path.slice(0,i)][path.slice(i+1)]=v; }
+function put(path,val,ts){ setP(S,path,val); S._mt[path] = ts===undefined ? Date.now() : ts; }
+function untickAll(ts){ Object.keys(S.ticked).forEach(k=>{ if(S.ticked[k]) put('ticked.'+k,false,ts); }); }
+const esc = t => String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $ = id => document.getElementById(id);
+const byId = id => R.find(r => r.id === id) || (S.mine[id] || undefined) || (id && String(id).startsWith('mob-') ? HIDDEN(id) : undefined);
+// placeholder for a private recipe this device can't load (sync not turned on yet)
+const HIDDEN = id => ({ id, name:'Private recipe — turn on sync to see it', tag:'private', kcal:700, p:45, c:70, f:22, i:[], m:['This dinner comes from your private recipe library. Turn on Household sync in Macros to load it.'], hidden:true });
+
+function targets(){ const s=S.settings,k=s.share/100; return {kcal:s.kcal*k,p:s.protein*k,c:s.carbs*k,f:s.fat*k}; }
+function scaleFor(r){ return Math.min(1.4, Math.max(0.75, targets().kcal / r.kcal)); }
+function scaled(r){ const s=scaleFor(r); return {kcal:r.kcal*s,p:r.p*s,c:r.c*s,f:r.f*s,s}; }
+function score(r){
+  const t=targets(), m=scaled(r);
+  return Math.max(0,t.p-m.p)/t.p*3 + Math.abs(m.c-t.c)/t.c*.6 + Math.abs(m.f-t.f)/t.f*.6 + Math.abs(m.kcal-t.kcal)/t.kcal;
+}
+function pick(exclude, used){
+  let pool = [...R, ...mineList().filter(r=>r.pick!==false)].filter(r=>!exclude.includes(r.id));
+  const fresh = pool.filter(r=>(used[r.tag]||0)<2); if (fresh.length) pool = fresh;
+  return pool[Math.floor(Math.random()*pool.length)].id;
+}
+function tagsOf(ids){ const t={}; ids.forEach(id=>{ const r=id&&byId(id); if(r){ t[r.tag]=(t[r.tag]||0)+1; } }); return t; }
+function generate(initial){
+  const ts = initial ? 0 : undefined;   // a brand-new device's starter week never overrides a synced one
+  const plan = DAYS.map((_,i)=>S.locked[i]?S.plan[i]:null);
+  DAYS.forEach((_,i)=>{ if(!plan[i]) plan[i]=pick(plan.filter(Boolean),tagsOf(plan)); });
+  DAYS.forEach((_,i)=>{ if(!S.locked[i]) put('cooked.'+i,false,ts); });
+  put('plan',plan,ts); untickAll(ts); save(); route();
+}
+function swap(i){
+  const others=S.plan.filter((_,j)=>j!==i);
+  const plan=[...S.plan]; plan[i]=pick([...others,S.plan[i]],tagsOf(others));
+  put('plan',plan); put('cooked.'+i,false); untickAll(); save(); route();
+  toast('Shuffled '+DAYS[i]);
+}
+
+// ---------- Quantities ----------
+function fmt(q,u){
+  if (u==='g'&&q>=1000) return (q/1000).toFixed(2).replace(/\.?0+$/,'')+' kg';
+  if (u==='g'||u==='ml') return Math.round(q/5)*5+' '+u;
+  if (u==='tin'){ const v=Math.ceil(q*2)/2; return v+(v===1?' tin':' tins'); }
+  if (u==='clove'){ const v=Math.ceil(q); return v+(v===1?' clove':' cloves'); }
+  if (u==='') return '× '+Math.ceil(q);
+  return (Math.round(q*2)/2)+' '+u;
+}
+function portion(q,u,s,n,L=0){
+  if (!q) return '';
+  if (u==='tsp'||u==='tbsp') return (q*(n+L))+' '+u;
+  if (u==='g'||u==='ml') return Math.round((q*s*n+q*L)/5)*5+' '+u;
+  const v=Math.round((q*s*n+q*L)*4)/4, nice=v%1===0?v:v.toFixed(2).replace(/0$/,'');
+  return u===''?nice:nice+' '+u+(v>1?'s':'');
+}
+function shopping(){
+  const n=S.settings.people, items={};
+  S.plan.forEach((id,di)=>{ const r=byId(id); if(!r) return; const s=scaleFor(r), L=S.lunch[di]?1:0;
+    r.i.forEach(([name,q,u,a])=>{ const key=name+'|'+u, mult=(a==='S'||u==='tsp'||u==='tbsp')?n+L:n*s+L;
+      items[key]=items[key]||{name,u,a,q:0,days:new Set()}; items[key].q+=q*mult; items[key].days.add(di); }); });
+  sweetsList().forEach(r => r.i.forEach(([name,q,u,a]) => { const key=name+'|'+u;
+      items[key]=items[key]||{name,u,a,q:0,days:new Set()}; items[key].q += a==='S' ? 0 : q*(r.serves||1); items[key].sweet=true; }));
+  const g={}; Object.values(items).forEach(it=>(g[it.a]=g[it.a]||[]).push(it));
+  Object.values(g).forEach(x=>x.sort((a,b)=>a.name.localeCompare(b.name))); return g;
+}
+
+function shopRows(){
+  const g=shopping(), rows=[];
+  ['M','V','D','C'].forEach(a => (g[a]||[]).forEach(it => {
+    if (P[it.name]) rows.push({...it, shop:P[it.name].s, prod:P[it.name], bp:bestPacks(it.name,it.q)});
+    else { const c = catRow(it); rows.push({...it, shop:c ? c.it.shop : 'A', prod:c && {n:c.it.n, u:c.it.u}, bp:c && c.bp}); }
+  }));
+  return rows;
+}
+// ingredients from imported recipes: what to look for in the Aldi catalogue (null = no good Aldi match)
+const CAT_ALIAS = {"Protein powder":"=Pro Fit Lean Vanilla Whey Powder|500 g", "Almond butter":"=Pip & Nut Smooth Almond Butter|170 g", "Chocolate":"=Dark Chocolate|180 g", "Cocoa powder":"=Cocoa Powder|250 g", "Dates":"=Deglet Nour Dates|200 g", "Desiccated coconut":"=Desiccated Coconut|250 g", "Condensed milk":"=Carnation Sweetened Condensed Milk|397 g", "Custard":"=Fresh Custard|500 g", "Raspberry":"=Raspberries|150 g", "Frozen Raspberry":"=Raspberries|150 g", "Chia Seed":"=Chia Seeds|150 g", "Brioche buns":"=Brioche Burger Buns|4", "Burger buns":"=Brioche Burger Buns|4", "Strawberry":"=Strawberries|250 g", "Mixed Berries":"=Frozen Strawberries & Blueberries|360 g", "Fresh Berries":"=Frozen Strawberries & Blueberries|360 g", "Frozen Mixed Berries":"=Frozen Strawberries & Blueberries|360 g", "Mixed Nuts":"=Chopped Mixed Nuts|200 g", "Pumpkin Seed":"=Pumpkin Seeds|100 g", "Blueberry":"blueberries", "Mango":"large mango", "Golden Syrup":"golden syrup", "Biscuits":"digestive biscuits", "Pastry":"ready rolled puff pastry", "Oats":"porridge oats", "Oranges":"oranges", "Bananas":"bananas", "Pears":"conference pears", "Raspberry Jam":"seedless raspberry jam", "Strawberry Jam":"strawberry jam", "Croissant":"all butter croissants", "Nectarine":"nectarines", "Crunchy Nut Cornflakes":"honey nut crunchy cornflakes", "Cherry":"=Frozen Dark Sweet Cherries|300 g", "Pitted Cherry":"=Frozen Dark Sweet Cherries|300 g", "Frozen Cherry":"=Frozen Dark Sweet Cherries|300 g", "Pitted Frozen Cherries":"=Frozen Dark Sweet Cherries|300 g", "Sour Cherry":"=Frozen Dark Sweet Cherries|300 g", "Pitted Frozen Sour Cherries":"=Frozen Dark Sweet Cherries|300 g",
+  "Anchovies":"=Anchovy Fillets in Olive Oil|50 g", "Aubergine":"=Aubergine|1", "Beansprouts":"=Beansprouts|300 g", "Beef stock cube":"=Stock Cubes, Beef|10", "Vegetable stock cube":"=Knorr Vegetable Stock Cubes|8", "Breadcrumbs":"=Panko Breadcrumbs|100 g", "Capers":"=Non Pareilles Capers in Brine|100 g", "Celery":"=Celery|1", "Chipotle paste":"=Capsicana Smoky Chipotle Paste|60 g", "Diced pancetta":"=Italian Cubetti Di Pancetta|200 g", "Fennel":"=Fennel|1", "Gnocchi":"=Potato Gnocchi|500 g", "Gochujang":"=Blue Dragon Gochujang Korean Chilli Paste|135 g", "Green beans":"=Green Beans|300 g", "Lamb mince":"=20% Fat Lamb Mince|500 g", "Lettuce":"=Little Gem Lettuce|1", "Miso paste":"=Miso Paste|100 g", "Nori seaweed":"=Yutaka Sushi Nori Roasted Seaweed Sheets|5", "Pork mince":"=British Pork Mince 5% Fat|500 g", "Pumpkin seeds":"=Pumpkin Seeds|100 g", "Radishes":"=Radish|240 g", "Raisins":"=Raisins, Seedless|500 g", "Red pesto":"=Pesto, Red|190 g", "Rice noodles":"=Rice Noodles|250 g", "Ricotta":"=Ricotta Cheese|250 g", "Roasted red peppers":"=Karyatis Roasted Red Peppers|350 g", "Smoked mackerel":"=British Smoked Mackerel Fillets|140 g", "Sun-dried tomatoes":"=Sundried Tomatoes|100 g", "Sushi rice":"=Yutaka Sushi Rice|500 g", "Tahini":"=Tahini|300 g", "Thai curry paste":"=Blue Dragon Thai Red Curry Paste|170 g", "Udon noodles":"=Udon Noodles x2|600 g", "Puy lentils (cooked)":"=Merchant Gourmet Puy Lentils|250 g", "Chicken mince":"=British Chicken Mince 6% Fat|500 g", "Pomegranate Seeds":"=Pomegranate Seeds|80 g", "Nuts":"=Chopped Mixed Nuts|200 g", "Tofu":"=Cauldron Extra Firm Tofu|200 g", "Apples":"pink lady apples", "Asparagus":"asparagus tips", "Brussels sprouts":"brussels sprouts", "Halloumi":"halloumi", "Houmous":"houmous", "Lasagne sheets":"lasagne sheets", "Mayonnaise":"real mayonnaise", "Milk":"semi skimmed milk", "Pitta bread":"white pitta bread", "Pork sausages":"pork sausages", "Smoked bacon":"smoked bacon lardons", "Soured cream":"soured cream", "Whole chicken":"whole chicken", "Red wine":"house malbec red wine", "Chilli bean paste":null, "Dried Mushroom":null,
+  'Rice pouch (cooked)':'basmati rice pouch','Quinoa pouch (cooked)':'basmati quinoa pouch','Grated cheese':'grated mature cheddar',
+  'Single cream':'single cream','Natural yogurt':'fat free natural yogurt','Butter':'salted butter','Eggs':'eggs','Tortilla wraps':'white tortilla wraps','Bread':'medium sliced wholemeal bread',
+  'Cucumber':'cucumber','Tomatoes':'salad tomatoes','Vine tomatoes':'vine ripened tomatoes','Cauliflower':'cauliflower','Orzo':'orzo pasta','Mascarpone':'mascarpone',
+  'Cooked beetroot':'cooked beetroot','Peanut butter':'smooth peanut butter','Avocado':'avocado','Potatoes':'british baby potatoes','Jalapeños':'jalapenos','Double cream':'double cream','Light cream cheese':'light soft cheese','Fresh herbs':'fresh coriander','Beef minute steak':null,
+  'Cottage cheese':'cottage cheese','White wine':'white wine','Tuna steak':'tuna steaks','Cannellini beans':'cannellini beans','Butter beans':'butter beans','Kale':'cavolo nero',
+  'Cabbage':'white cabbage','Fresh chilli':'red chillies','Harissa paste':'harissa paste','Sugar snap peas':'sugar snap peas','Carrots':'carrots 500g','Mushrooms':'button mushrooms'};
+function sizeOf(sz){ const m=String(sz).match(/^([\d.]+)\s*(kg|g|ml|l)\b/i); if(m){ const q=+m[1], u=m[2].toLowerCase(); return u==='kg'?{q:q*1000,u:'g'}:u==='l'?{q:q*1000,u:'ml'}:{q,u}; }
+  return /^\d+$/.test(sz) ? {q:+sz,u:''} : null; }
+const catCache = {};
+function catRow(it){
+  const q = it.name in CAT_ALIAS ? CAT_ALIAS[it.name] : isCustomIng(it.name) ? it.name : null;
+  if (!q) return null;
+  const key = it.name; if (!(key in catCache)) catCache[key] = (q[0] === '=' ? byKey(q.slice(1)) : candidates(q)[0]) || null;
+  const c = catCache[key]; if (!c) return null;
+  const sz = sizeOf(c.sz); let n;
+  if (it.u === 'slice') n = Math.ceil(it.q/20 - 1e-9);
+  else if (sz && sz.u === it.u) n = Math.ceil(it.q/sz.q - 1e-9);
+  else if (sz && sz.u === '' && it.u === '') n = Math.ceil(it.q/sz.q - 1e-9);
+  else n = it.u === '' ? Math.ceil(it.q - 1e-9) : 1;
+  n = Math.max(1, n);
+  return { it:c, bp:{ buy:[{label:c.sz||'pack', n, price:c.pr}], cost:n*c.pr } };
+}
+function totals(rows=shopRows()){ const t={A:0,S:0,X:0}; rows.forEach(r=>{ if(r.bp) t[r.shop]+=r.bp.cost; });
+  extrasList().forEach(([,v])=>{ const x=extraInfo(v); if(x.cost!=null){ t.X+=x.cost; t[x.it && x.it.shop==='S' ? 'S' : 'A'] += x.cost; } }); t.all=t.A+t.S; return t; }
+const packStr = bp => bp ? bp.buy.map(b=>(b.n>1?b.n+' × ':'')+b.label).join(' + ') : '';
+
+
+// ---------- Recipe colour palettes (for the animated gradients) ----------
+// Each recipe sets a starting hue from its main ingredients; the palette is then built around it
+// with a saturated cool accent (blue / violet / magenta / pink) so neighbouring colours never blur together.
+const HUES = [
+ [/salmon/,10],[/prawn/,14],[/tuna/,350],[/\bcod\b|haddock|white fish/,200],[/gochujang|kimchi|sriracha/,352],[/harissa|chorizo|paprika|peri peri|piri/,6],
+ [/tikka|tandoori/,18],[/turmeric|curry|korma|jalfrezi|golden/,42],[/teriyaki|soy|marmite|caramel|bbq/,24],[/satay|peanut/,30],[/coconut/,185],
+ [/lemon/,52],[/lime/,85],[/mango|orange/,36],[/beetroot|pomegranate/,330],[/tomato|passata/,4],[/pepper/,22],[/pesto|basil/,115],
+ [/herb|coriander|parsley|mint|dill/,135],[/spinach|kale|cavolo|broccoli|tenderstem|pak choi|edamame|peas|courgette|cucumber|sugar snap|avocado|cabbage/,145],
+ [/sweet potato|squash|carrot|butternut/,28],[/mushroom|aubergine/,280],[/beef|steak/,345],[/pork/,325],[/turkey/,20],[/chicken/,34],[/halloumi|feta/,48],
+];
+const TAGHUE = { chicken:34, beef:345, pork:325, fish:200, turkey:20, tofu:52, veg:135, private:265 };
+function hsl2hex(h, s, l){ h=((h%360)+360)%360; if (h > 60 && h < 170) { l -= 12; s -= 8; } s/=100; l/=100;
+  const k=n=>(n+h/30)%12, a=s*Math.min(l,1-l), f=n=>l-a*Math.max(-1,Math.min(k(n)-3,9-k(n),1));
+  return '#'+[f(0),f(8),f(4)].map(x=>Math.round(x*255).toString(16).padStart(2,'0')).join(''); }
+const palCache = {};
+function palette(r){
+  const key = r ? r.id : 'none'; if (palCache[key]) return palCache[key];
+  // random but stable per recipe: hash the id, then pick two hues anywhere on the wheel
+  let h = 2166136261; for (const ch of key) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; }
+  const rnd = () => { h ^= h << 13; h >>>= 0; h ^= h >> 17; h ^= h << 5; h >>>= 0; return h / 4294967296; };
+  // 12 hue families that each look distinct (the raw wheel has a huge stretch of green)
+  const FAM = [2, 20, 38, 52, 80, 135, 172, 198, 222, 255, 282, 318];
+  const i1 = Math.floor(rnd() * 12), step = [2,3,4,5,7,8,9,10][Math.floor(rnd() * 8)];  // skip neighbours and direct opposites
+  const h1 = FAM[i1] + (rnd()*10 - 5), h2 = FAM[(i1 + step) % 12] + (rnd()*10 - 5);
+  const second = rnd() < .25 ? '#ffffff' : hsl2hex(h2, 85 + rnd()*10, 56 + rnd()*8);
+  return palCache[key] = [hsl2hex(h1, 85 + rnd()*10, 55 + rnd()*7), second];
+}
+const lum = hex => { const n = parseInt(hex.slice(1),16), c = [n>>16, n>>8&255, n&255].map(v => { v/=255; return v<=.03928 ? v/12.92 : ((v+.055)/1.055)**2.4; }); return .2126*c[0]+.7152*c[1]+.0722*c[2]; };
+function gradStyle(r, i){
+  const [a, b] = palette(r), g = [a, b, a, b];
+  const dark = (lum(a) + lum(b)) / 2 > .5;
+  return `--c:${g[0]};--g1:${g[0]};--g2:${g[1]};--g3:${g[2]};--g4:${g[3]};--on:${dark ? '#14110d' : '#fff'};--off:${dark ? '#fff' : '#14110d'};--d:${-(i*3.7 % 17).toFixed(1)}s`;
+}
+const LOCK_SVG = on => on
+  ? '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M7 10V7a5 5 0 0 1 10 0v3h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/></svg>'
+  : '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M8 10V7a4 4 0 0 1 7.6-1.7M6 10h12a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z"/></svg>';
+const SHUF_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const LIST_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
+const dayStyle = i => gradStyle(byId(S.plan[i]), i);
+
+// ---------- Helpers ----------
+const k0 = v => Math.round(v);
+const macroLine = m => `≈${k0(m.kcal)} kcal, ≈${k0(m.p)}g protein, ${k0(m.c)}g carbs, ${k0(m.f)}g fat`;
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const dayOf = k => { const [y,m,d] = k.split('-').map(Number); return new Date(y, m-1, d); };
+function mondayOf(d){ const m = new Date(d.getFullYear(), d.getMonth(), d.getDate()); m.setDate(m.getDate() - (m.getDay()+6)%7); return m; }
+// weeks run Sunday to Sunday: a week is keyed by its Sunday; dinners are Sunday–Thursday (older saved weeks were Monday–Friday: start 1)
+function sundayOf(d){ const m = new Date(d.getFullYear(), d.getMonth(), d.getDate()); m.setDate(m.getDate() - m.getDay()); return m; }
+const thisWeek = () => iso(sundayOf(new Date()));
+// older versions keyed weeks by Monday: move those to the Sunday before
+function migrateWeeks(){
+  let moved = false;
+  if (S.week && dayOf(S.week).getDay() === 1){ put('week', iso(addDays(dayOf(S.week), -1)), S._mt.week || 0); moved = true; }
+  Object.entries(S.history).forEach(([k, v]) => { if (!v || dayOf(k).getDay() !== 1) return;
+    const sun = iso(addDays(dayOf(k), -1)), ts = S._mt['history.'+k] || 0;
+    if (!S.history[sun]) put('history.'+sun, v, ts); put('history.'+k, null, ts); moved = true; });
+  return moved;
+}
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+function weekRange(key){
+  const sun = key ? dayOf(key) : sundayOf(new Date());
+  const end = addDays(sun, 7);
+  const M=x=>x.toLocaleDateString('en-GB',{month:'long'});
+  return sun.getMonth()===end.getMonth() ? `${sun.getDate()}–${end.getDate()} ${M(end)}` : `${sun.getDate()} ${M(sun).slice(0,3)} – ${end.getDate()} ${M(end).slice(0,3)}`;
+}
+const lunches = () => S.lunch.slice(0,5).filter(Boolean).length;
+// ---------- Weekly archive ----------
+function archiveWeek(key){
+  if (!key || S.plan.length !== 5) return;
+  put('history.'+key, { start:0, plan:[...S.plan], names:S.plan.map(id => (byId(id)||{}).name || ''), cooked:DAYS.map((_,i)=>!!S.cooked[i]), lunch:DAYS.map((_,i)=>!!S.lunch[i]) });
+}
+// On the first open of a new week: save last week, then start fresh
+function rollover(){
+  const cur = thisWeek();
+  if (!S.week){ put('week', cur, 0); save(); return false; }
+  if (S.week >= cur) return false;
+  archiveWeek(S.week);
+  put('week', cur);
+  DAYS.forEach((_,i) => { put('locked.'+i, false); put('lunch.'+i, false); });
+  put('shopDone', false);
+  Object.keys(S.sweets).forEach(id => { if (S.sweets[id]) put('sweets.'+id, false); });
+  // breakfast & lunch items are bought every week: keep them, just untick; one-off added items go once bought
+  Object.entries(S.extras).forEach(([id,v]) => { if (!v) return; if (v.cat){ if (v.done) put('extras.'+id, {...v, done:false}); } else if (v.done) put('extras.'+id, null); });
+  generate();
+  toast('New week picked — last week is saved in Past weeks');
+  return true;
+}
+function nextIndex(){ const i=S.cooked.findIndex((c,j)=>j<5&&!c); return i===-1?null:i; }
+
+// ---------- Views ----------
+function viewWeek(){
+  const t=targets(), done=S.cooked.filter(Boolean).length, nx=nextIndex(), hi = nx===null?4:nx;
+  const r=byId(S.plan[hi]), m=scaled(r);
+  const prog = DAYS.map((_,i)=>`<i class="${S.cooked[i]?'grad':''}" style="${S.cooked[i]?dayStyle(i):''}"></i>`).join('');
+  const bar=(l,v,tt)=>`<span>${l}</span><div class="mbar"><i style="width:${Math.min(100,v/tt*100)}%"></i></div><span>${k0(v)}/${k0(tt)}g</span>`;
+  const avg=S.plan.reduce((a,id)=>{const x=scaled(byId(id));a.kcal+=x.kcal;a.p+=x.p;a.c+=x.c;a.f+=x.f;return a;},{kcal:0,p:0,c:0,f:0});
+  const stat=(l,v,tt,u)=>`<div class="stat ${(l==='protein'?v/tt<.88:l==='kcal'?Math.abs(v/tt-1)>.12:false)?'off':''}"><b>${k0(v)}${u}</b><span>${l} · ${k0(tt)}${u}</span></div>`;
+  const items = Object.values(shopping()).flat().filter(x=>x.a!=='S').length;
+
+  return `
+  <h1>${weekRange()}</h1>
+  <div class="sub">${done} of 5 cooked · ${items} things to buy (≈${gbp(totals().all)}) · ${S.settings.people} ${S.settings.people>1?'people':'person'}${lunches()?` + ${lunches()} lunch${lunches()>1?'es':''}`:''}</div>
+  <div class="progress">${prog}</div>
+  ${nx===null?`<div class="note">🎉 <b>All five cooked.</b> Pick next week when you're ready.</div>`:''}
+  <div class="grid">
+    <div>
+      <section class="hero grad ${nx===null?'done':''}" data-i="${hi}" style="${dayStyle(hi)}">
+        <div class="hero-top">
+          <div class="hero-head">
+            <div class="day">${nx===null?'Last up':'Up next'} · ${DAYS[hi]}</div>
+            <h2>${esc(r.name)}</h2>
+            <div class="eyebrow"><span class="chip">${r.tag}</span>${r.mins?`<span class="chip">${r.mins} min</span>`:''}${Math.abs(m.s-1)>.04?`<span class="chip">${m.s.toFixed(2).replace(/0$/,'')}× portion</span>`:''}${S.lunch[hi]?'<span class="sticker" data-from="'+hi+'">+ Lunch</span>':''}</div>
+          </div>
+          ${imgTag(r,'hero-photo')}
+        </div>
+        <div class="meta">${macroLine(m)}</div>
+        <div class="mbars">${bar('P',m.p,t.p)}${bar('C',m.c,t.c)}${bar('F',m.f,t.f)}</div>
+        <div class="btns">
+          <a class="btn solid" href="#/recipe/${hi}">See recipe</a>
+          <button class="btn" data-act="cook" data-i="${hi}">${S.cooked[hi]?'Cooked ✓':'Mark cooked'}</button>
+          <button class="btn" data-act="swap" data-i="${hi}" ${S.locked[hi]?'disabled style="opacity:.4"':''}>Shuffle</button>
+          <a class="btn" href="#/pick/${hi}">Choose</a>
+          <button class="btn lockbtn ${S.locked[hi]?'on':''}" data-act="lock" data-i="${hi}" aria-pressed="${!!S.locked[hi]}" title="${S.locked[hi]?'Unlock':'Lock this dinner'}">${LOCK_SVG(S.locked[hi])}</button>
+        </div>
+      </section>
+    </div>
+    <div>
+      <p class="label">The week</p>
+      <div>${S.plan.map((id,i)=>{ const x=byId(id), mm=scaled(x);
+        return `<a class="row ${S.cooked[i]?'cooked':''} ${i===hi?'active':''}" data-i="${i}" href="#/recipe/${i}" style="${dayStyle(i)}">
+          <div class="tile grad">${imgTag(x,'')}</div>
+          <div class="rbody"><div class="rday">${DAYS[i]}</div><div class="rtitle">${esc(x.name)}</div>
+          <div class="rmeta">${isLoved(x.id)?'<span class="lovedot">♥</span> ':''}≈${k0(mm.kcal)} kcal · ${k0(mm.p)}g protein${x.mins?` · ${x.mins} min`:''}${x.by?` · ${x.by}`:''}</div></div>
+          <div class="acts">
+          <button class="ract" data-act="swap" data-i="${i}" ${S.locked[i]?'disabled':''} title="Shuffle — random dinner" aria-label="Shuffle ${DAYS[i]}">${SHUF_SVG}<span>Shuffle</span></button>
+          <button class="ract" data-act="choose" data-i="${i}" title="Choose from all recipes" aria-label="Choose ${DAYS[i]}'s dinner">${LIST_SVG}<span>Choose</span></button>
+          <button class="lock ${S.locked[i]?'on':''}" data-act="lock" data-i="${i}" aria-pressed="${!!S.locked[i]}" aria-label="${S.locked[i]?'Unlock':'Lock'} ${DAYS[i]}" title="${S.locked[i]?'Locked — stays when you shuffle':'Lock to keep it when you shuffle'}">${LOCK_SVG(S.locked[i])}</button>
+          <span class="slot" data-slot="${i}">${S.lunch[i]?`<span class="sticker" data-from="${i}">+ Lunch</span>`:'<span class="lslot">+ lunch</span>'}</span>
+          </div></a>`; }).join('')}</div>
+      <div class="bentos">${['breakfast','lunch'].map(cat => { const its = extrasList().filter(([,v]) => v.cat === cat);
+        return `<section class="bento" data-cat="${cat}"><div class="bhead"><b>${cat==='breakfast'?'Breakfast':'Lunch'}</b>${its.length?`<span class="small">${its.length}</span>`:''}</div>
+          <div class="bitems">${its.map(([id,v]) => `<span class="bchip">${esc(v.t)}<button data-act="delx" data-id="${id}" aria-label="Remove ${esc(v.t)}">✕</button></span>`).join('') || `<span class="small">${cat==='breakfast'?'Oats, eggs, fruit…':'Wraps, salad, soup…'}</span>`}</div>
+          <div class="badd"><input class="bin" data-cat="${cat}" placeholder="Add for ${cat}" autocomplete="off" enterkeyhint="done"><button class="bplus" data-act="addcat" data-cat="${cat}" aria-label="Add to ${cat}">+</button></div></section>`; }).join('')}
+        ${dessertBento()}</div>
+      <div class="card tray" style="margin-top:12px">
+        <div class="stack"><span class="sticker under">+ Lunch</span><span class="sticker" data-from="tray">+ Lunch</span></div>
+        <div><b>Lunch for tomorrow</b><div class="small">Drag a sticker onto a dinner to cook an extra portion for the next day. Drag it off to remove. ${lunches()?`<b style="color:var(--ink)">${lunches()} this week.</b>`:''}</div></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center"><b>Average dinner</b><a class="small" href="#/macros">Edit macros ›</a></div>
+        <div class="stats">${stat('kcal',avg.kcal/5,t.kcal,'')}${stat('protein',avg.p/5,t.p,'g')}${stat('carbs',avg.c/5,t.c,'g')}${stat('fat',avg.f/5,t.f,'g')}</div>
+      </div>
+      <div class="card small" style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+        <span>Not feeling it? Shuffle every dinner you haven't locked <span style="display:inline-flex;vertical-align:-3px">${LOCK_SVG(true)}</span>.</span>
+        <button class="pill" data-act="gen">New week</button>
+      </div>
+      <p class="small" style="margin-top:14px">● Saved on this device · macros are estimates</p>
+    </div>
+  </div>`;
+}
+
+function viewRecipe(i){
+  const r=byId(S.plan[i]); if(!r) return viewWeek();
+  const m=scaled(r), n=S.settings.people, L=S.lunch[i]?1:0;
+  return `<a class="back" href="#/">‹ This week</a>
+  <div style="${dayStyle(i)}">
+    ${photoOf(r) ? `<div class="banner grad">${imgTag(r,'')}</div>` : ''}
+    <div class="rhead"><div><div class="label" style="margin:2px 0 4px">${DAYS[i]} · ${r.tag}${r.mins?` · ${r.mins} min`:''}</div><h1>${esc(r.name)}</h1></div>${r.hidden?'':heartBtn(r.id,'big')}</div>
+    <div class="sub" style="margin-top:0">${macroLine(m)} per portion${r.est?' (estimated)':''}${Math.abs(m.s-1)>.04?` · scaled ${m.s.toFixed(2).replace(/0$/,'')}× to hit your target`:''}</div>
+    <div class="btns" style="margin:0 0 24px">
+      <button class="pill" data-act="cook" data-i="${i}">${S.cooked[i]?'Cooked ✓':'Mark cooked'}</button>
+      <button class="pill ghost" data-act="lunch" data-i="${i}">${L?'Remove lunch portion':'+ Lunch portion'}</button>
+      <button class="pill ghost" data-act="lock" data-i="${i}">${S.locked[i]?'Unlock':'Lock this dinner'}</button>
+      <button class="pill ghost" data-act="swap" data-i="${i}" ${S.locked[i]?'disabled style="opacity:.4"':''}>Shuffle</button>
+      <a class="pill ghost" href="#/pick/${i}">Choose</a>
+      ${r.mine && !r.deleted ? `<a class="pill ghost" href="#/mine/edit/${r.id}">Edit recipe</a>` : ''}
+    </div>
+    <div class="grid">
+      <div class="card"><b>Ingredients</b><span class="small"> · ${n} ${n>1?'people':'person'}${L?' + 1 lunch':''}</span>${L?' <span class="sticker" style="cursor:default">+ Lunch</span>':''}
+        ${r.i.map(([nm,q,u])=>`<div class="item" style="cursor:default"><span class="nm">${esc(nm)}</span><span class="q">${portion(q,u,m.s,n,L)}</span></div>`).join('')}
+      </div>
+      <div><p class="label">Method${r.src?' (in short)':''}</p><ol class="method">${r.m.map(x=>`<li><span>${esc(x)}</span></li>`).join('')}</ol>
+        ${r.src?`<a class="pill ghost srclink" href="${esc(r.src)}" target="_blank" rel="noopener">${r.mine?'Recipe link':'Full recipe on '+r.by} ↗</a>`:''}</div>
+    </div>
+  </div>`;
+}
+
+function viewShop(){
+  const rows=shopRows(), t=totals(rows), g=shopping();
+  const ex=extrasList(), got=rows.filter(x=>S.ticked[x.name+'|'+x.u]).length + ex.filter(([,v])=>v.done).length, done=!!S.shopDone;
+  const shopSec = sh => {
+    const list=rows.filter(r=>r.shop===sh); if(!list.length) return '';
+    const left=list.filter(r=>r.a==='M'||r.a==='V'), right=list.filter(r=>r.a==='D'||r.a==='C');
+    const col = items => ['M','V','D','C'].map(a=>{ const its=items.filter(r=>r.a===a); return its.length?aisle(a,its):''; }).join('');
+    return `<section class="shop-sec"><div class="shophead"><h2>${SHOP[sh]}</h2><span class="subtotal">${gbp(t[sh])}</span></div>
+      <div class="grid">${list.length>6?`<div>${col(left)}</div><div>${col(right)}</div>`:`<div>${col(list)}</div>`}</div></section>`;
+  };
+  return `<h1>Shopping</h1>
+  <div class="sub">${got} of ${rows.length+ex.length} in the basket · for ${weekRange()}${lunches()?` · includes ${lunches()} lunch${lunches()>1?'es':''}`:''}</div>
+  <div class="card totals"><div class="stats">
+      <div class="stat"><b>${gbp(t.all)}</b><span>estimated total</span></div>
+      <div class="stat"><b>${gbp(t.A)}</b><span>Aldi</span></div>
+      <div class="stat"><b>${gbp(t.S)}</b><span>Sainsbury's</span></div></div>
+    <div class="small" style="margin-top:8px">Prices checked ${PRICED}. ${done ? 'Shop done — the list is locked.' : 'Tap a price to change it to what you paid.'}</div></div>
+  <div class="slidelock ${done?'on':''}" style="--v:${done?100:0}"><span class="sl-text">${done ? 'Shop done ✓ · slide to unlock' : 'Slide when the shop\'s done'}</span>
+    <input type="range" id="shoplock" min="0" max="100" step="1" value="${done?100:0}" aria-label="${done?'Shop done — slide left to unlock the list':'Slide right when the shop is done'}"></div>
+  <div class="btns" style="margin:14px 0 26px"><button class="pill" data-act="copy">Copy list</button>${got && !done?`<button class="pill ghost" data-act="untick">Untick all</button>`:''}</div>
+  <div class="shopbody ${done?'locked':''}" ${done?'inert':''}>
+  <section class="card extras"><div class="xhead"><b>Added items</b>${ex.length?`<span class="subx">${gbp(t.X)}</span>`:''}</div>
+    <div class="addrow"><input id="xtra" placeholder="Milk, bin bags, snacks…" autocomplete="off" enterkeyhint="done"><button class="pill" data-act="addx">Add</button></div>
+    ${ex.map(([id,v])=>{ const x=extraInfo(v), it=x.it;
+      const sub = it ? `${SHOP[it.shop||'A']} · ${it.u?`<a href="${it.u}" target="_blank" rel="noopener">${esc(it.n)}</a>`:esc(it.n)}${it.sz?' · '+esc(it.sz):''}${x.qty>1?` · ×${x.qty}`:''}`
+                : typeof v.p==='number' ? 'Your price' : v.m==='' ? 'No Aldi or Sainsbury\'s match — tap the price to add one' : 'Not checked yet — tap Check prices';
+      return `<label class="item ${v.done?'done':''}"><input type="checkbox" data-extra="${id}" ${v.done?'checked':''}>
+        <span class="nm"><span class="pn">${esc(v.t)}${v.cat?` <span class="ctag">${v.cat}</span>`:''}</span><span class="pd">${sub}</span></span>
+        ${it?`<button class="price alt" data-act="altx" data-id="${id}" title="Try another product">↻</button>`:''}
+        <button class="price ${typeof v.p==='number'?'edited':''}" data-act="xprice" data-id="${id}">${x.cost!=null?gbp(x.cost):'£ –'}</button>
+        <button class="price alt" data-act="delx" data-id="${id}" aria-label="Remove ${esc(v.t)}">✕</button></label>`; }).join('')}
+    ${ex.length?`<div class="btns" style="margin-top:10px"><button class="pill" data-act="checkx">Check prices</button></div>`:''}
+  </section>
+  ${shopSec('A')}${shopSec('S')}
+  ${g.S?`<div class="card small"><b style="color:var(--ink)">Check you have</b><p style="margin-top:4px">${[...new Set(g.S.map(x=>x.name))].map(esc).join(', ')}</p></div>`:''}
+  </div>`;
+}
+function aisle(a,list){
+  return `<div class="aisle"><h3>${A[a]}<span class="muted" style="font-weight:500">${list.length}</span></h3>${list.map(it=>{
+    const key=it.name+'|'+it.u, done=S.ticked[key], pr=it.prod, bp=it.bp;
+    const title = pr ? (pr.u ? `<a href="${pr.u}" target="_blank" rel="noopener">${pr.n}</a>` : pr.n) : it.name;
+    const lbl = bp ? (bp.perKg ? 'kg' : bp.buy[bp.buy.length-1].label) : '';
+    const edited = pr && S.prices[it.name+'|'+lbl] != null;
+    return `<label class="item ${done?'done':''}"><input type="checkbox" data-key="${key}" ${done?'checked':''}>
+      <span class="nm"><span class="pn">${title}</span><span class="pd">Need ${fmt(it.q,it.u).replace('× ','')} · buy ${packStr(bp)||'—'}</span></span>
+      <span class="dots">${[...it.days].sort().map(d=>`<i style="${dayStyle(d)}" title="${DAYS[d]}"></i>`).join('')}</span>
+      ${bp?`<button class="price ${edited?'edited':''}" data-act="price" data-key="${it.name}" data-label="${lbl}">${gbp(bp.cost)}</button>`:''}</label>`;
+  }).join('')}</div>`;
+}
+
+function viewMacros(){
+  const s=S.settings, t=targets();
+  const f=(id,l,step)=>`<label class="field"><span>${l}</span><input id="${id}" type="number" inputmode="numeric" step="${step}" value="${s[id]}"></label>`;
+  return `<h1>Macros</h1>
+  <div class="sub">Your daily targets. Dinners are picked and portioned to hit your share of them.</div>
+  <div class="fields">${f('kcal','Daily kcal',50)}${f('protein','Protein (g)',5)}${f('carbs','Carbs (g)',5)}${f('fat','Fat (g)',5)}${f('share','Dinner share %',5)}${f('people','People',1)}</div>
+  <div class="card" style="margin-top:16px"><b>Each dinner aims for</b>
+    <div class="stats" id="tgt">${tgt(t)}</div></div>
+  <div class="btns"><button class="pill" data-act="gen">Re-pick this week</button><a class="pill ghost" href="#/">Done</a></div>
+  ${syncCard()}`;
+}
+function syncCard(){
+  if(!SY.cfg) return `<section class="card sync"><b>Household sync</b>
+    <div class="small" style="margin-top:2px">Share this week between phones — cooked dinners, lunch stickers, ticks and added items. Turn it on on your device first, then on hers with the same repo and token.</div>
+    <label class="field"><span>Data repo</span><input id="syncRepo" value="SteeShaw/WhatsCooking-data" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+    <label class="field"><span>Access token</span><input id="syncToken" type="password" autocomplete="off" placeholder="github_pat_…"></label>
+    <button class="pill" data-act="syncon">Turn on sync</button></section>`;
+  return `<section class="card sync"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><b>Household sync</b><span id="syncstatus" class="small">${syncText()}</span></div>
+    <div class="small" style="margin-top:2px">Syncing with ${esc(SY.cfg.repo)}. Checks for changes every 15 seconds and whenever you open the app.</div>
+    <div class="btns" style="margin-top:12px"><button class="pill" data-act="syncnow">Sync now</button><button class="pill ghost" data-act="syncoff">Turn off on this device</button></div></section>`;
+}
+const tgt = t => `<div class="stat"><b>${k0(t.kcal)}</b><span>kcal</span></div><div class="stat"><b>${k0(t.p)}g</b><span>protein</span></div><div class="stat"><b>${k0(t.c)}g</b><span>carbs</span></div><div class="stat"><b>${k0(t.f)}g</b><span>fat</span></div>`;
+
+
+// ---------- Past weeks ----------
+function weekData(key){
+  if (key === (S.week || thisWeek())) return { plan:S.plan, cooked:DAYS.map((_,i)=>!!S.cooked[i]), lunch:DAYS.map((_,i)=>!!S.lunch[i]), names:S.plan.map(id=>(byId(id)||{}).name||''), current:true, start:0 };
+  return S.history[key] || null;
+}
+function viewArchive(ym){
+  const now = new Date(); let [y, m] = (ym && /^\d{4}-\d{2}$/.test(ym)) ? ym.split('-').map(Number) : [now.getFullYear(), now.getMonth()+1];
+  const first = new Date(y, m-1, 1), last = new Date(y, m, 0), today = iso(now);
+  const prev = iso(new Date(y, m-2, 1)).slice(0,7), next = iso(new Date(y, m, 1)).slice(0,7);
+  const weeks = []; for (let sun = sundayOf(first); sun <= last; sun = addDays(sun, 7)) weeks.push(sun);
+  const saved = Object.values(S.history).filter(Boolean), cookedCount = saved.reduce((a,w) => a + (w.cooked||[]).filter(Boolean).length, 0);
+  const cell = (sun, col) => {
+    const d = addDays(sun, col), key = iso(sun), w = weekData(key), i = w ? col - (w.start ?? 1) : -1, id = w && i >= 0 && w.plan[i], inMonth = d.getMonth() === m-1;
+    const cls = `cday ${inMonth?'':'out'} ${iso(d)===today?'today':''}`;
+    if (!id) return `<div class="${cls} empty"><span class="dnum">${d.getDate()}</span></div>`;
+    const r = byId(id), name = (r && !r.hidden ? r.name : (w.names||[])[i]) || 'Dinner';
+    return `<a class="${cls}${w.cooked && w.cooked[i] ? ' done' : ''}" href="#/past/${key}/${i}" style="${gradStyle(r, i)}">
+      <span class="dnum">${d.getDate()}${w.cooked && w.cooked[i] ? '<span class="tick">✓</span>' : ''}${w.lunch && w.lunch[i] ? '<span class="ldot" title="+ lunch"></span>' : ''}</span>
+      <span class="sw grad">${imgTag(r,'')}</span><span class="dname">${esc(name)}</span></a>`;
+  };
+  return `<h1>Past weeks</h1>
+  <div class="sub">${saved.length ? `${saved.length} week${saved.length>1?'s':''} saved · ${cookedCount} dinners cooked` : 'Each week is saved here automatically when a new one starts on Sunday.'}</div>
+  <div class="calnav"><a class="pill ghost" href="#/archive/${prev}">‹</a><b>${first.toLocaleDateString('en-GB',{month:'long', year:'numeric'})}</b><a class="pill ghost" href="#/archive/${next}">›</a></div>
+  <div class="cal">
+    ${['Sun','Mon','Tue','Wed','Thu'].map(d => `<div class="chead">${d}</div>`).join('')}
+    ${weeks.map(sun => [0,1,2,3,4].map(c => cell(sun, c)).join('')).join('')}
+  </div>
+  <p class="small" style="margin-top:14px">Tap a dinner to see it again or cook it again this week. ✓ cooked · <span class="ldot"></span> with a lunch portion</p>`;
+}
+function viewPast(key, i){
+  if (!key || key === (S.week || thisWeek())) return viewRecipe(i);
+  const w = S.history[key]; if (!w) return viewArchive();
+  const r = byId(w.plan[i]), d = addDays(dayOf(key), i + (w.start ?? 1));
+  if (!r || r.hidden) return `<a class="back" href="#/archive/${key.slice(0,7)}">‹ Past weeks</a><h1>${esc((w.names||[])[i]||'Dinner')}</h1><div class="sub">This recipe isn't available on this device — turn on sync to load your private recipes.</div>`;
+  const m = scaled(r);
+  return `<a class="back" href="#/archive/${key.slice(0,7)}">‹ Past weeks</a>
+  <div style="${gradStyle(r, i)}">
+    ${photoOf(r) ? `<div class="banner grad">${imgTag(r,'')}</div>` : ''}
+    <div class="rhead"><div><div class="label">${d.toLocaleDateString('en-GB',{weekday:'long', day:'numeric', month:'long'})}${w.cooked && w.cooked[i] ? ' · cooked ✓' : ''}</div><h1>${esc(r.name)}</h1></div>${heartBtn(r.id,'big')}</div>
+    <div class="sub" style="margin-top:0">${macroLine(m)} per portion${r.est?' (estimated)':''}</div>
+    <div class="btns" style="margin:0 0 24px"><button class="pill" data-act="again" data-id="${r.id}">Cook this again this week</button>${r.src?`<a class="pill ghost" href="${esc(r.src)}" target="_blank" rel="noopener">${r.mine?'Recipe link':'Full recipe on '+r.by} ↗</a>`:''}</div>
+    <div class="grid">
+      <div class="card"><b>Ingredients</b><span class="small"> · per portion</span>
+        ${r.i.map(([nm,q,u])=>`<div class="item" style="cursor:default"><span class="nm">${esc(nm)}</span><span class="q">${portion(q,u,m.s,1)}</span></div>`).join('')}</div>
+      <div><p class="label">Method${r.src?' (in short)':''}</p><ol class="method">${r.m.map(x=>`<li><span>${esc(x)}</span></li>`).join('')}</ol></div>
+    </div>
+  </div>`;
+}
+// put a past dinner back into this week: the next day that isn't cooked or locked
+function cookAgain(id){
+  const todayIdx = Math.min(4, new Date().getDay()), open = j => !S.cooked[j] && !S.locked[j];
+  let j = [0,1,2,3,4].find(k => k >= todayIdx && open(k)); if (j === undefined) j = [0,1,2,3,4].find(open);
+  if (j === undefined){ toast('Every night this week is cooked or locked'); return; }
+  const plan = [...S.plan]; plan[j] = id; put('plan', plan); put('cooked.'+j, false); untickAll(); save();
+  location.hash = '#/'; toast(`Added to ${DAYS[j]}`);
+}
+
+
+// ---------- My recipes (built by hand, synced with the rest of the week) ----------
+const mineList = () => Object.values(S.mine).filter(r => r && r.id && !r.deleted).sort((a,b) => a.name.localeCompare(b.name));
+const TAGS = ['chicken','beef','pork','lamb','turkey','fish','tofu','veg','other'];
+const UNITS = [['g','g'],['ml','ml'],['','×'],['tin','tin'],['clove','clove'],['slice','slice'],['tsp','tsp'],['tbsp','tbsp']];
+// what every known ingredient is usually measured in and which aisle it lives in (from all the recipes in the app)
+function knownIngs(){
+  const m = {}; [...R, ...mineList()].forEach(r => (r.i||[]).forEach(([n,q,u,a]) => { if (!m[n]) m[n] = {u, a}; else if (q && !m[n].q) m[n].u = u; if (q) m[n].q = true; }));
+  Object.keys(P).forEach(n => { if (!m[n]) m[n] = {u:'g', a:'C'}; });
+  return m;
+}
+const isCustomIng = n => mineList().some(r => r.i.some(x => x[0] === n));
+// aisle for an ingredient nobody has used before: guess from the shop catalogue
+function guessAisle(name, u, q){
+  const k = knownIngs()[name]; if (k) return k.a;
+  if (!q || u === 'tsp') return 'S';
+  const c = candidates(name)[0]; if (!c) return 'C';
+  if (/^[MVD]$/.test(c.a)) return c.a;
+  if (/^S-(Veg|Fruit|Fresh herbs)$/.test(c.a)) return 'V';
+  if (/^S-(Dairy|Chilled|Deli)$/.test(c.a)) return 'D';
+  if (c.a === 'S-Fish') return 'M';
+  return 'C';
+}
+
+// Typical values per 100 g (or 100 ml): [match, kcal, protein, carbs, fat, grams per item, grams per tin]
+const NUT = [
+ [/stock cube|stock pot|bouillon/,250,10,20,15,10],[/\bstock\b/,5,0.5,0.5,0.2],[/vinegar/,20,0,1,0],[/soy sauce/,55,8,5,0],[/oyster sauce/,100,2,22,0.2],[/fish sauce|hot sauce|sriracha|peri peri sauce|tabasco|worcester/,40,1.5,7,0.5],
+ [/teriyaki|hoisin|sweet chilli|bbq|barbecue|ketchup/,170,1.5,40,0.3],[/jam|chutney|marmalade/,240,0.4,58,0.1],[/peanut butter|nut butter|almond butter/,600,25,13,50],[/coconut milk.*light|light coconut/,75,0.7,1.5,7.5,null,400],[/coconut milk|coconut cream|creamed coconut/,180,1.5,3,18,null,400],
+ [/pomegranate/,80,1.5,18,1],[/molasses/,290,0,75,0],[/coconut/,180,1.5,3,18,null,400],[/fried onion|crispy onion/,600,6,40,44],
+ [/spring onion|scallion/,32,1.8,6,0.2,15],[/sugar snap|mange ?tout/,42,3,7,0.2],[/edamame/,120,11,7,5],[/green bean|fine bean|runner bean/,31,1.8,5,0.2],[/cornflour|plain flour|self.raising|\bflour\b/,350,1,85,1],
+ [/egg noodle|noodle nest/,360,13,70,2.5],[/rice noodle/,360,6,80,0.6],[/tuna steak/,110,25,0,1,110],[/gammon steak/,140,20,0,6,150],[/pork mince/,200,19,0,14],[/lamb mince/,240,17,0,19],[/peppercorn|black pepper|white pepper/,250,10,64,3],
+ [/chicken breast|chicken fillet|chicken strips/,106,24,0,1.1,170],[/chicken thigh/,125,20,0,4.8,90],[/chicken mince/,120,21,0,4],[/chicken drumstick|chicken leg/,170,18,0,11,110],[/chicken/,120,22,0,3.5,150],
+ [/turkey mince/,120,22,0,3.5],[/turkey/,105,24,0,1,150],
+ [/beef mince.*(10|12)|mince.*(10|12)%/,180,20,0,11],[/beef mince.*(15|20)|mince.*(15|20)%/,230,18,0,17],[/beef mince|steak mince|mince/,125,21,0,5],
+ [/steak|beef strips|sirloin|rump|beef/,150,23,0,6.5,200],[/pork (tenderloin|fillet)/,109,21,0,2.2],[/pork|gammon/,150,20,0,8,150],
+ [/lamb/,200,20,0,13,150],[/chorizo/,455,24,2,38],[/bacon|pancetta/,215,16,0.5,16,30],[/sausage/,250,13,9,18,57],[/ham/,110,18,1.5,3.5,30],
+ [/salmon/,200,20,0,13,120],[/tinned tuna|tuna chunks|tuna in|can.*tuna/,110,25,0,1,110,110],[/tuna/,110,25,0,1,110],[/prawn|shrimp/,70,15,0,1],[/mackerel/,230,19,0,17,100],
+ [/\bcod\b|haddock|basa|pollock|hake|white fish|sea bass|seabass/,80,18,0,0.7,130],[/fish/,100,18,0,3,130],
+ [/egg white/,48,11,0.7,0.2,33],[/\beggs?\b/,143,12.6,0.7,9.5,58],[/tofu/,120,13,1.5,7],
+ [/halloumi.*light|light.*halloumi/,245,26,1.5,15],[/halloumi/,320,22,2,25],[/feta/,265,14,1,22],[/lighter cheddar|light cheese|lighter.*cheese/,315,27,0.1,22,20],
+ [/parmesan|parmigiano|\bgrana\b/,390,33,0,29],[/mozzarella/,250,18,1,19,125],[/cottage cheese/,90,11,3.5,3.5],[/cream cheese|soft cheese/,160,7,5,12],[/mascarpone/,420,5,4,42],
+ [/cheddar|grated cheese|cheese/,415,25,0.1,35,20],[/greek.*(0%|fat free)|(0%|fat free).*greek/,57,10,3.6,0.2],[/skyr/,64,11,4,0.2],[/greek/,130,6,4,10],
+ [/yogh?urt/,60,5.5,7,1],[/milk/,47,3.5,4.8,1.7],[/double cream/,445,1.7,2.7,48],[/single cream/,190,2.6,3.5,19],[/soured cream|sour cream/,190,3,4,18],[/cr[eè]me fra[iî]che/,300,2.4,2.6,30],[/butter(?! ?bean)(?!nut)/,740,0.6,0.6,82],
+  [/rice pouch|microwave rice|cooked rice/,160,3.5,32,2,250],[/quinoa pouch|cooked quinoa/,170,5.5,27,4,250],[/quinoa/,370,14,64,6],[/rice/,355,7.5,78,1],
+ [/instant noodle|ramen/,450,9,60,19,85],[/noodle/,350,10,70,2],[/gnocchi/,150,3.5,33,0.3],[/couscous/,360,13,72,1.5],[/orzo|pasta|spaghetti|penne|fusilli|linguine|tagliatelle|macaroni|lasagne/,355,12.5,70,1.5],
+ [/wrap|tortilla/,290,8.5,50,6,62],[/pitta/,265,9,52,1.5,60],[/naan/,285,8.5,48,6,130],[/bagel/,260,10,50,1.5,85],[/sourdough|bread|roll|bun|ciabatta/,245,9,45,2.5,40],
+ [/sweet potato/,86,1.6,20,0.1,200],[/new potato|baby potato/,70,1.6,15,0.3,40],[/potato/,77,2,17,0.1,200],[/\boats?\b|porridge/,375,11,60,8],
+ [/red lentil|lentil.*dry|dried lentil/,330,24,50,1.5],[/lentil/,120,9,17,0.5,null,265],[/chickpea/,120,7,15,2.5,null,240],[/bean(?!s? sprout)(?! ?curd)(?!.*green)/,100,7,14,0.5,null,240],
+ [/chopped tomato|plum tomato|tinned tomato/,22,1.1,3.7,0.2,null,400],[/passata/,30,1.3,5,0.2,null,500],[/tomato pur[eé]e|tomato paste/,80,4.5,13,0.3],[/sun.?dried tomato/,210,4,20,13],
+ [/sweetcorn|\bcorn\b/,80,2.8,14,1.5,null,200],[/peas/,70,6,9,1],
+ [/onion/,40,1.1,8,0.1,150],[/pepper(?!corn)|capsicum/,30,1,5,0.3,160],[/garlic/,150,6,30,0.5,5],[/ginger/,80,1.8,15,0.8,30],[/carrot/,40,0.6,8,0.3,80],[/courgette|zucchini/,17,1.2,2.5,0.3,200],
+ [/tenderstem|broccoli/,35,3,4,0.5,300],[/spinach/,23,3,1.5,0.4],[/kale|cavolo/,35,3,3,1],[/cabbage|sprout/,25,1.3,4,0.1,600],[/mushroom/,22,3,0.5,0.3,15],[/cherry tomato/,18,0.9,3,0.2,15],[/tomato/,18,0.9,3,0.2,85],
+ [/cucumber/,12,0.6,2,0.1,300],[/lettuce|salad|rocket|leaves/,15,1.3,2,0.2,200],[/stir.?fry veg|mixed veg|vegetables/,35,2,5,0.3],[/aubergine|eggplant/,25,1,4,0.2,250],
+ [/cauliflower/,25,2,3,0.3,600],[/leek/,30,1.5,5,0.3,150],[/pak choi|bok choy/,13,1.5,1.2,0.2,120],[/butternut|squash|pumpkin(?! seed)/,45,1,10,0.1,900],
+ [/celery/,16,0.7,3,0.2,40],[/asparagus/,20,2.2,3.9,0.1,20],[/avocado/,190,1.9,1.9,19.5,140],[/beetroot/,45,1.7,8,0.1,80],
+ [/lemon/,29,1,9,0.3,100],[/lime/,30,0.7,10,0.2,60],[/chilli(?! (powder|flakes|sauce))/,40,2,8,0.4,15],[/herb|coriander|parsley|basil|mint|dill|chive/,40,3,5,0.5,30],
+ [/banana/,89,1.1,23,0.3,120],[/apple(?! cider)/,52,0.3,14,0.2,150],[/berr|grape/,50,0.8,11,0.3],[/mango/,60,0.8,15,0.4,250],[/orange/,47,0.9,12,0.1,150],[/raisin|sultana|cranberr.*dried/,300,3,70,0.5],
+ [/olive oil|vegetable oil|sunflower oil|rapeseed oil|sesame oil|coconut oil|\boil\b/,900,0,0,100],[/tahini/,600,17,10,55],
+ [/nuts|almond|cashew|peanut|walnut/,600,20,15,52],[/seed/,570,25,15,48],[/olive/,145,1,4,15,4],
+ [/green pesto|^pesto/,450,5,4,45],[/red pesto/,350,4,10,32],[/curry paste|tikka paste|korma paste|thai.*paste/,180,3,12,13],[/harissa/,120,2,10,7],[/gochujang/,210,4,45,1.5],
+ [/honey|maple|syrup/,330,0.4,82,0],[/sugar/,400,0,100,0],
+ [/mayo/,700,1,1.5,75],[/mustard/,150,7,6,11],[/salsa/,35,1.4,6,0.2],
+ [/gravy/,400,6,60,15],[/marmite|yeast extract/,260,40,24,0],
+ [/kimchi|sauerkraut/,30,2,4,0.5],[/jalape/,25,1,4,0.5],[/artichoke/,90,2,4,7],[/white wine|red wine|wine/,80,0.1,2.6,0],[/chocolate|cocoa/,540,7,55,31],[/protein powder|whey/,380,75,8,6,30],
+ [/salt|pepper|paprika|cumin|turmeric|oregano|thyme|seasoning|spice|powder|flakes|cinnamon|garam|curry|cajun|fajita/,300,10,50,8,null,null],
+];
+const nutOf = name => { const n = String(name).toLowerCase(); const row = NUT.find(x => x[0].test(n)); return row || null; };
+function gramsOf(row, q, u){
+  if (u === 'g' || u === 'ml') return q;
+  if (u === 'tsp') return q * (row[1] > 600 ? 4.5 : 5);
+  if (u === 'tbsp') return q * (row[1] > 600 ? 13.5 : 15);
+  if (u === 'clove') return q * (row[5] || 5);
+  if (u === 'slice') return q * (row[5] && row[5] < 60 ? row[5] : 35);
+  if (u === 'tin') return q * (row[6] || 400);
+  if (u === '') return row[5] ? q * row[5] : null;
+  return null;
+}
+// per-portion ingredients → estimated macros per portion
+function estimate(ings){
+  const tot = {kcal:0,p:0,c:0,f:0}, missed = []; let hit = 0, counted = 0;
+  ings.forEach(([n,q,u]) => { if (!n) return; counted++;
+    if (!q) { hit++; return; }                        // "to taste" — nothing to add
+    const row = nutOf(n), g = row && gramsOf(row, q, u);
+    if (g == null) { missed.push(n); return; }
+    hit++; tot.kcal += row[1]*g/100; tot.p += row[2]*g/100; tot.c += row[3]*g/100; tot.f += row[4]*g/100; });
+  return { kcal:Math.round(tot.kcal), p:Math.round(tot.p), c:Math.round(tot.c), f:Math.round(tot.f), hit, counted, missed };
+}
+function parseQty(t){
+  t = String(t||'').trim().replace(',', '.').replace(/½/,'.5').replace(/¼/,'.25').replace(/¾/,'.75').replace(/⅓/,'.33');
+  let m = t.match(/^(\d+)\s+(\d+)\/(\d+)$/); if (m) return +m[1] + m[2]/m[3];
+  m = t.match(/^(\d+)\/(\d+)$/); if (m) return m[1]/m[2];
+  m = t.match(/^(\d*)(\.\d+)?$/); if (m && t) return parseFloat((m[1]||'0') + (m[2]||''));
+  return NaN;
+}
+const nice = v => { const r = Math.round(v*100)/100; return String(r); };
+
+function viewMine(){
+  const list = mineList();
+  return `<h1>My recipes</h1>
+  <div class="sub">${list.length ? `${list.length} recipe${list.length>1?'s':''} of your own · they join the weekly shuffle and the shopping list` : 'Build your own dinners — they join the weekly shuffle and the shopping list, priced at Aldi.'}</div>
+  <div class="btns" style="margin:0 0 18px"><a class="pill" href="#/mine/new">+ New recipe</a></div>
+  ${list.length ? `<div>${list.map((r,i) => `<a class="row" href="#/mine/edit/${r.id}" style="${gradStyle(r,i)}">
+      <div class="tile grad">${imgTag(r,'')}</div>
+      <div class="rbody"><div class="rday">${esc(r.tag)}${r.pick===false?' · not in the shuffle':''}</div><div class="rtitle">${esc(r.name)}</div>
+      <div class="rmeta">≈${k0(r.kcal)} kcal · ${k0(r.p)}g protein${r.mins?` · ${r.mins} min`:''} · ${r.i.length} ingredient${r.i.length>1?'s':''}</div></div>
+      ${heartBtn(r.id)}<button class="pill ghost minebtn" data-act="mineadd" data-id="${r.id}">Add to week</button>
+      <span class="chev">›</span></a>`).join('')}</div>`
+  : `<div class="card"><b>How it works</b><p class="small" style="margin-top:4px">Add the ingredients for the whole dish and how many it serves. WhatsCooking works out a portion, estimates the macros, and prices the shopping at Aldi (or Sainsbury's when Aldi doesn't sell it).</p></div>`}`;
+}
+
+function draftLoad(key){ try{ const d = JSON.parse(localStorage.getItem('wc-draft')); return d && d.key === key ? d.r : null; }catch(e){ return null; } }
+function draftSave(){ const f = $('rform'); if (!f) return; try{ localStorage.setItem('wc-draft', JSON.stringify({ key:f.dataset.key, r:readForm() })); }catch(e){} }
+function draftClear(){ try{ localStorage.removeItem('wc-draft'); }catch(e){} }
+
+function ingRow(n, q, u){
+  return `<div class="ing"><input class="ing-n" list="ingnames" placeholder="Ingredient" value="${esc(n||'')}" autocomplete="off" enterkeyhint="next">
+    <input class="ing-q" inputmode="decimal" placeholder="Qty" value="${q===''||q==null?'':esc(q)}" enterkeyhint="next">
+    <select class="ing-u" aria-label="Unit">${UNITS.map(([v,l]) => `<option value="${v}" ${v===(u==null?'g':u)?'selected':''}>${l}</option>`).join('')}</select>
+    <button type="button" class="ing-x" data-act="ingdel" aria-label="Remove ingredient">✕</button></div>`;
+}
+function viewEditor(id){
+  const src = id ? S.mine[id] : null;
+  if (id && (!src || src.deleted)) return viewMine();
+  const key = id || 'new', d = draftLoad(key);
+  // the form edits whole-dish quantities; recipes store them per portion
+  const r = d || (src ? { ...src, serves:src.serves||1, i:src.i.map(([n,q,u]) => [n, q ? nice(q*(src.serves||1)) : '', u]), m:(src.m||[]).join('\n') }
+                      : { name:'', tag:'chicken', mins:'', serves:2, i:[['','','g'],['','','g'],['','','g']], m:'', kcal:'', p:'', c:'', f:'', src:'', img:'', pick:true });
+  const names = Object.keys(knownIngs()).sort((a,b) => a.localeCompare(b));
+  const mf = (k, l) => `<label class="field mfield"><span>${l}</span><input id="rf-${k}" class="rf-m" inputmode="numeric" value="${r[k]===''||r[k]==null?'':esc(r[k])}"></label>`;
+  return `<a class="back" href="#/mine">‹ My recipes</a>
+  <h1>${src ? 'Edit recipe' : 'New recipe'}</h1>
+  <form id="rform" data-key="${key}" data-est="${r.est?1:''}" onsubmit="return false">
+    <label class="field tfield"><span>Name</span><input id="rf-name" value="${esc(r.name||'')}" placeholder="e.g. Harissa traybake" autocomplete="off"></label>
+    <div class="fields three">
+      <label class="field sfield"><span>Main</span><select id="rf-tag">${TAGS.map(t => `<option ${t===r.tag?'selected':''}>${t}</option>`).join('')}</select></label>
+      <label class="field sfield"><span>Minutes</span><input id="rf-mins" inputmode="numeric" value="${esc(r.mins||'')}" placeholder="30"></label>
+      <label class="field sfield"><span>Serves</span><input id="rf-serves" inputmode="numeric" value="${esc(r.serves||1)}"></label>
+    </div>
+    <section class="card ingcard"><div class="xhead"><b>Ingredients</b><span class="small">for the whole dish</span></div>
+      <div id="ings">${r.i.map(x => ingRow(...x)).join('')}</div>
+      <datalist id="ingnames">${names.map(n => `<option value="${esc(n)}">`).join('')}</datalist>
+      <button type="button" class="pill ghost" data-act="ingadd" style="margin-top:10px">+ Add ingredient</button>
+      <p class="small" style="margin:10px 0 0">Pick from the suggestions where you can — those are already matched to Aldi products. Leave the qty blank for things like salt and pepper.</p>
+    </section>
+    <p class="label" style="margin-top:22px">Method</p>
+    <textarea id="rf-m" class="rf-text" rows="5" placeholder="One step per line">${esc(r.m||'')}</textarea>
+    <div class="card" style="margin-top:18px">
+      <div class="xhead"><b>Macros per serving</b><button type="button" class="pill" data-act="ingest">Estimate from ingredients</button></div>
+      <div class="fields four">${mf('kcal','kcal')}${mf('p','Protein g')}${mf('c','Carbs g')}${mf('f','Fat g')}</div>
+      <p class="small" id="estnote" style="margin:10px 0 0">${r.est ? 'Estimated from the ingredients — change any number if you know better.' : 'Type them in, or let WhatsCooking estimate them from typical values.'}</p>
+    </div>
+    <label class="field tfield" style="margin-top:18px"><span>Recipe link (optional)</span><input id="rf-src" value="${esc(r.src||'')}" placeholder="https://…" autocomplete="off" autocapitalize="off" inputmode="url"></label>
+    <label class="field tfield"><span>Photo link (optional)</span><input id="rf-img" value="${esc(r.img||'')}" placeholder="https://…/photo.jpg" autocomplete="off" autocapitalize="off" inputmode="url"></label>
+    <label class="item check" style="cursor:pointer"><input type="checkbox" id="rf-pick" ${r.pick!==false?'checked':''}><span class="nm">Include it when picking a new week</span></label>
+    <div class="btns" style="margin-top:20px">
+      <button type="button" class="pill" data-act="rsave">Save recipe</button>
+      <button type="button" class="pill ghost" data-act="rsaveadd">Save and add to this week</button>
+      ${src ? `<button type="button" class="pill ghost danger" data-act="rdel">Delete</button>` : ''}
+    </div>
+  </form>`;
+}
+function readForm(){
+  const v = id => ($(id) ? $(id).value : '').trim();
+  const i = [...document.querySelectorAll('#ings .ing')].map(row => [row.querySelector('.ing-n').value.trim(), row.querySelector('.ing-q').value.trim(), row.querySelector('.ing-u').value]);
+  return { name:v('rf-name'), tag:v('rf-tag'), mins:v('rf-mins'), serves:v('rf-serves'), i, m:$('rf-m') ? $('rf-m').value : '',
+    kcal:v('rf-kcal'), p:v('rf-p'), c:v('rf-c'), f:v('rf-f'), src:v('rf-src'), img:v('rf-img'), pick:$('rf-pick') ? $('rf-pick').checked : true, est:!!($('rform') && $('rform').dataset.est) };
+}
+// form values → per-portion ingredient list (or an error message)
+function formIngs(d){
+  const serves = Math.max(1, Math.min(20, Math.round(parseFloat(d.serves) || 1)));
+  const out = [];
+  for (const [n, qs, u] of d.i){ if (!n) continue;
+    const q = qs === '' ? 0 : parseQty(qs);
+    if (!isFinite(q) || q < 0) return { err:`Check the amount for ${n}` };
+    const per = Math.round(q / serves * 1000) / 1000;
+    out.push([n, per, u, guessAisle(n, u, q)]); }
+  return { serves, ings:out };
+}
+function runEstimate(){
+  const d = readForm(), fi = formIngs(d); if (fi.err){ toast(fi.err); return null; }
+  if (!fi.ings.length){ toast('Add some ingredients first'); return null; }
+  const e = estimate(fi.ings);
+  ['kcal','p','c','f'].forEach(k => { $('rf-'+k).value = e[k]; });
+  $('rform').dataset.est = '1';
+  $('estnote').innerHTML = `Estimated from ${e.hit} of ${e.counted} ingredients using typical values${e.missed.length ? ` — couldn't work out <b>${e.missed.map(esc).join(', ')}</b>, so add those yourself if they matter` : ''}. Change any number if you know better.`;
+  draftSave(); return e;
+}
+function saveRecipe(andAdd){
+  const f = $('rform'); if (!f) return;
+  const d = readForm(); if (!d.name){ toast('Give it a name'); $('rf-name').focus(); return; }
+  const fi = formIngs(d); if (fi.err){ toast(fi.err); return; }
+  if (!fi.ings.length){ toast('Add at least one ingredient'); return; }
+  let mac = { kcal:parseFloat(d.kcal), p:parseFloat(d.p), c:parseFloat(d.c), f:parseFloat(d.f) }, est = d.est;
+  if (!(mac.kcal > 0)){ const e = runEstimate(); if (!e || e.kcal < 80){ toast('Add the calories per serving'); $('rf-kcal').focus(); return; } mac = e; est = true; }
+  ['p','c','f'].forEach(k => { if (!(mac[k] >= 0)) mac[k] = 0; });
+  const id = f.dataset.key === 'new' ? 'my-' + Date.now().toString(36) + Math.random().toString(36).slice(2,5) : f.dataset.key;
+  const link = u => /^https?:\/\/\S+$/i.test(u) ? u : '';
+  const r = { id, name:d.name.slice(0,80), tag:TAGS.includes(d.tag) ? d.tag : 'other', kcal:Math.round(mac.kcal), p:Math.round(mac.p), c:Math.round(mac.c), f:Math.round(mac.f),
+    ...(parseInt(d.mins) > 0 ? { mins:parseInt(d.mins) } : {}), serves:fi.serves, i:fi.ings,
+    m:d.m.split('\n').map(s => s.replace(/^\s*(\d+[.)]|[-•*])\s*/, '').trim()).filter(Boolean),
+    ...(link(d.src) ? { src:link(d.src) } : {}), ...(link(d.img) ? { img:link(d.img) } : {}),
+    by:'Yours', mine:true, pick:d.pick, ...(est ? { est:true } : {}) };
+  if (!r.m.length) r.m = ['No method added yet — tap Edit recipe to add the steps.'];
+  delete catCache[r.id];
+  put('mine.' + id, r); save(); draftClear();
+  if (andAdd){ cookAgain(id); return; }
+  location.hash = '#/mine'; toast(f.dataset.key === 'new' ? `Saved ${r.name}` : 'Recipe updated');
+}
+
+// ---------- Dessert ----------
+function dessertBento(){
+  const list = sweetsList();
+  return `<section class="bento dessert"><div class="bhead"><b>Dessert</b>${list.length?`<span class="small">${list.length}</span>`:''}</div>
+    ${list.length ? `<div class="dlist">${list.map((r,k) => `<a class="drow" href="#/sweet/${r.id}" style="${gradStyle(r,k+3)}"><span class="tile grad">${imgTag(r,'')}</span>
+        <span class="rbody"><span class="rtitle">${esc(r.name)}</span><span class="rmeta">≈${k0(r.kcal)} kcal a serving · serves ${r.serves}${isLoved(r.id)?' · <span class="lovedot">♥</span>':''}</span></span>
+        <button class="bx" data-act="sweet" data-id="${r.id}" aria-label="Remove ${esc(r.name)}">✕</button></a>`).join('')}</div>`
+      : `<span class="small">${D.length ? 'Pick something sweet for the week.' : 'Turn on Household sync in Macros to load the dessert recipes.'}</span>`}
+    ${D.length ? `<a class="pill ${list.length?'ghost':''} dpick" href="#/sweets">${list.length ? '+ Another dessert' : 'Choose a dessert'}</a>` : ''}</section>`;
+}
+let DF = '';
+function sweetList(){
+  const words = DF.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  let list = D.filter(r => !words.length || words.every(w => (r.name + ' ' + r.i.map(x => x[0]).join(' ')).toLowerCase().includes(w)));
+  list.sort((a,b) => (isLoved(b.id) - isLoved(a.id)) || a.name.localeCompare(b.name));
+  if (!list.length) return `<p class="small" style="padding:18px 0">Nothing matches “${esc(DF)}”.</p>`;
+  const nl = list.filter(r => isLoved(r.id)).length;
+  return list.map((r,k) => `${k===0 && nl ? '<p class="label plabel">♥ Loved</p>' : ''}${k===nl && nl ? '<p class="label plabel">Everything else</p>' : ''}<div class="row prow ${S.sweets[r.id]?'active':''}" role="button" tabindex="0" data-act="sweet" data-id="${r.id}" style="${gradStyle(r,k)}">
+      <div class="tile grad">${imgTag(r,'')}</div>
+      <div class="rbody"><div class="rday">serves ${r.serves}${r.mins?` · ${r.mins} min`:''}${S.sweets[r.id]?' · <b>this week</b>':''}</div><div class="rtitle">${esc(r.name)}</div>
+      <div class="rmeta">≈${k0(r.kcal)} kcal · ${k0(r.p)}g protein a serving</div></div>
+      ${heartBtn(r.id)}<span class="chev">${S.sweets[r.id]?'✓':'+'}</span></div>`).join('');
+}
+function viewSweets(){
+  return `<a class="back" href="#/">‹ This week</a><h1>Desserts</h1>
+  <div class="sub">${D.length} sweet recipes from Mob · tap one to add it to this week</div>
+  <div class="addrow pickbar"><input id="dq" type="search" placeholder="Search desserts or ingredients" value="${esc(DF)}" autocomplete="off" enterkeyhint="search"></div>
+  <div id="dlist">${sweetList()}</div>`;
+}
+function viewSweet(id){
+  const r = sweetById(id); if (!r) return viewSweets();
+  const on = !!S.sweets[id];
+  return `<a class="back" href="#/">‹ This week</a>
+  <div style="${gradStyle(r,3)}">
+    ${photoOf(r) ? `<div class="banner grad">${imgTag(r,'')}</div>` : ''}
+    <div class="rhead"><div><div class="label" style="margin:2px 0 4px">Dessert · serves ${r.serves}${r.mins?` · ${r.mins} min`:''}</div><h1>${esc(r.name)}</h1></div>${heartBtn(r.id,'big')}</div>
+    <div class="sub" style="margin-top:0">${macroLine(r)} a serving</div>
+    <div class="btns" style="margin:0 0 24px"><button class="pill" data-act="sweet" data-id="${r.id}" data-stay="1">${on ? 'Remove from this week' : 'Add to this week'}</button>
+      <a class="pill ghost" href="${esc(r.src)}" target="_blank" rel="noopener">Method on Mob ↗</a></div>
+    <div class="card"><b>Ingredients</b><span class="small"> · whole recipe</span>
+      ${r.i.map(([nm,q,u]) => `<div class="item" style="cursor:default"><span class="nm">${esc(nm)}</span><span class="q">${portion(q,u,1,r.serves)}</span></div>`).join('')}</div>
+  </div>`;
+}
+
+// ---------- Choose a dinner from every recipe ----------
+const isLoved = id => !!S.loved[id];
+const HEART_SVG = on => `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.4C1.4 7.6 3.6 4.5 7 4.5c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.4 0 5.6 3.1 4.3 6.6-1.8 4.8-9.3 9.4-9.3 9.4z" fill="${on?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>`;
+const heartBtn = (id, cls='') => `<button class="heart ${cls} ${isLoved(id)?'on':''}" data-act="love" data-id="${id}" aria-pressed="${isLoved(id)}" aria-label="${isLoved(id)?'Remove from loved':'Love this dish'}" title="${isLoved(id)?'Loved':'Love it'}">${HEART_SVG(isLoved(id))}</button>`;
+const allRecipes = () => [...R.filter(r => !r.hidden), ...mineList()];
+let PF = { q:'', tag:'all' };
+function pickList(i){
+  const q = PF.q.trim().toLowerCase(), words = q.split(/\s+/).filter(Boolean);
+  let list = allRecipes().filter(r => PF.tag === 'all' || (PF.tag === 'yours' ? r.mine : PF.tag === 'loved' ? isLoved(r.id) : r.tag === PF.tag));
+  if (words.length) list = list.filter(r => { const hay = (r.name + ' ' + r.tag + ' ' + (r.by||'') + ' ' + r.i.map(x => x[0]).join(' ')).toLowerCase(); return words.every(w => hay.includes(w)); });
+  list.sort((a,b) => (isLoved(b.id) - isLoved(a.id)) || a.name.localeCompare(b.name));   // loved dishes first
+  if (!list.length) return `<p class="small" style="padding:18px 0">${PF.tag==='loved' && !q ? 'Nothing loved yet — tap the heart on a dish you love.' : `Nothing matches${q ? ` “${esc(PF.q)}”` : ''}.`}</p>`;
+  const nl = list.filter(r => isLoved(r.id)).length;
+  return list.map((r,k) => { const m = scaled(r), d = S.plan.indexOf(r.id);
+    return `${k===0 && nl && PF.tag!=='loved' ? '<p class="label plabel">♥ Loved</p>' : ''}${k===nl && nl && PF.tag!=='loved' ? '<p class="label plabel">Everything else</p>' : ''}<div class="row prow ${d===i?'active':''}" role="button" tabindex="0" data-act="setday" data-i="${i}" data-id="${r.id}" style="${gradStyle(r,k)}">
+      <div class="tile grad">${imgTag(r,'')}</div>
+      <div class="rbody"><div class="rday">${esc(r.tag)}${r.by?` · ${esc(r.by)}`:''}${d>=0?` · <b>on ${DAYS[d]}</b>`:''}</div><div class="rtitle">${esc(r.name)}</div>
+      <div class="rmeta">≈${k0(m.kcal)} kcal · ${k0(m.p)}g protein${r.mins?` · ${r.mins} min`:''}</div></div>
+      ${heartBtn(r.id)}<span class="chev">›</span></div>`; }).join('');
+}
+function viewPick(i){
+  if (!(i >= 0 && i < 5)) return viewWeek();
+  const cur = byId(S.plan[i]), tags = ['all', ...TAGS.filter(t => allRecipes().some(r => r.tag === t))];
+  tags.splice(1, 0, 'loved'); if (mineList().length) tags.push('yours');
+  return `<a class="back" href="#/">‹ This week</a>
+  <h1>${DAYS[i]}</h1>
+  <div class="sub">Pick a dinner from all ${allRecipes().length} recipes${cur ? ` · now: ${esc(cur.name)}` : ''}</div>
+  <div class="addrow pickbar"><input id="pq" type="search" placeholder="Search recipes or ingredients" value="${esc(PF.q)}" autocomplete="off" enterkeyhint="search">
+    <button class="pill" data-act="swap" data-i="${i}" title="Random dinner">${SHUF_SVG} Random</button></div>
+  <div class="chips">${tags.map(t => `<button class="fchip ${PF.tag===t?'on':''}" data-act="pf" data-tag="${t}">${t==='all'?'All':t==='yours'?'Yours':t==='loved'?'♥ Loved':t}</button>`).join('')}</div>
+  <div id="plist">${pickList(i)}</div>`;
+}
+function setDay(i, id){
+  const plan = [...S.plan], j = plan.indexOf(id);
+  if (j >= 0 && j !== i){ plan[j] = plan[i]; put('cooked.'+j, false); }   // already in the week: swap the two nights
+  plan[i] = id; put('plan', plan); put('cooked.'+i, false); untickAll(); save();
+  location.hash = '#/'; toast(`${DAYS[i]}: ${byId(id).name}${j>=0 && j!==i ? ` (swapped with ${DAYS[j]})` : ''}`);
+}
+
+// ---------- Router ----------
+function route(){
+  const h=location.hash.replace(/^#\/?/,''), [p,arg]=h.split('/');
+  const name = p==='shop'?'shop':p==='macros'?'macros':p==='mine'?'mine':(p==='archive'||p==='past')?'archive':'week';
+  document.querySelectorAll('.tab').forEach(a=>{ const on=a.dataset.r===name; a.classList.toggle('on',on); if(on) $('modelabel').textContent=a.querySelector('b').textContent; });
+  menu(false);
+  const parts = h.split('/');
+  $('app').innerHTML = p==='recipe' ? viewRecipe(+arg) : p==='shop' ? viewShop() : p==='macros' ? viewMacros() : p==='archive' ? viewArchive(arg) : p==='pick' ? viewPick(+arg) : p==='sweets' ? viewSweets() : p==='sweet' ? viewSweet(arg) : p==='mine' ? (arg==='new' ? viewEditor(null) : arg==='edit' ? viewEditor(parts[2]) : viewMine()) : p==='past' ? viewPast(parts[1], +parts[2]) : viewWeek();
+  document.title = (p==='shop'?'Shopping':p==='macros'?'Macros':p==='mine'?'My recipes':name==='archive'?'Past weeks':weekRange()) + ' – WhatsCooking';
+  if (p==='mine' && arg==='new' && !$('rf-name').value) $('rf-name').focus();
+}
+addEventListener('hashchange', ()=>{ route(); scrollTo(0,0); });
+// mode menu in the top bar
+function menu(open){ const m=document.querySelector('.mode'); if(!m) return; m.classList.toggle('open',open); $('modebtn').setAttribute('aria-expanded',open); }
+$('modebtn').addEventListener('click', e=>{ e.stopPropagation(); const open=!document.querySelector('.mode').classList.contains('open'); menu(open); if(open) document.querySelector('.tab.on')?.focus(); });
+$('menu').addEventListener('click', e=>{ if(e.target.closest('.tab')) menu(false); });
+document.addEventListener('click', e=>{ if(!e.target.closest('.mode')) menu(false); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape' && document.querySelector('.mode.open')){ menu(false); $('modebtn').focus(); } });
+
+// ---------- Events ----------
+let justDragged=false;
+$('app').addEventListener('click', e=>{
+  if (justDragged){ e.preventDefault(); justDragged=false; return; }
+  const slot=e.target.closest('[data-slot]');
+  if (slot){ e.preventDefault(); if(e.target.closest('.lslot')) setLunch(+slot.dataset.slot,true); return; }
+  if (e.target.closest('.sticker')){ e.preventDefault(); return; }
+  const b=e.target.closest('[data-act]'); if(!b) return; e.preventDefault();
+  const i=+b.dataset.i, a=b.dataset.act;
+  if(a==='gen'){ generate(); toast('New week picked'); if(location.hash.includes('macros')) location.hash='#/'; }
+  if(a==='swap'){ if(S.locked[i]){ toast(DAYS[i]+' is locked'); return; } swap(i); if(location.hash.startsWith('#/pick')) location.hash='#/'; }
+  if(a==='choose'){ PF={q:'',tag:'all'}; location.hash='#/pick/'+i; }
+  if(a==='setday') setDay(i, b.dataset.id);
+  if(a==='sweet'){ const id=b.dataset.id, on=!S.sweets[id], r=sweetById(id); put('sweets.'+id, on); save();
+    toast(on ? `${r ? r.name : 'Dessert'} added — ingredients are on the shopping list` : 'Dessert removed');
+    if(on && location.hash.startsWith('#/sweets')) location.hash='#/'; else route(); }
+  if(a==='love'){ const id=b.dataset.id, on=!isLoved(id); put('loved.'+id, on); save();
+    const r=byId(id)||sweetById(id); toast(on ? `♥ Loved ${r ? r.name : ''}` : 'Removed from loved');
+    if($('plist')) $('plist').innerHTML=pickList(+location.hash.split('/')[2]); else if($('dlist')) $('dlist').innerHTML=sweetList(); else route(); }
+  if(a==='pf'){ PF.tag=b.dataset.tag; document.querySelectorAll('.fchip').forEach(c=>c.classList.toggle('on',c.dataset.tag===PF.tag)); $('plist').innerHTML=pickList(+location.hash.split('/')[2]); }
+  if(a==='cook'){ put('cooked.'+i,!S.cooked[i]); save(); route(); if(S.cooked[i]) toast(DAYS[i]+' cooked'); }
+  if(a==='lock'){ put('locked.'+i,!S.locked[i]); save(); route(); toast(S.locked[i] ? `${DAYS[i]} locked — it stays when you shuffle` : `${DAYS[i]} unlocked`); }
+  if(a==='lunch') setLunch(i,!S.lunch[i]);
+  if(a==='untick'){ untickAll(); Object.entries(S.extras).forEach(([id,v])=>{ if(v&&v.done) put('extras.'+id,{...v,done:false}); }); save(); route(); }
+  if(a==='addx') addExtra();
+  if(a==='addcat') addExtra(b.dataset.cat);
+  if(a==='delx'){ put('extras.'+b.dataset.id,null); save(); route(); }
+  if(a==='checkx') checkExtras(false);
+  if(a==='again') cookAgain(b.dataset.id);
+  if(a==='mineadd') cookAgain(b.dataset.id);
+  if(a==='ingadd'){ $('ings').insertAdjacentHTML('beforeend', ingRow('','','g')); const rows=$('ings').querySelectorAll('.ing'); rows[rows.length-1].querySelector('.ing-n').focus(); draftSave(); }
+  if(a==='ingdel'){ const row=b.closest('.ing'); if($('ings').children.length>1) row.remove(); else row.querySelectorAll('input').forEach(x=>x.value=''); draftSave(); }
+  if(a==='ingest') runEstimate();
+  if(a==='rsave') saveRecipe(false);
+  if(a==='rsaveadd') saveRecipe(true);
+  if(a==='rdel'){ const id=$('rform').dataset.key, r=S.mine[id]; if(!r || !confirm(`Delete ${r.name}? Past weeks that used it keep it.`)) return;
+    put('mine.'+id, {...r, deleted:true}); save(); draftClear(); location.hash='#/mine'; toast('Recipe deleted'); }
+  if(a==='altx'){ const id=b.dataset.id, v=S.extras[id], c=candidates(v.t); if(c.length<2){ toast('No other matches'); return; }
+    const i=c.findIndex(o=>o.key===v.m), nx=c[(i+1)%c.length]; const nv={...v, m:nx.key}; delete nv.p; put('extras.'+id, nv); save(); route(); toast(nx.n+(nx.sz?' · '+nx.sz:'')); }
+  if(a==='xprice'){ const id=b.dataset.id, v=S.extras[id], x=extraInfo(v), unit=x.cost!=null?x.cost/x.qty:null;
+    const r=prompt(`${v.t}${x.qty>1?` (price for one, ×${x.qty})`:''}\nWhat does it cost? (leave blank to reset)`, unit!=null?unit.toFixed(2):'');
+    if(r===null) return; const nv={...v}; if(String(r).trim()===''){ delete nv.p; } else { const n=parseFloat(String(r).replace('£','')); if(!isFinite(n)||n<0) return; nv.p=n; }
+    put('extras.'+id, nv); save(); route(); }
+  if(a==='syncon'){
+    const repo=$('syncRepo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\/$/,''), token=$('syncToken').value.trim();
+    if(!/^[\w.-]+\/[\w.-]+$/.test(repo) || !token){ toast('Add the repo and token'); return; }
+    SY.cfg={repo,token}; try{ localStorage.setItem('wc-sync', JSON.stringify(SY.cfg)); }catch(e){}
+    route(); syncNow(); loadPrivate();
+  }
+  if(a==='syncnow') syncNow();
+  if(a==='syncoff'){ if(!confirm('Stop syncing on this device? Your week stays here.')) return; SY.cfg=null; try{ localStorage.removeItem('wc-sync'); }catch(e){} setSync('off'); route(); }
+  if(a==='price'){
+    const k=b.dataset.key, l=b.dataset.label, pr=P[k], cur=priceOf(k,l, l==='kg'?pr.perKg:(pr.packs.find(x=>x[2]===l)||[])[1]);
+    const v=prompt(`${pr.n} — ${l==='kg'?'price per kg':l}\nWhat did it cost? (leave blank to reset)`, cur.toFixed(2));
+    if(v===null) return; const x=parseFloat(String(v).replace('£',''));
+    if(String(v).trim()==='') put('prices.'+k+'|'+l,null); else if(isFinite(x)&&x>=0) put('prices.'+k+'|'+l,x); else return;
+    save(); route();
+  }
+  if(a==='copy'){
+    const rows=shopRows(), t=totals(rows), g=shopping();
+    const txt=['A','S'].map(sh=>{ const l=rows.filter(r=>r.shop===sh); if(!l.length) return '';
+      return SHOP[sh].toUpperCase()+` (${gbp(t[sh])})\n`+l.map(r=>`- ${r.prod?r.prod.n:r.name} — ${packStr(r.bp)} ${r.bp?gbp(r.bp.cost):''}`).join('\n'); }).filter(Boolean).join('\n\n')
+      +(extrasList().length?'\n\nALSO\n'+extrasList().map(([,v])=>{ const x=extraInfo(v); return '- '+v.t+(x.it?` (${x.it.n})`:'')+(x.cost!=null?' '+gbp(x.cost):''); }).join('\n'):'')
+      +(g.S?'\n\nCHECK YOU HAVE\n'+[...new Set(g.S.map(x=>x.name))].map(x=>'- '+x).join('\n'):'')+`\n\nEstimated total ${gbp(t.all)}`;
+    navigator.clipboard.writeText(txt).then(()=>toast('List copied')).catch(()=>toast('Copy failed'));
+  }
+
+});
+$('app').addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.id==='xtra'){ e.preventDefault(); addExtra(); return; }
+  if(e.key==='Enter' && e.target.classList.contains('bin')){ e.preventDefault(); addExtra(e.target.dataset.cat); return; }
+  if((e.key==='Enter'||e.key===' ') && e.target.classList.contains('prow')){ e.preventDefault(); e.target.click(); return; }
+  const t=e.target; if(e.key!=='Enter' || !t.closest('#rform') || t.tagName==='TEXTAREA') return; e.preventDefault();
+  if(t.classList.contains('ing-n')) t.closest('.ing').querySelector('.ing-q').focus();
+  else if(t.classList.contains('ing-q')){ const row=t.closest('.ing'), nx=row.nextElementSibling;
+    if(nx) nx.querySelector('.ing-n').focus(); else { $('ings').insertAdjacentHTML('beforeend', ingRow('','','g')); $('ings').lastElementChild.querySelector('.ing-n').focus(); } }
+});
+function addExtra(cat){
+  const el = cat ? document.querySelector(`.bin[data-cat="${cat}"]`) : $('xtra'); const t=el && el.value.trim(); if(!t) return;
+  const v = matchExtra({t, done:false, ...(cat ? {cat} : {})}), it = v.m ? byKey(v.m) : null;
+  put('extras.'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), v); save(); route();
+  (cat ? document.querySelector(`.bin[data-cat="${cat}"]`) : $('xtra'))?.focus(); toast(it ? `Added ${t} — ${gbp(extraInfo(v).cost)} at ${SHOP[it.shop||'A']}` : `Added ${t} — no match, tap £ to price it`);
+}
+const extrasList = () => Object.entries(S.extras).filter(([,v])=>v && v.t);
+$('app').addEventListener('change', e=>{
+  if(e.target.id==='shoplock'){ const v=+e.target.value, on=!!S.shopDone;
+    if(!on && v>=85){ put('shopDone', true); save(); route(); toast('Shop done — list locked'); }
+    else if(on && v<=15){ put('shopDone', false); save(); route(); toast('List unlocked'); }
+    else { const el=e.target; el.value=on?100:0; el.parentElement.style.setProperty('--v', el.value); }
+    return; }
+  if(e.target.closest('#rform')){ draftSave(); return; }
+  const x=e.target.dataset.extra; if(x){ put('extras.'+x,{...S.extras[x],done:e.target.checked}); save(); route(); return; }
+  const k=e.target.dataset.key; if(!k) return; put('ticked.'+k,e.target.checked); save(); route();
+});
+$('app').addEventListener('input', e=>{
+  if(e.target.id==='shoplock'){ e.target.parentElement.style.setProperty('--v', e.target.value); return; }
+  if(e.target.id==='dq'){ DF=e.target.value; $('dlist').innerHTML=sweetList(); return; }
+  if(e.target.id==='pq'){ PF.q=e.target.value; $('plist').innerHTML=pickList(+location.hash.split('/')[2]); return; }
+  if(e.target.closest('#rform')){ const t=e.target;
+    if(t.classList.contains('rf-m')) $('rform').dataset.est='';
+    if(t.classList.contains('ing-n')){ const k=knownIngs()[t.value.trim()], row=t.closest('.ing');
+      if(k && !row.querySelector('.ing-q').value) row.querySelector('.ing-u').value=k.u; }
+    draftSave(); return; }
+  const id=e.target.id; if(!(id in S.settings)) return;
+  const v=parseFloat(e.target.value); if(!isFinite(v)||v<=0) return;
+  put('settings.'+id,v); save(); const el=$('tgt'); if(el) el.innerHTML=tgt(targets());
+});
+function setLunch(i,on,quiet){ put('lunch.'+i,on); save(); route(); if(!quiet) toast(on?`Lunch added to ${DAYS[i]}`:`Lunch removed from ${DAYS[i]}`); }
+
+let drag=null;
+$('app').addEventListener('pointerdown', e=>{
+  const st=e.target.closest('.sticker[data-from]'); if(!st || e.button>0) return;
+  e.preventDefault(); st.setPointerCapture?.(e.pointerId);
+  drag={from:st.dataset.from, x:e.clientX, y:e.clientY, moved:false, el:null, src:st, target:null};
+});
+addEventListener('pointermove', e=>{
+  if(!drag) return;
+  if(!drag.moved && Math.hypot(e.clientX-drag.x, e.clientY-drag.y) < 6) return;
+  if(!drag.moved){ drag.moved=true; drag.el=drag.src.cloneNode(true); drag.el.classList.add('float'); document.body.appendChild(drag.el); drag.src.style.opacity=.25; }
+  drag.el.style.left=(e.clientX-30)+'px'; drag.el.style.top=(e.clientY-16)+'px';
+  const over=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-i]');
+  if(drag.target && drag.target!==over) drag.target.classList.remove('drop');
+  drag.target=over||null; if(over) over.classList.add('drop');
+});
+function endDrag(e){
+  if(!drag) return; const d=drag; drag=null;
+  d.el?.remove(); d.src.style.opacity=''; d.target?.classList.remove('drop');
+  justDragged=true; setTimeout(()=>justDragged=false,350);
+  if(!d.moved){ if(d.from!=='tray') setLunch(+d.from,false); else toast('Drag me onto a dinner'); return; }
+  const to = d.target ? +d.target.dataset.i : null, from = d.from==='tray' ? null : +d.from;
+  if (to===null){ if(from!==null) setLunch(from,false); return; }
+  if (from!==null && from!==to) put('lunch.'+from,false);
+  setLunch(to,true);
+}
+addEventListener('pointerup', endDrag); addEventListener('pointercancel', endDrag);
+
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),1600); }
+
+// ---------- Live sync between tabs/windows ----------
+let lastSaved = null;
+function resync(){
+  const raw = (()=>{ try{ return localStorage.getItem('wc'); }catch(e){ return null; } })();
+  if (!raw || raw === lastSaved) return; lastSaved = raw;
+  const next = norm(JSON.parse(raw)); if (next.plan.length !== 5) return;
+  S = next;
+  const f = document.activeElement;
+  if (f && f.tagName === 'INPUT' && f.type === 'number') return;   // don't interrupt typing in Macros
+  if ($('rform')) return;                                            // or a recipe being built
+  route();
+}
+addEventListener('storage', e => { if (e.key === 'wc') resync(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) resync(); });
+addEventListener('pageshow', resync);
+addEventListener('focus', resync);
+
+// ---------- Household sync via a private GitHub repo ----------
+const SY = { cfg:(()=>{ try{ return JSON.parse(localStorage.getItem('wc-sync')); }catch(e){ return null; } })(), sha:null, state:'off', last:null, busy:false, again:false, t:null };
+const FILE = 'whatscooking.json', PRIV = 'recipes-private.json';
+function addPrivate(list){ if(!Array.isArray(list)) return 0; let n=0; list.forEach(r=>{ if(r && r.id && !R.some(x=>x.id===r.id)){ R.push(r); n++; } }); return n; }
+(()=>{ try{ addPrivate(JSON.parse(localStorage.getItem('wc-priv')||'[]')); }catch(e){} })();
+let PHOTOS = (()=>{ try{ return JSON.parse(localStorage.getItem('wc-photos')||'{}'); }catch(e){ return {}; } })();
+const photoOf = r => r && (PHOTOS[r.id] || r.img) || '';
+const imgTag = (r, cls) => { const u = photoOf(r); return u ? `<img class="${cls}" src="${esc(u)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">` : ''; };
+// Desserts (private Mob list): separate from dinners, chosen in the Dessert box
+let D = (()=>{ try{ return JSON.parse(localStorage.getItem('wc-priv-d')||'[]'); }catch(e){ return []; } })();
+const sweetById = id => D.find(r => r.id === id);
+const sweetsList = () => Object.keys(S.sweets).filter(id => S.sweets[id]).map(sweetById).filter(Boolean);
+const isSweetIng = n => sweetsList().some(r => r.i.some(x => x[0] === n));
+async function loadPrivate(){
+  if(!SY.cfg) return;
+  try{
+    const r = await fetch(`https://api.github.com/repos/${SY.cfg.repo}/contents/${PRIV}`, { cache:'no-store', headers:{ Authorization:'Bearer '+SY.cfg.token, Accept:'application/vnd.github+json' } });
+    if (r.status !== 200) return;
+    const pj = JSON.parse(b64d((await r.json()).content)), list = pj.recipes || [];
+    try{ localStorage.setItem('wc-priv', JSON.stringify(list)); }catch(e){}
+    let added = addPrivate(list);
+    if (Array.isArray(pj.desserts) && JSON.stringify(pj.desserts) !== JSON.stringify(D)){ D = pj.desserts; added = true; try{ localStorage.setItem('wc-priv-d', JSON.stringify(D)); }catch(e){} }
+    let newPhotos = false;
+    const ph = await fetch(`https://api.github.com/repos/${SY.cfg.repo}/contents/photos.json`, { cache:'no-store', headers:{ Authorization:'Bearer '+SY.cfg.token, Accept:'application/vnd.github+json' } });
+    if (ph.status === 200){ const map = JSON.parse(b64d((await ph.json()).content)).photos || {};
+      newPhotos = JSON.stringify(map) !== JSON.stringify(PHOTOS); PHOTOS = map; try{ localStorage.setItem('wc-photos', JSON.stringify(map)); }catch(e){} }
+    if (added || newPhotos) { const f=document.activeElement; if(!(f && f.tagName==='INPUT') && !$('rform')) route(); }
+  }catch(e){}
+}
+const b64e = t => btoa(unescape(encodeURIComponent(t)));
+const b64d = t => decodeURIComponent(escape(atob(t.replace(/\s/g,''))));
+function gh(method, body){
+  return fetch(`https://api.github.com/repos/${SY.cfg.repo}/contents/${FILE}`, { method, cache:'no-store',
+    headers:{ Authorization:'Bearer '+SY.cfg.token, Accept:'application/vnd.github+json' }, body: body ? JSON.stringify(body) : undefined });
+}
+function allPaths(){
+  const ps=['plan','week','shopDone']; Object.keys(S.history).forEach(k=>ps.push('history.'+k)); Object.keys(S.settings).forEach(k=>ps.push('settings.'+k));
+  for(let i=0;i<5;i++) ps.push('cooked.'+i,'locked.'+i,'lunch.'+i);
+  ['ticked','prices','extras','mine','loved','sweets'].forEach(a=>Object.keys(S[a]).forEach(k=>ps.push(a+'.'+k)));
+  return ps;
+}
+// take whichever side changed each piece most recently
+function mergeIn(remote){
+  let changed=false;
+  for (const [path,t] of Object.entries(remote._mt||{})){
+    if (S._mt[path] >= t) continue;
+    const v = getP(remote,path); setP(S, path, v===undefined ? null : JSON.parse(JSON.stringify(v))); S._mt[path]=t; changed=true;
+  }
+  return changed;
+}
+const needsPush = remote => Object.entries(S._mt).some(([p,t]) => !((remote._mt||{})[p] >= t));
+function queuePush(){ if(!SY.cfg) return; clearTimeout(SY.t); SY.t=setTimeout(syncNow, 1200); }
+async function syncNow(){
+  if(!SY.cfg) return; if(SY.busy){ SY.again=true; return; }
+  SY.busy=true; setSync('syncing');
+  try{
+    for (let attempt=0; attempt<3; attempt++){
+      const r = await gh('GET'); let remote=null;
+      if (r.status===200){ const j=await r.json(); SY.sha=j.sha; remote=norm(JSON.parse(b64d(j.content))); }
+      else if (r.status===404){ SY.sha=null; const now=Date.now(); allPaths().forEach(p=>{ if(S._mt[p]==null || S._mt[p]===0) S._mt[p]=now; }); }
+      else if (r.status===401||r.status===403){ setSync('auth'); return; }
+      else throw new Error('GET '+r.status);
+      if (remote && mergeIn(remote)){ migrateWeeks(); save(false); const f=document.activeElement; if(!(f && f.tagName==='INPUT') && !$('rform')) route(); }
+      if (remote && !needsPush(remote)){ setSync('ok'); return; }
+      const w = await gh('PUT', { message:'Sync '+new Date().toISOString(), content:b64e(JSON.stringify(S)), ...(SY.sha?{sha:SY.sha}:{}) });
+      if (w.status===200||w.status===201){ SY.sha=(await w.json()).content.sha; setSync('ok'); return; }
+      if (w.status===409||w.status===422) continue;          // the other phone saved first: pull, merge, try again
+      if (w.status===401||w.status===403){ setSync('auth'); return; }
+      throw new Error('PUT '+w.status);
+    }
+    setSync('ok');
+  } catch(e){ setSync('offline'); }
+  finally { SY.busy=false; rollover(); if(SY.again){ SY.again=false; setTimeout(syncNow,300); } }
+}
+function syncText(){
+  return { off:'', syncing:'Syncing…', offline:'Offline — will retry', auth:"Token didn't work — check it has Contents read & write on that repo",
+    ok:'Synced ✓ '+(SY.last?SY.last.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'') }[SY.state];
+}
+function setSync(st){
+  SY.state=st; if(st==='ok') SY.last=new Date();
+  const b=$('syncbadge'); b.hidden=!SY.cfg; b.dataset.s=st; b.textContent={ok:'Synced',syncing:'Syncing',offline:'Offline',auth:'Sync error',off:''}[st];
+  const el=$('syncstatus'); if(el) el.textContent=syncText();
+}
+setInterval(()=>{ if(SY.cfg && !document.hidden) syncNow(); }, 15000);
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) return; if(SY.cfg){ syncNow(); loadPrivate(); } else rollover(); });
+addEventListener('online', ()=>{ if(SY.cfg) syncNow(); });
+
+if (migrateWeeks()) save();
+if (S.plan.length!==5 || S.plan.some(id=>!byId(id))) { S.locked=[]; S.cooked=[]; generate(true); } else route();
+if (!SY.cfg) rollover();
+if (SY.cfg){ syncNow(); loadPrivate(); }
+</script>
+</body>
+</html>
