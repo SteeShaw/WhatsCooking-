@@ -134,7 +134,7 @@ ol.method li::before{content:counter(s);flex:none;width:26px;height:26px;border-
 
 .toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(8px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:99px;font-size:14px;font-weight:600;opacity:0;transition:.2s;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%)}
-@media (max-width:480px){.brand{font-size:18px}.modebtn{font-size:14px}}
+@media (max-width:480px){.sl-text{font-size:14px;padding:0 58px}.brand{font-size:18px}.modebtn{font-size:14px}}
 
 /* lunch stickers */
 .slot{flex:none;display:grid;place-items:center;min-width:74px;height:34px}
@@ -313,6 +313,24 @@ ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));colo
 .prow{background:none;border-left:0;border-right:0;border-top:0;font:inherit;color:inherit}
 .prow.active{background:var(--soft);border-radius:14px;padding-left:10px;padding-right:10px}
 .prow .rday b{color:var(--ink)}
+
+/* shop done slider */
+.slidelock{position:relative;height:58px;border-radius:99px;background:var(--soft);margin:14px 0 0;overflow:hidden;--v:0;transition:background .25s}
+.slidelock::before{content:"";position:absolute;top:0;bottom:0;left:0;width:calc(54px + (100% - 58px) * var(--v) / 100);background:var(--ok);opacity:.22;border-radius:inherit;pointer-events:none}
+.slidelock.on::before{opacity:0}
+.sl-text{position:absolute;inset:0;display:grid;place-items:center;font-weight:700;font-size:15px;white-space:nowrap;color:var(--muted);pointer-events:none;padding:0 66px;text-align:center;line-height:1.2}
+.slidelock input{position:absolute;top:4px;left:4px;width:calc(100% - 8px);height:50px;margin:0;-webkit-appearance:none;appearance:none;background:transparent;cursor:grab;touch-action:pan-y}
+.slidelock input:active{cursor:grabbing}
+.slidelock input::-webkit-slider-runnable-track{height:50px;background:transparent}
+.slidelock input::-moz-range-track{height:50px;background:transparent}
+.slidelock input::-webkit-slider-thumb{-webkit-appearance:none;width:50px;height:50px;border-radius:99px;border:0;background:var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E") center/22px no-repeat;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.slidelock input::-moz-range-thumb{width:50px;height:50px;border-radius:99px;border:0;background:var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E") center/22px no-repeat}
+.slidelock.on{background:var(--ok)}
+.slidelock.on .sl-text{color:#fff}
+.slidelock.on input::-webkit-slider-thumb{background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%230e9a5c' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/22px no-repeat}
+.slidelock.on input::-moz-range-thumb{background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%230e9a5c' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/22px no-repeat}
+.shopbody{transition:opacity .25s,filter .25s}
+.shopbody.locked{opacity:.4;filter:grayscale(1);pointer-events:none;user-select:none}
 </style>
 </head>
 <body>
@@ -560,7 +578,7 @@ const gbp = v => '£' + v.toFixed(2);
 // Aldi recipes (aldi.co.uk/recipes) — ingredients per portion, macros estimated from typical values
 const R_ALDI = [{"id":"aldi-cajun-chicken-pasta","name":"Creamy Cajun Chicken Pasta","tag":"chicken","kcal":620,"p":33,"c":63,"f":26,"mins":20,"i":[["Pasta",75,"g","C"],["Chicken breast",80,"g","M"],["Peppers",0.5,"","V"],["Onion",0.25,"","V"],["Cajun seasoning",0,"","S"],["Olive oil",1,"tsp","S"],["Garlic",0.5,"clove","V"],["Double cream",37.5,"ml","D"],["Chicken stock cube",0.125,"","C"],["Parmesan",7.5,"g","D"]],"m":["Boil the fusilli. Dust sliced chicken in Cajun seasoning and fry until golden and cooked; set aside.","Soften onion and peppers in the same pan with garlic and the rest of the spice, then add stock, cream and Parmesan.","Return the chicken and drained pasta, toss to coat and season."],"src":"https://www.aldi.co.uk/recipes/courses/mains/creamy-cajun-chicken-pasta","by":"Aldi","est":true},{"id":"aldi-chargrilled-chicken-couscous","name":"Chargrilled Chicken with Salsa & Fruity Couscous","tag":"chicken","kcal":570,"p":45,"c":47,"f":21,"mins":30,"i":[["Chicken breast",150,"g","M"],["Balsamic vinegar",0,"","S"],["Couscous",44,"g","C"],["Olive oil",2,"tsp","S"],["Avocado",0.25,"","V"],["Tomatoes",60,"g","V"],["Fresh herbs",5,"g","V"],["Raisins",12,"g","C"],["Pumpkin seeds",8,"g","C"]],"m":["Marinate the chicken in balsamic for 5 min; soak the couscous in just-boiled water for 10 min.","Fry the chicken 10–12 min, turning once; mix avocado, tomato, a little oil and coriander into a salsa.","Fluff the couscous with oil, raisins, pumpkin seeds and coriander and top with chicken and salsa."],"src":"https://www.aldi.co.uk/recipes/team-gb/chargrilled-chicken-with-salsa-fruity-couscous","by":"Aldi","est":true},{"id":"aldi-herb-crusted-salmon","name":"Herb-Crusted Salmon with Roast Tomatoes","tag":"fish","kcal":610,"p":38,"c":46,"f":29,"mins":45,"i":[["Salmon fillet",1,"","M"],["Cherry tomatoes",125,"g","V"],["Chopped tomatoes",0.125,"tin","C"],["Bread",0.5,"slice","C"],["Olive oil",1.5,"tsp","S"],["Parmesan",5,"g","D"],["Fresh herbs",3,"g","V"],["New potatoes",200,"g","V"]],"m":["Roast cherry and tinned tomatoes with a pinch of sugar and basil at 200°C for 15 min; boil the new potatoes.","Blitz stale bread with oil, Parmesan and basil and press onto the salmon.","Bake the salmon on the tray for 10 min until crisp; serve over the tomatoes with potatoes."],"src":"https://www.aldi.co.uk/recipes/team-gb/herb-crusted-salmon-with-tomatoes","by":"Aldi","est":true},{"id":"aldi-stir-fried-beef-veg","name":"Stir-Fried Beef with Crunchy Veg & Noodles","tag":"beef","kcal":460,"p":34,"c":45,"f":16,"mins":20,"i":[["Sirloin steak",125,"g","M"],["Honey",1,"tbsp","S"],["Soy sauce",1,"tbsp","S"],["Cucumber",0.125,"","V"],["Carrots",0.5,"","V"],["Spring onions",2,"","V"],["Ginger",1,"tsp","V"],["Fresh chilli",0.25,"","V"],["Egg noodles",75,"g","C"],["Sesame oil",2,"tsp","S"]],"m":["Whisk vinegar, honey, soy and a splash of sherry; slice the cucumber, carrots and radishes thinly.","Slice the steak thinly, dust in cornflour and flash-fry with chilli and ginger for a minute.","Stir-fry spring onions and veg, then toss everything with the noodles, coriander and sauce for 30 seconds."],"src":"https://www.aldi.co.uk/recipes/team-gb/stir-fried-beef-with-vegetables","by":"Aldi","est":true},{"id":"aldi-turkey-meatballs-tomato","name":"Turkey Meatballs in Rich Tomato & Herb Sauce","tag":"turkey","kcal":570,"p":40,"c":79,"f":10,"mins":30,"i":[["Turkey mince",125,"g","M"],["Bread",0.5,"slice","C"],["Spring onions",1,"","V"],["Smoked paprika",0,"","S"],["Fresh herbs",8,"g","V"],["Olive oil",1.5,"tsp","S"],["Onion",0.25,"","V"],["Chopped tomatoes",0.5,"tin","C"],["Tomato purée",0,"","S"],["Basmati rice",75,"g","C"]],"m":["Blitz stale bread into crumbs and mix with turkey, spring onion, paprika and parsley; roll into small balls.","Brown the meatballs gently for about 20 min; soften onion, add tomatoes and purée and simmer 10 min. Cook the rice.","Stir the meatballs and remaining parsley into the sauce and serve over rice."],"src":"https://www.aldi.co.uk/recipes/team-gb/turkey-meatballs-in-rich-tomato-herb-sauce","by":"Aldi","est":true},{"id":"aldi-asian-beef-cabbage","name":"Asian Beef & Cabbage Stir-Fry","tag":"beef","kcal":550,"p":39,"c":67,"f":13,"mins":30,"i":[["Sirloin steak",140,"g","M"],["Cabbage",100,"g","V"],["Red onion",0.25,"","V"],["Fresh chilli",0.25,"","V"],["Garlic",0.75,"clove","V"],["Ginger",1.5,"tsp","V"],["Soy sauce",1,"tbsp","S"],["Olive oil",1.5,"tsp","S"],["Basmati rice",75,"g","C"]],"m":["Slice the steak thinly, trim and season; shred the cabbage and slice onion, chilli, garlic and ginger. Cook the rice.","Sear the steak in a very hot wok, then stir-fry onion, cabbage, garlic and chilli for 5 min, adding ginger at the end.","Add soy and lime juice, toss for a few minutes and serve over rice."],"src":"https://www.aldi.co.uk/recipes/collections/family-meals/asian-beef-and-cabbage-stirfry","by":"Aldi","est":true},{"id":"aldi-cottage-pie","name":"Cottage Pie","tag":"beef","kcal":370,"p":26,"c":55,"f":6,"mins":60,"i":[["Lean beef mince (5%)",88,"g","M"],["Potatoes",250,"g","V"],["Onion",0.25,"","V"],["Carrots",0.25,"","V"],["Courgette",0.25,"","V"],["Green beans",25,"g","V"],["Sweetcorn",12,"g","C"],["Gravy granules",0,"","S"]],"m":["Boil the potatoes for 20 min and mash with pepper.","Brown the mince, add onion, carrot, courgette, beans, herbs and water and simmer 20 min; stir in sweetcorn and gravy granules.","Top the mince with mash in a hot dish and grill until golden."],"src":"https://www.aldi.co.uk/recipes/collections/family-meals/cottage-pie","by":"Aldi","est":true},{"id":"aldi-crunchy-quinoa-chicken-salad","name":"Crunchy Quinoa & Chicken Salad","tag":"chicken","kcal":590,"p":49,"c":36,"f":27,"mins":45,"i":[["Chicken thighs (skinless)",180,"g","M"],["Garlic",0.75,"clove","V"],["Lemon",0.125,"","V"],["Quinoa pouch (cooked)",62,"g","C"],["Kale",50,"g","V"],["Spring onions",2,"","V"],["Cannellini beans",0.5,"tin","C"],["Jalapeños",30,"g","C"],["Greek yogurt (0%)",17.5,"g","D"],["Fresh herbs",7.5,"g","V"],["Olive oil",3,"tsp","S"]],"m":["Marinate the thighs in garlic, lemon, oregano and oil; roast the cooked quinoa at 200°C until crisp.","Wilt the cavolo nero and toss with spring onions and beans; blitz jalapeños, brine, yoghurt and parsley into a dressing.","Pan-fry the chicken 10–15 min, slice and serve on the salad with dressing and crispy quinoa."],"src":"https://www.aldi.co.uk/recipes/aldi-mob/courses/mains/crunchy-quinoa-and-chicken-salad","by":"Aldi","est":true},{"id":"aldi-salmon-skewers-peanut","name":"Lime Salmon Skewers with Peanut Dip & Noodles","tag":"fish","kcal":820,"p":37,"c":50,"f":51,"mins":35,"i":[["Salmon fillet",1,"","M"],["Fresh herbs",8,"g","V"],["Lime",0.5,"","V"],["Sugar",0,"","S"],["Olive oil",2,"tsp","S"],["Onion",0.25,"","V"],["Ginger",0.75,"tsp","V"],["Garlic",0.5,"clove","V"],["Peanut butter",2,"tbsp","C"],["Spring onions",0.75,"","V"],["Instant noodles",1,"","C"]],"m":["Cube the salmon, thread onto skewers and coat in mint, lime zest, sugar, pepper and oil.","Soften onion, ginger, garlic and chilli, then stir in vinegar, peanut butter, herbs and water to make a dip.","Cook the skewers 3–4 min a side in a hot pan or on the barbecue and serve with noodles and the dip."],"src":"https://www.aldi.co.uk/recipes/collections/family-meals/grilled-salmon-skewers-with-lime","by":"Aldi","est":true},{"id":"aldi-mediterranean-fish-bake","name":"Mediterranean Fish Bake with New Potatoes","tag":"fish","kcal":400,"p":29,"c":43,"f":10,"mins":40,"i":[["Cod fillet",130,"g","M"],["Chopped tomatoes",0.25,"tin","C"],["Red onion",0.5,"","V"],["Peppers",0.25,"","V"],["Black olives",5,"","C"],["Lime",0.25,"","V"],["Fresh herbs",2,"g","V"],["Garlic",0.5,"clove","V"],["White wine",17.5,"ml","C"],["Olive oil",1.5,"tsp","S"],["New potatoes",200,"g","V"]],"m":["Soften the onion in oil, then add garlic and pepper; heat the oven to 200°C and boil the new potatoes.","Crush in the tomatoes with lime, wine, olives, basil and spices and simmer 10 min.","Spoon the sauce over the fish and bake 15 min; serve with the potatoes."],"src":"https://www.aldi.co.uk/recipes/collections/family-meals/mediterranean-fish-bake","by":"Aldi","est":true},{"id":"aldi-thai-tuna-stir-fry","name":"Thai Tuna Stir-Fry with Rice","tag":"fish","kcal":520,"p":34,"c":75,"f":9,"mins":20,"i":[["Tuna steak",110,"g","M"],["Lime",0.25,"","V"],["Honey",0.75,"tsp","S"],["Ginger",1,"tsp","V"],["Olive oil",1.5,"tsp","S"],["Tomatoes",50,"g","V"],["Spring onions",1,"","V"],["Fresh chilli",0.25,"","V"],["Fresh herbs",4,"g","V"],["Basmati rice",90,"g","C"]],"m":["Marinate the tuna in sherry, lime, honey and ginger (up to an hour); cook the rice.","Sear the drained tuna in very hot oil for 2–3 min.","Add the marinade, tomatoes, spring onion and chilli for a couple of minutes, toss in the herbs and serve with rice."],"src":"https://www.aldi.co.uk/recipes/courses/mains/thai-tuna-stirfry","by":"Aldi","est":true}];
 R.push(...R_ALDI);
-const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday'];
 const COL = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)'];
 
 // ---------- State ----------
@@ -717,7 +735,7 @@ const macroLine = m => `≈${k0(m.kcal)} kcal, ≈${k0(m.p)}g protein, ${k0(m.c)
 const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const dayOf = k => { const [y,m,d] = k.split('-').map(Number); return new Date(y, m-1, d); };
 function mondayOf(d){ const m = new Date(d.getFullYear(), d.getMonth(), d.getDate()); m.setDate(m.getDate() - (m.getDay()+6)%7); return m; }
-// weeks run Sunday to Sunday: a week is keyed by its Sunday, and its dinners are Monday–Friday after it
+// weeks run Sunday to Sunday: a week is keyed by its Sunday; dinners are Sunday–Thursday (older saved weeks were Monday–Friday: start 1)
 function sundayOf(d){ const m = new Date(d.getFullYear(), d.getMonth(), d.getDate()); m.setDate(m.getDate() - m.getDay()); return m; }
 const thisWeek = () => iso(sundayOf(new Date()));
 // older versions keyed weeks by Monday: move those to the Sunday before
@@ -740,7 +758,7 @@ const lunches = () => S.lunch.slice(0,5).filter(Boolean).length;
 // ---------- Weekly archive ----------
 function archiveWeek(key){
   if (!key || S.plan.length !== 5) return;
-  put('history.'+key, { plan:[...S.plan], names:S.plan.map(id => (byId(id)||{}).name || ''), cooked:DAYS.map((_,i)=>!!S.cooked[i]), lunch:DAYS.map((_,i)=>!!S.lunch[i]) });
+  put('history.'+key, { start:0, plan:[...S.plan], names:S.plan.map(id => (byId(id)||{}).name || ''), cooked:DAYS.map((_,i)=>!!S.cooked[i]), lunch:DAYS.map((_,i)=>!!S.lunch[i]) });
 }
 // On the first open of a new week: save last week, then start fresh
 function rollover(){
@@ -750,6 +768,7 @@ function rollover(){
   archiveWeek(S.week);
   put('week', cur);
   DAYS.forEach((_,i) => { put('locked.'+i, false); put('lunch.'+i, false); });
+  put('shopDone', false);
   Object.entries(S.extras).forEach(([id,v]) => { if (v && v.done) put('extras.'+id, null); });
   generate();
   toast('New week picked — last week is saved in Past weeks');
@@ -852,7 +871,7 @@ function viewRecipe(i){
 
 function viewShop(){
   const rows=shopRows(), t=totals(rows), g=shopping();
-  const ex=extrasList(), got=rows.filter(x=>S.ticked[x.name+'|'+x.u]).length + ex.filter(([,v])=>v.done).length;
+  const ex=extrasList(), got=rows.filter(x=>S.ticked[x.name+'|'+x.u]).length + ex.filter(([,v])=>v.done).length, done=!!S.shopDone;
   const shopSec = sh => {
     const list=rows.filter(r=>r.shop===sh); if(!list.length) return '';
     const left=list.filter(r=>r.a==='M'||r.a==='V'), right=list.filter(r=>r.a==='D'||r.a==='C');
@@ -866,8 +885,11 @@ function viewShop(){
       <div class="stat"><b>${gbp(t.all)}</b><span>estimated total</span></div>
       <div class="stat"><b>${gbp(t.A)}</b><span>Aldi</span></div>
       <div class="stat"><b>${gbp(t.S)}</b><span>Sainsbury's</span></div></div>
-    <div class="small" style="margin-top:8px">Prices checked ${PRICED}. Tap a price to change it to what you paid.</div></div>
-  <div class="btns" style="margin:14px 0 26px"><button class="pill" data-act="copy">Copy list</button>${got?`<button class="pill ghost" data-act="untick">Untick all</button>`:''}</div>
+    <div class="small" style="margin-top:8px">Prices checked ${PRICED}. ${done ? 'Shop done — the list is locked.' : 'Tap a price to change it to what you paid.'}</div></div>
+  <div class="slidelock ${done?'on':''}" style="--v:${done?100:0}"><span class="sl-text">${done ? 'Shop done ✓ · slide to unlock' : 'Slide when the shop\'s done'}</span>
+    <input type="range" id="shoplock" min="0" max="100" step="1" value="${done?100:0}" aria-label="${done?'Shop done — slide left to unlock the list':'Slide right when the shop is done'}"></div>
+  <div class="btns" style="margin:14px 0 26px"><button class="pill" data-act="copy">Copy list</button>${got && !done?`<button class="pill ghost" data-act="untick">Untick all</button>`:''}</div>
+  <div class="shopbody ${done?'locked':''}" ${done?'inert':''}>
   <section class="card extras"><div class="xhead"><b>Added items</b>${ex.length?`<span class="subx">${gbp(t.X)}</span>`:''}</div>
     <div class="addrow"><input id="xtra" placeholder="Milk, bin bags, snacks…" autocomplete="off" enterkeyhint="done"><button class="pill" data-act="addx">Add</button></div>
     ${ex.map(([id,v])=>{ const x=extraInfo(v), it=x.it;
@@ -881,7 +903,8 @@ function viewShop(){
     ${ex.length?`<div class="btns" style="margin-top:10px"><button class="pill" data-act="checkx">Check prices</button></div>`:''}
   </section>
   ${shopSec('A')}${shopSec('S')}
-  ${g.S?`<div class="card small"><b style="color:var(--ink)">Check you have</b><p style="margin-top:4px">${[...new Set(g.S.map(x=>x.name))].map(esc).join(', ')}</p></div>`:''}`;
+  ${g.S?`<div class="card small"><b style="color:var(--ink)">Check you have</b><p style="margin-top:4px">${[...new Set(g.S.map(x=>x.name))].map(esc).join(', ')}</p></div>`:''}
+  </div>`;
 }
 function aisle(a,list){
   return `<div class="aisle"><h3>${A[a]}<span class="muted" style="font-weight:500">${list.length}</span></h3>${list.map(it=>{
@@ -922,17 +945,17 @@ const tgt = t => `<div class="stat"><b>${k0(t.kcal)}</b><span>kcal</span></div><
 
 // ---------- Past weeks ----------
 function weekData(key){
-  if (key === (S.week || thisWeek())) return { plan:S.plan, cooked:DAYS.map((_,i)=>!!S.cooked[i]), lunch:DAYS.map((_,i)=>!!S.lunch[i]), names:S.plan.map(id=>(byId(id)||{}).name||''), current:true };
+  if (key === (S.week || thisWeek())) return { plan:S.plan, cooked:DAYS.map((_,i)=>!!S.cooked[i]), lunch:DAYS.map((_,i)=>!!S.lunch[i]), names:S.plan.map(id=>(byId(id)||{}).name||''), current:true, start:0 };
   return S.history[key] || null;
 }
 function viewArchive(ym){
   const now = new Date(); let [y, m] = (ym && /^\d{4}-\d{2}$/.test(ym)) ? ym.split('-').map(Number) : [now.getFullYear(), now.getMonth()+1];
   const first = new Date(y, m-1, 1), last = new Date(y, m, 0), today = iso(now);
   const prev = iso(new Date(y, m-2, 1)).slice(0,7), next = iso(new Date(y, m, 1)).slice(0,7);
-  const weeks = []; for (let mon = mondayOf(first); mon <= last; mon = addDays(mon, 7)) weeks.push(mon);
+  const weeks = []; for (let sun = sundayOf(first); sun <= last; sun = addDays(sun, 7)) weeks.push(sun);
   const saved = Object.values(S.history).filter(Boolean), cookedCount = saved.reduce((a,w) => a + (w.cooked||[]).filter(Boolean).length, 0);
-  const cell = (mon, i) => {
-    const d = addDays(mon, i), key = iso(addDays(mon, -1)), w = weekData(key), id = w && w.plan[i], inMonth = d.getMonth() === m-1;
+  const cell = (sun, col) => {
+    const d = addDays(sun, col), key = iso(sun), w = weekData(key), i = w ? col - (w.start ?? 1) : -1, id = w && i >= 0 && w.plan[i], inMonth = d.getMonth() === m-1;
     const cls = `cday ${inMonth?'':'out'} ${iso(d)===today?'today':''}`;
     if (!id) return `<div class="${cls} empty"><span class="dnum">${d.getDate()}</span></div>`;
     const r = byId(id), name = (r && !r.hidden ? r.name : (w.names||[])[i]) || 'Dinner';
@@ -944,15 +967,15 @@ function viewArchive(ym){
   <div class="sub">${saved.length ? `${saved.length} week${saved.length>1?'s':''} saved · ${cookedCount} dinners cooked` : 'Each week is saved here automatically when a new one starts on Sunday.'}</div>
   <div class="calnav"><a class="pill ghost" href="#/archive/${prev}">‹</a><b>${first.toLocaleDateString('en-GB',{month:'long', year:'numeric'})}</b><a class="pill ghost" href="#/archive/${next}">›</a></div>
   <div class="cal">
-    ${['Mon','Tue','Wed','Thu','Fri'].map(d => `<div class="chead">${d}</div>`).join('')}
-    ${weeks.map(mon => [0,1,2,3,4].map(i => cell(mon, i)).join('')).join('')}
+    ${['Sun','Mon','Tue','Wed','Thu'].map(d => `<div class="chead">${d}</div>`).join('')}
+    ${weeks.map(sun => [0,1,2,3,4].map(c => cell(sun, c)).join('')).join('')}
   </div>
   <p class="small" style="margin-top:14px">Tap a dinner to see it again or cook it again this week. ✓ cooked · <span class="ldot"></span> with a lunch portion</p>`;
 }
 function viewPast(key, i){
   if (!key || key === (S.week || thisWeek())) return viewRecipe(i);
   const w = S.history[key]; if (!w) return viewArchive();
-  const r = byId(w.plan[i]), d = addDays(dayOf(key), i + 1);
+  const r = byId(w.plan[i]), d = addDays(dayOf(key), i + (w.start ?? 1));
   if (!r || r.hidden) return `<a class="back" href="#/archive/${key.slice(0,7)}">‹ Past weeks</a><h1>${esc((w.names||[])[i]||'Dinner')}</h1><div class="sub">This recipe isn't available on this device — turn on sync to load your private recipes.</div>`;
   const m = scaled(r);
   return `<a class="back" href="#/archive/${key.slice(0,7)}">‹ Past weeks</a>
@@ -970,7 +993,7 @@ function viewPast(key, i){
 }
 // put a past dinner back into this week: the next day that isn't cooked or locked
 function cookAgain(id){
-  const wd = new Date().getDay(), todayIdx = wd === 0 ? 0 : Math.min(4, wd - 1), open = j => !S.cooked[j] && !S.locked[j];
+  const todayIdx = Math.min(4, new Date().getDay()), open = j => !S.cooked[j] && !S.locked[j];
   let j = [0,1,2,3,4].find(k => k >= todayIdx && open(k)); if (j === undefined) j = [0,1,2,3,4].find(open);
   if (j === undefined){ toast('Every night this week is cooked or locked'); return; }
   const plan = [...S.plan]; plan[j] = id; put('plan', plan); put('cooked.'+j, false); untickAll(); save();
@@ -1315,11 +1338,17 @@ function addExtra(){
 }
 const extrasList = () => Object.entries(S.extras).filter(([,v])=>v && v.t);
 $('app').addEventListener('change', e=>{
+  if(e.target.id==='shoplock'){ const v=+e.target.value, on=!!S.shopDone;
+    if(!on && v>=85){ put('shopDone', true); save(); route(); toast('Shop done — list locked'); }
+    else if(on && v<=15){ put('shopDone', false); save(); route(); toast('List unlocked'); }
+    else { const el=e.target; el.value=on?100:0; el.parentElement.style.setProperty('--v', el.value); }
+    return; }
   if(e.target.closest('#rform')){ draftSave(); return; }
   const x=e.target.dataset.extra; if(x){ put('extras.'+x,{...S.extras[x],done:e.target.checked}); save(); route(); return; }
   const k=e.target.dataset.key; if(!k) return; put('ticked.'+k,e.target.checked); save(); route();
 });
 $('app').addEventListener('input', e=>{
+  if(e.target.id==='shoplock'){ e.target.parentElement.style.setProperty('--v', e.target.value); return; }
   if(e.target.id==='pq'){ PF.q=e.target.value; $('plist').innerHTML=pickList(+location.hash.split('/')[2]); return; }
   if(e.target.closest('#rform')){ const t=e.target;
     if(t.classList.contains('rf-m')) $('rform').dataset.est='';
@@ -1408,7 +1437,7 @@ function gh(method, body){
     headers:{ Authorization:'Bearer '+SY.cfg.token, Accept:'application/vnd.github+json' }, body: body ? JSON.stringify(body) : undefined });
 }
 function allPaths(){
-  const ps=['plan','week']; Object.keys(S.history).forEach(k=>ps.push('history.'+k)); Object.keys(S.settings).forEach(k=>ps.push('settings.'+k));
+  const ps=['plan','week','shopDone']; Object.keys(S.history).forEach(k=>ps.push('history.'+k)); Object.keys(S.settings).forEach(k=>ps.push('settings.'+k));
   for(let i=0;i<5;i++) ps.push('cooked.'+i,'locked.'+i,'lunch.'+i);
   ['ticked','prices','extras','mine'].forEach(a=>Object.keys(S[a]).forEach(k=>ps.push(a+'.'+k)));
   return ps;
