@@ -294,6 +294,25 @@ ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));colo
 .pill.danger{color:#c62d2d}
 @media (max-width:560px){#rform .tfield #rf-name{font-size:20px}.fields.four{grid-template-columns:1fr 1fr}.fields.three{grid-template-columns:1fr 1fr}.fields.three .field:first-child{grid-column:1/-1}
   .ing{grid-template-columns:minmax(0,1fr) 58px 66px 26px;gap:5px}.ing input,.ing select{padding:9px 9px}}
+/* row actions + chooser */
+.acts{flex:none;display:flex;align-items:center;gap:6px}
+.ract{flex:none;height:34px;min-width:34px;padding:0 9px;border-radius:99px;display:inline-flex;align-items:center;justify-content:center;gap:6px;color:var(--muted);border:1.5px solid var(--line);background:var(--bg);font-size:13px;font-weight:700}
+.ract span{display:none}
+.ract:hover{color:var(--ink);border-color:var(--muted)}
+.ract:disabled{opacity:.35;cursor:default}
+@media (max-width:1000px){
+  .row:not(.prow){flex-wrap:wrap;row-gap:10px}
+  .acts{width:100%;padding-left:66px}
+  .ract span{display:inline}
+}
+@media (max-width:480px){.acts{padding-left:54px;gap:5px}.ract{height:30px;padding:0 10px;font-size:12px}}
+.pickbar input{background:var(--soft)!important}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 8px}
+.fchip{padding:6px 12px;border-radius:99px;background:var(--soft);font-size:13px;font-weight:700;text-transform:capitalize}
+.fchip.on{background:var(--ink);color:var(--bg)}
+.prow{background:none;border-left:0;border-right:0;border-top:0;font:inherit;color:inherit}
+.prow.active{background:var(--soft);border-radius:14px;padding-left:10px;padding-right:10px}
+.prow .rday b{color:var(--ink)}
 </style>
 </head>
 <body>
@@ -573,9 +592,7 @@ function score(r){
 function pick(exclude, used){
   let pool = [...R, ...mineList().filter(r=>r.pick!==false)].filter(r=>!exclude.includes(r.id));
   const fresh = pool.filter(r=>(used[r.tag]||0)<2); if (fresh.length) pool = fresh;
-  const w = pool.map(r=>Math.exp(-score(r)*4)); let x = Math.random()*w.reduce((a,b)=>a+b,0);
-  for (let i=0;i<pool.length;i++){ x-=w[i]; if(x<=0) return pool[i].id; }
-  return pool[pool.length-1].id;
+  return pool[Math.floor(Math.random()*pool.length)].id;
 }
 function tagsOf(ids){ const t={}; ids.forEach(id=>{ const r=id&&byId(id); if(r){ t[r.tag]=(t[r.tag]||0)+1; } }); return t; }
 function generate(initial){
@@ -589,7 +606,7 @@ function swap(i){
   const others=S.plan.filter((_,j)=>j!==i);
   const plan=[...S.plan]; plan[i]=pick([...others,S.plan[i]],tagsOf(others));
   put('plan',plan); put('cooked.'+i,false); untickAll(); save(); route();
-  toast('Swapped '+DAYS[i]);
+  toast('Shuffled '+DAYS[i]);
 }
 
 // ---------- Quantities ----------
@@ -689,6 +706,8 @@ function gradStyle(r, i){
 const LOCK_SVG = on => on
   ? '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M7 10V7a5 5 0 0 1 10 0v3h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/></svg>'
   : '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M8 10V7a4 4 0 0 1 7.6-1.7M6 10h12a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z"/></svg>';
+const SHUF_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const LIST_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
 const dayStyle = i => gradStyle(byId(S.plan[i]), i);
 
 // ---------- Helpers ----------
@@ -757,7 +776,8 @@ function viewWeek(){
         <div class="btns">
           <a class="btn solid" href="#/recipe/${hi}">See recipe</a>
           <button class="btn" data-act="cook" data-i="${hi}">${S.cooked[hi]?'Cooked ✓':'Mark cooked'}</button>
-          <button class="btn" data-act="swap" data-i="${hi}" ${S.locked[hi]?'disabled style="opacity:.4"':''}>Swap</button>
+          <button class="btn" data-act="swap" data-i="${hi}" ${S.locked[hi]?'disabled style="opacity:.4"':''}>Shuffle</button>
+          <a class="btn" href="#/pick/${hi}">Choose</a>
           <button class="btn lockbtn ${S.locked[hi]?'on':''}" data-act="lock" data-i="${hi}" aria-pressed="${!!S.locked[hi]}" title="${S.locked[hi]?'Unlock':'Lock this dinner'}">${LOCK_SVG(S.locked[hi])}</button>
         </div>
       </section>
@@ -769,9 +789,12 @@ function viewWeek(){
           <div class="tile grad">${imgTag(x,'')}</div>
           <div class="rbody"><div class="rday">${DAYS[i]}</div><div class="rtitle">${esc(x.name)}</div>
           <div class="rmeta">≈${k0(mm.kcal)} kcal · ${k0(mm.p)}g protein${x.mins?` · ${x.mins} min`:''}${x.by?` · ${x.by}`:''}</div></div>
+          <div class="acts">
+          <button class="ract" data-act="swap" data-i="${i}" ${S.locked[i]?'disabled':''} title="Shuffle — random dinner" aria-label="Shuffle ${DAYS[i]}">${SHUF_SVG}<span>Shuffle</span></button>
+          <button class="ract" data-act="choose" data-i="${i}" title="Choose from all recipes" aria-label="Choose ${DAYS[i]}'s dinner">${LIST_SVG}<span>Choose</span></button>
           <button class="lock ${S.locked[i]?'on':''}" data-act="lock" data-i="${i}" aria-pressed="${!!S.locked[i]}" aria-label="${S.locked[i]?'Unlock':'Lock'} ${DAYS[i]}" title="${S.locked[i]?'Locked — stays when you shuffle':'Lock to keep it when you shuffle'}">${LOCK_SVG(S.locked[i])}</button>
           <span class="slot" data-slot="${i}">${S.lunch[i]?`<span class="sticker" data-from="${i}">+ Lunch</span>`:'<span class="lslot">+ lunch</span>'}</span>
-          <span class="chev">›</span></a>`; }).join('')}</div>
+          </div></a>`; }).join('')}</div>
       <div class="card tray" style="margin-top:12px">
         <div class="stack"><span class="sticker under">+ Lunch</span><span class="sticker" data-from="tray">+ Lunch</span></div>
         <div><b>Lunch for tomorrow</b><div class="small">Drag a sticker onto a dinner to cook an extra portion for the next day. Drag it off to remove. ${lunches()?`<b style="color:var(--ink)">${lunches()} this week.</b>`:''}</div></div>
@@ -781,7 +804,7 @@ function viewWeek(){
         <div class="stats">${stat('kcal',avg.kcal/5,t.kcal,'')}${stat('protein',avg.p/5,t.p,'g')}${stat('carbs',avg.c/5,t.c,'g')}${stat('fat',avg.f/5,t.f,'g')}</div>
       </div>
       <div class="card small" style="display:flex;justify-content:space-between;align-items:center;gap:12px">
-        <span>Not feeling it? Reshuffle everything you haven't locked <span style="display:inline-flex;vertical-align:-3px">${LOCK_SVG(true)}</span>.</span>
+        <span>Not feeling it? Shuffle every dinner you haven't locked <span style="display:inline-flex;vertical-align:-3px">${LOCK_SVG(true)}</span>.</span>
         <button class="pill" data-act="gen">New week</button>
       </div>
       <p class="small" style="margin-top:14px">● Saved on this device · macros are estimates</p>
@@ -801,7 +824,8 @@ function viewRecipe(i){
       <button class="pill" data-act="cook" data-i="${i}">${S.cooked[i]?'Cooked ✓':'Mark cooked'}</button>
       <button class="pill ghost" data-act="lunch" data-i="${i}">${L?'Remove lunch portion':'+ Lunch portion'}</button>
       <button class="pill ghost" data-act="lock" data-i="${i}">${S.locked[i]?'Unlock':'Lock this dinner'}</button>
-      <button class="pill ghost" data-act="swap" data-i="${i}" ${S.locked[i]?'disabled style="opacity:.4"':''}>Swap</button>
+      <button class="pill ghost" data-act="swap" data-i="${i}" ${S.locked[i]?'disabled style="opacity:.4"':''}>Shuffle</button>
+      <a class="pill ghost" href="#/pick/${i}">Choose</a>
       ${r.mine && !r.deleted ? `<a class="pill ghost" href="#/mine/edit/${r.id}">Edit recipe</a>` : ''}
     </div>
     <div class="grid">
@@ -1150,6 +1174,41 @@ function saveRecipe(andAdd){
   location.hash = '#/mine'; toast(f.dataset.key === 'new' ? `Saved ${r.name}` : 'Recipe updated');
 }
 
+// ---------- Choose a dinner from every recipe ----------
+const allRecipes = () => [...R.filter(r => !r.hidden), ...mineList()];
+let PF = { q:'', tag:'all' };
+function pickList(i){
+  const q = PF.q.trim().toLowerCase(), words = q.split(/\s+/).filter(Boolean);
+  let list = allRecipes().filter(r => PF.tag === 'all' || (PF.tag === 'yours' ? r.mine : r.tag === PF.tag));
+  if (words.length) list = list.filter(r => { const hay = (r.name + ' ' + r.tag + ' ' + (r.by||'') + ' ' + r.i.map(x => x[0]).join(' ')).toLowerCase(); return words.every(w => hay.includes(w)); });
+  list.sort((a,b) => a.name.localeCompare(b.name));
+  if (!list.length) return `<p class="small" style="padding:18px 0">Nothing matches${q ? ` “${esc(PF.q)}”` : ''}.</p>`;
+  return list.map((r,k) => { const m = scaled(r), d = S.plan.indexOf(r.id);
+    return `<button class="row prow ${d===i?'active':''}" data-act="setday" data-i="${i}" data-id="${r.id}" style="${gradStyle(r,k)}">
+      <div class="tile grad">${imgTag(r,'')}</div>
+      <div class="rbody"><div class="rday">${esc(r.tag)}${r.by?` · ${esc(r.by)}`:''}${d>=0?` · <b>on ${DAYS[d]}</b>`:''}</div><div class="rtitle">${esc(r.name)}</div>
+      <div class="rmeta">≈${k0(m.kcal)} kcal · ${k0(m.p)}g protein${r.mins?` · ${r.mins} min`:''}</div></div>
+      <span class="chev">›</span></button>`; }).join('');
+}
+function viewPick(i){
+  if (!(i >= 0 && i < 5)) return viewWeek();
+  const cur = byId(S.plan[i]), tags = ['all', ...TAGS.filter(t => allRecipes().some(r => r.tag === t))];
+  if (mineList().length) tags.push('yours');
+  return `<a class="back" href="#/">‹ This week</a>
+  <h1>${DAYS[i]}</h1>
+  <div class="sub">Pick a dinner from all ${allRecipes().length} recipes${cur ? ` · now: ${esc(cur.name)}` : ''}</div>
+  <div class="addrow pickbar"><input id="pq" type="search" placeholder="Search recipes or ingredients" value="${esc(PF.q)}" autocomplete="off" enterkeyhint="search">
+    <button class="pill" data-act="swap" data-i="${i}" title="Random dinner">${SHUF_SVG} Random</button></div>
+  <div class="chips">${tags.map(t => `<button class="fchip ${PF.tag===t?'on':''}" data-act="pf" data-tag="${t}">${t==='all'?'All':t==='yours'?'Yours':t}</button>`).join('')}</div>
+  <div id="plist">${pickList(i)}</div>`;
+}
+function setDay(i, id){
+  const plan = [...S.plan], j = plan.indexOf(id);
+  if (j >= 0 && j !== i){ plan[j] = plan[i]; put('cooked.'+j, false); }   // already in the week: swap the two nights
+  plan[i] = id; put('plan', plan); put('cooked.'+i, false); untickAll(); save();
+  location.hash = '#/'; toast(`${DAYS[i]}: ${byId(id).name}${j>=0 && j!==i ? ` (swapped with ${DAYS[j]})` : ''}`);
+}
+
 // ---------- Router ----------
 function route(){
   const h=location.hash.replace(/^#\/?/,''), [p,arg]=h.split('/');
@@ -1157,7 +1216,7 @@ function route(){
   document.querySelectorAll('.tab').forEach(a=>{ const on=a.dataset.r===name; a.classList.toggle('on',on); if(on) $('modelabel').textContent=a.querySelector('b').textContent; });
   menu(false);
   const parts = h.split('/');
-  $('app').innerHTML = p==='recipe' ? viewRecipe(+arg) : p==='shop' ? viewShop() : p==='macros' ? viewMacros() : p==='archive' ? viewArchive(arg) : p==='mine' ? (arg==='new' ? viewEditor(null) : arg==='edit' ? viewEditor(parts[2]) : viewMine()) : p==='past' ? viewPast(parts[1], +parts[2]) : viewWeek();
+  $('app').innerHTML = p==='recipe' ? viewRecipe(+arg) : p==='shop' ? viewShop() : p==='macros' ? viewMacros() : p==='archive' ? viewArchive(arg) : p==='pick' ? viewPick(+arg) : p==='mine' ? (arg==='new' ? viewEditor(null) : arg==='edit' ? viewEditor(parts[2]) : viewMine()) : p==='past' ? viewPast(parts[1], +parts[2]) : viewWeek();
   document.title = (p==='shop'?'Shopping':p==='macros'?'Macros':p==='mine'?'My recipes':name==='archive'?'Past weeks':weekRange()) + ' – WhatsCooking';
   if (p==='mine' && arg==='new' && !$('rf-name').value) $('rf-name').focus();
 }
@@ -1179,7 +1238,10 @@ $('app').addEventListener('click', e=>{
   const b=e.target.closest('[data-act]'); if(!b) return; e.preventDefault();
   const i=+b.dataset.i, a=b.dataset.act;
   if(a==='gen'){ generate(); toast('New week picked'); if(location.hash.includes('macros')) location.hash='#/'; }
-  if(a==='swap') swap(i);
+  if(a==='swap'){ if(S.locked[i]){ toast(DAYS[i]+' is locked'); return; } swap(i); if(location.hash.startsWith('#/pick')) location.hash='#/'; }
+  if(a==='choose'){ PF={q:'',tag:'all'}; location.hash='#/pick/'+i; }
+  if(a==='setday') setDay(i, b.dataset.id);
+  if(a==='pf'){ PF.tag=b.dataset.tag; document.querySelectorAll('.fchip').forEach(c=>c.classList.toggle('on',c.dataset.tag===PF.tag)); $('plist').innerHTML=pickList(+location.hash.split('/')[2]); }
   if(a==='cook'){ put('cooked.'+i,!S.cooked[i]); save(); route(); if(S.cooked[i]) toast(DAYS[i]+' cooked'); }
   if(a==='lock'){ put('locked.'+i,!S.locked[i]); save(); route(); toast(S.locked[i] ? `${DAYS[i]} locked — it stays when you shuffle` : `${DAYS[i]} unlocked`); }
   if(a==='lunch') setLunch(i,!S.lunch[i]);
@@ -1246,6 +1308,7 @@ $('app').addEventListener('change', e=>{
   const k=e.target.dataset.key; if(!k) return; put('ticked.'+k,e.target.checked); save(); route();
 });
 $('app').addEventListener('input', e=>{
+  if(e.target.id==='pq'){ PF.q=e.target.value; $('plist').innerHTML=pickList(+location.hash.split('/')[2]); return; }
   if(e.target.closest('#rform')){ const t=e.target;
     if(t.classList.contains('rf-m')) $('rform').dataset.est='';
     if(t.classList.contains('ing-n')){ const k=knownIngs()[t.value.trim()], row=t.closest('.ing');
