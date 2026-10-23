@@ -46,16 +46,16 @@ h1{font-size:clamp(44px,8vw,68px);font-weight:800;letter-spacing:-.035em;line-he
 @media (max-width:820px){.grid{grid-template-columns:1fr}}
 
 /* hero */
-.hero{background:var(--c);color:#fff;border-radius:28px;padding:24px 24px 26px;position:relative;overflow:hidden}
+.hero{background:var(--c);color:var(--on,#fff);border-radius:28px;padding:24px 24px 26px;position:relative;overflow:hidden}
 .hero .num{font-size:clamp(200px,30vw,280px);font-weight:900;line-height:.8;letter-spacing:-.06em;margin:4px 0 14px -6px}
 .hero .eyebrow{display:flex;gap:8px;align-items:center;font-size:14px;font-weight:700}
 .chip{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.22)}
 .hero h2{font-size:clamp(34px,4.6vw,44px);font-weight:800;letter-spacing:-.03em;line-height:1.02;margin:8px 0 10px}
 .hero .meta{font-size:14px;opacity:.9}
 .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
-.btn{padding:10px 18px;border-radius:99px;font-size:15px;font-weight:700;border:2px solid rgba(255,255,255,.6);color:#fff}
+.btn{padding:10px 18px;border-radius:99px;font-size:15px;font-weight:700;border:2px solid color-mix(in srgb,var(--on,#fff) 55%,transparent);color:var(--on,#fff);backdrop-filter:blur(6px)}
 .btn:hover{border-color:#fff}
-.btn.solid{background:#fff;color:var(--c);border-color:#fff}
+.btn.solid{background:var(--on,#fff);color:var(--off,#14110d);border-color:var(--on,#fff)}
 .hero.done{background:var(--soft);color:var(--ink)}
 .hero.done .btn{color:var(--ink);border-color:var(--line)}
 .hero.done .btn.solid{background:var(--ink);color:var(--bg);border-color:var(--ink)}
@@ -70,7 +70,7 @@ h1{font-size:clamp(44px,8vw,68px);font-weight:800;letter-spacing:-.035em;line-he
 .label{font-size:14px;font-weight:600;color:var(--muted);margin:0 0 8px}
 .row{display:flex;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer;width:100%;text-align:left}
 .row:last-child{border-bottom:0}
-.tile{flex:none;width:44px;height:44px;border-radius:12px;background:var(--c);color:#fff;display:grid;place-items:center;font-weight:800;font-size:22px}
+.tile{flex:none;width:44px;height:44px;border-radius:12px;background:var(--c);color:var(--on,#fff);display:grid;place-items:center;font-weight:800;font-size:22px}
 .row.cooked .tile{background:var(--soft);color:var(--muted)}
 .row.cooked .rtitle{text-decoration:line-through;text-decoration-thickness:2px;color:var(--muted)}
 .row.active .tile{box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--c)}
@@ -178,6 +178,33 @@ ol.method li::before{content:counter(s);flex:none;width:26px;height:26px;border-
 .price.alt:hover{color:var(--ink)}
 .extras .pd a:hover{text-decoration:underline}
 .srclink{margin-top:14px}
+
+/* ethereal, slowly drifting gradients coloured by each recipe */
+.grad{position:relative;overflow:hidden;isolation:isolate;background:var(--g1)}
+.grad::before,.grad::after{content:"";position:absolute;inset:-60%;z-index:-1;pointer-events:none}
+.grad::before{background:
+  radial-gradient(closest-side at 28% 32%,var(--g2),transparent 72%),
+  radial-gradient(closest-side at 72% 38%,var(--g3),transparent 72%),
+  radial-gradient(closest-side at 38% 76%,var(--g4),transparent 72%),
+  radial-gradient(closest-side at 78% 78%,var(--g2),transparent 70%);
+  filter:blur(34px) saturate(1.15);animation:drift 22s ease-in-out infinite alternate;animation-delay:var(--d,0s)}
+.grad::after{background:
+  radial-gradient(closest-side at 60% 20%,color-mix(in srgb,var(--g3) 80%,#fff),transparent 70%),
+  radial-gradient(closest-side at 20% 70%,color-mix(in srgb,var(--g1) 70%,#fff),transparent 70%);
+  filter:blur(40px);opacity:.55;mix-blend-mode:soft-light;animation:drift2 30s ease-in-out infinite alternate;animation-delay:var(--d,0s)}
+.tile.grad::before{filter:blur(7px) saturate(1.15)} .tile.grad::after{filter:blur(9px)}
+.progress i.grad::before{filter:blur(4px)} .progress i.grad::after{display:none}
+.dots i{overflow:hidden;position:relative;background:linear-gradient(135deg,var(--g1),var(--g3))}
+.hero.grad{box-shadow:0 18px 40px -18px color-mix(in srgb,var(--g2) 70%,transparent)}
+.hero.grad .num{color:var(--on,#fff);opacity:.92;text-shadow:0 2px 30px color-mix(in srgb,var(--g1) 50%,transparent)}
+.hero.grad .chip{background:color-mix(in srgb,var(--on,#fff) 18%,transparent)}
+.hero.grad .mbar{background:color-mix(in srgb,var(--on,#fff) 22%,transparent)} .hero.grad .mbar i{background:var(--on,#fff)}
+.hero.done.grad::before,.hero.done.grad::after{opacity:.18}
+.row.cooked .tile.grad::before,.row.cooked .tile.grad::after{opacity:.25;filter:grayscale(1) blur(7px)}
+ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));color:var(--on,#fff)}
+@keyframes drift{0%{transform:translate(-8%,-6%) rotate(0deg) scale(1)}50%{transform:translate(6%,5%) rotate(35deg) scale(1.18)}100%{transform:translate(-4%,7%) rotate(-18deg) scale(1.06)}}
+@keyframes drift2{0%{transform:translate(6%,4%) rotate(0deg)}100%{transform:translate(-7%,-6%) rotate(-40deg) scale(1.2)}}
+@media (prefers-reduced-motion: reduce){.grad::before,.grad::after{animation:none}}
 </style>
 </head>
 <body>
@@ -528,6 +555,42 @@ function totals(rows=shopRows()){ const t={A:0,S:0,X:0}; rows.forEach(r=>{ if(r.
   extrasList().forEach(([,v])=>{ const x=extraInfo(v); if(x.cost!=null){ t.X+=x.cost; t[x.it && x.it.shop==='S' ? 'S' : 'A'] += x.cost; } }); t.all=t.A+t.S; return t; }
 const packStr = bp => bp ? bp.buy.map(b=>(b.n>1?b.n+' × ':'')+b.label).join(' + ') : '';
 
+
+// ---------- Recipe colour palettes (for the animated gradients) ----------
+// Ordered most-specific first. Each dinner takes the colours of its ingredients, in recipe order.
+const HUES = [
+ [/salmon/,'#ff8a65'],[/prawn/,'#ff9e7a'],[/tuna/,'#c44d58'],[/\bcod\b|haddock|white fish/,'#cfe4f2'],
+ [/gochujang|kimchi|sriracha/,'#d7263d'],[/harissa|chorizo|paprika|peri peri|piri/,'#e0482f'],[/tikka|tandoori/,'#f0663a'],
+ [/turmeric|curry|korma|jalfrezi|golden/,'#f4b41a'],[/teriyaki|soy|marmite|caramel|bbq|balsamic/,'#7a4a2b'],
+ [/satay|peanut/,'#d08c4a'],[/coconut/,'#f4ecd8'],[/lemon/,'#ffe45c'],[/lime/,'#a8e05f'],[/mango|orange/,'#ffb547'],
+ [/beetroot|pomegranate|red onion/,'#b5174e'],[/tomato|passata|tikka|chilli\b/,'#ef4335'],[/pepper/,'#ff8c2e'],
+ [/pesto|basil|herb|coriander|parsley|mint|dill|green/,'#4caf50'],[/spinach|kale|cavolo|broccoli|tenderstem|pak choi|edamame|peas|courgette|cucumber|sugar snap|avocado/,'#5cb85c'],
+ [/sweet potato|squash|carrot|butternut/,'#ff9a3c'],[/mushroom/,'#a1887f'],[/aubergine/,'#5e3a6e'],[/cabbage/,'#9ccc65'],
+ [/beef|steak/,'#8e2f2f'],[/pork/,'#e8a28b'],[/turkey/,'#e6b89c'],[/chicken/,'#f2c48d'],[/feta|halloumi|yog|cream|cheese|parmesan/,'#fff6e8'],
+ [/rice|orzo|pasta|gnocchi|noodle|couscous|quinoa|potato|wrap|bread/,'#f3dfb0'],[/bean|chickpea|lentil/,'#d9b38c'],
+];
+const TAGHUE = { chicken:['#f2c48d','#ffb547','#ffe0b2'], beef:['#8e2f2f','#ef4335','#ffb547'], pork:['#e8a28b','#b5174e','#ffd3b6'], fish:['#7ec8e3','#cfe4f2','#a8e05f'],
+  turkey:['#e6b89c','#ef4335','#4caf50'], veg:['#5cb85c','#ffe45c','#ff9a3c'], private:['#9aa0ff','#c3b4f0','#f4ecd8'] };
+const palCache = {};
+function palette(r){
+  if (!r) return TAGHUE.private;
+  if (palCache[r.id]) return palCache[r.id];
+  const words = [r.name, ...r.i.filter(x => x[3] !== 'S').map(x => x[0])].map(x => String(x).toLowerCase());
+  const out = [];
+  for (const w of words) for (const [re, hex] of HUES) if (re.test(w) && !out.includes(hex)) { out.push(hex); break; }
+  (TAGHUE[r.tag] || TAGHUE.chicken).forEach(h => { if (out.length < 3 && !out.includes(h)) out.push(h); });
+  return palCache[r.id] = out.slice(0, 4);
+}
+const lum = hex => { const n = parseInt(hex.slice(1),16), c = [n>>16, n>>8&255, n&255].map(v => { v/=255; return v<=.03928 ? v/12.92 : ((v+.055)/1.055)**2.4; }); return .2126*c[0]+.7152*c[1]+.0722*c[2]; };
+// pick the strongest colour as the accent, and dark or light text depending on how pale the mix is
+function gradStyle(r, i){
+  const p = palette(r), g = [p[0], p[1]||p[0], p[2]||p[0], p[3]||p[1]||p[0]];
+  const accent = [...p].sort((a,b) => Math.abs(lum(a)-.25) - Math.abs(lum(b)-.25))[0];
+  const avg = g.reduce((a,h) => a + lum(h), 0) / g.length;
+  return `--c:${accent};--g1:${g[0]};--g2:${g[1]};--g3:${g[2]};--g4:${g[3]};--on:${avg > .42 ? '#14110d' : '#fff'};--off:${avg > .42 ? '#fff' : '#14110d'};--d:${-(i*3.7 % 17).toFixed(1)}s`;
+}
+const dayStyle = i => gradStyle(byId(S.plan[i]), i);
+
 // ---------- Helpers ----------
 const k0 = v => Math.round(v);
 const macroLine = m => `≈${k0(m.kcal)} kcal, ≈${k0(m.p)}g protein, ${k0(m.c)}g carbs, ${k0(m.f)}g fat`;
@@ -544,7 +607,7 @@ function nextIndex(){ const i=S.cooked.findIndex((c,j)=>j<5&&!c); return i===-1?
 function viewWeek(){
   const t=targets(), done=S.cooked.filter(Boolean).length, nx=nextIndex(), hi = nx===null?4:nx;
   const r=byId(S.plan[hi]), m=scaled(r);
-  const prog = DAYS.map((_,i)=>`<i style="${S.cooked[i]?`background:${COL[i]}`:''}"></i>`).join('');
+  const prog = DAYS.map((_,i)=>`<i class="${S.cooked[i]?'grad':''}" style="${S.cooked[i]?dayStyle(i):''}"></i>`).join('');
   const bar=(l,v,tt)=>`<span>${l}</span><div class="mbar"><i style="width:${Math.min(100,v/tt*100)}%"></i></div><span>${k0(v)}/${k0(tt)}g</span>`;
   const avg=S.plan.reduce((a,id)=>{const x=scaled(byId(id));a.kcal+=x.kcal;a.p+=x.p;a.c+=x.c;a.f+=x.f;return a;},{kcal:0,p:0,c:0,f:0});
   const stat=(l,v,tt,u)=>`<div class="stat ${(l==='protein'?v/tt<.88:l==='kcal'?Math.abs(v/tt-1)>.12:false)?'off':''}"><b>${k0(v)}${u}</b><span>${l} · ${k0(tt)}${u}</span></div>`;
@@ -557,7 +620,7 @@ function viewWeek(){
   ${nx===null?`<div class="note">🎉 <b>All five cooked.</b> Pick next week when you're ready.</div>`:''}
   <div class="grid">
     <div>
-      <section class="hero ${nx===null?'done':''}" data-i="${hi}" style="--c:${COL[hi]}">
+      <section class="hero grad ${nx===null?'done':''}" data-i="${hi}" style="${dayStyle(hi)}">
         <div class="num">${hi+1}</div>
         <div class="eyebrow">${nx===null?'Last up':'Up next'} · ${DAYS[hi]} <span class="chip">${r.tag}</span>${Math.abs(m.s-1)>.04?`<span class="chip">${m.s.toFixed(2).replace(/0$/,'')}× portion</span>`:''}${S.lunch[hi]?'<span class="sticker" data-from="'+hi+'">+ Lunch</span>':''}</div>
         <h2>${r.name}</h2>
@@ -573,8 +636,8 @@ function viewWeek(){
     <div>
       <p class="label">The week</p>
       <div>${S.plan.map((id,i)=>{ const x=byId(id), mm=scaled(x);
-        return `<a class="row ${S.cooked[i]?'cooked':''} ${i===hi?'active':''}" data-i="${i}" href="#/recipe/${i}" style="--c:${COL[i]}">
-          <div class="tile">${i+1}</div>
+        return `<a class="row ${S.cooked[i]?'cooked':''} ${i===hi?'active':''}" data-i="${i}" href="#/recipe/${i}" style="${dayStyle(i)}">
+          <div class="tile grad">${i+1}</div>
           <div class="rbody"><div class="rtitle">${x.name}${S.locked[i]?'<span class="lockdot">LOCKED</span>':''}</div>
           <div class="rmeta">${DAYS[i].slice(0,3)} · ≈${k0(mm.kcal)} kcal, ≈${k0(mm.p)}g protein${x.mins?` · ${x.mins} min`:''}${x.by?` · ${x.by}`:''}</div></div>
           <span class="slot" data-slot="${i}">${S.lunch[i]?`<span class="sticker" data-from="${i}">+ Lunch</span>`:'<span class="lslot">+ lunch</span>'}</span>
@@ -600,8 +663,8 @@ function viewRecipe(i){
   const r=byId(S.plan[i]); if(!r) return viewWeek();
   const m=scaled(r), n=S.settings.people, L=S.lunch[i]?1:0;
   return `<a class="back" href="#/">‹ This week</a>
-  <div style="--c:${COL[i]}">
-    <div class="rhead"><div class="tile">${i+1}</div><div><div class="label" style="margin:2px 0 4px">${DAYS[i]} · ${r.tag}${r.mins?` · ${r.mins} min`:''}</div><h1>${r.name}</h1></div></div>
+  <div style="${dayStyle(i)}">
+    <div class="rhead"><div class="tile grad">${i+1}</div><div><div class="label" style="margin:2px 0 4px">${DAYS[i]} · ${r.tag}${r.mins?` · ${r.mins} min`:''}</div><h1>${r.name}</h1></div></div>
     <div class="sub" style="margin-top:0">${macroLine(m)} per portion${r.est?' (estimated)':''}${Math.abs(m.s-1)>.04?` · scaled ${m.s.toFixed(2).replace(/0$/,'')}× to hit your target`:''}</div>
     <div class="btns" style="margin:0 0 24px">
       <button class="pill" data-act="cook" data-i="${i}">${S.cooked[i]?'Cooked ✓':'Mark cooked'}</button>
@@ -660,7 +723,7 @@ function aisle(a,list){
     const edited = pr && S.prices[it.name+'|'+lbl] != null;
     return `<label class="item ${done?'done':''}"><input type="checkbox" data-key="${key}" ${done?'checked':''}>
       <span class="nm"><span class="pn">${title}</span><span class="pd">Need ${fmt(it.q,it.u).replace('× ','')} · buy ${packStr(bp)||'—'}</span></span>
-      <span class="dots">${[...it.days].sort().map(d=>`<i style="--c:${COL[d]}" title="${DAYS[d]}"></i>`).join('')}</span>
+      <span class="dots">${[...it.days].sort().map(d=>`<i style="${dayStyle(d)}" title="${DAYS[d]}"></i>`).join('')}</span>
       ${bp?`<button class="price ${edited?'edited':''}" data-act="price" data-key="${it.name}" data-label="${lbl}">${gbp(bp.cost)}</button>`:''}</label>`;
   }).join('')}</div>`;
 }
