@@ -313,10 +313,12 @@ const COL = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)'];
 
 // ---------- State ----------
 const DEF = {kcal:2500,protein:160,carbs:260,fat:85,share:30,people:1};
-let S = load() || {};
-S.settings = {...DEF, ...(S.settings||{})}; S.plan = S.plan||[]; S.locked = S.locked||[]; S.ticked = S.ticked||{}; S.cooked = S.cooked||[]; S.lunch = S.lunch||[]; S.prices = S.prices||{};
+let S = norm(load());
+function norm(x){ x = x || {};
+  x.settings = {...DEF, ...(x.settings||{})}; x.plan = x.plan||[]; x.locked = x.locked||[]; x.ticked = x.ticked||{}; x.cooked = x.cooked||[]; x.lunch = x.lunch||[]; x.prices = x.prices||{};
+  return x; }
 function load(){ try{ return JSON.parse(localStorage.getItem('wc')); }catch(e){ return null; } }
-function save(){ try{ localStorage.setItem('wc', JSON.stringify(S)); }catch(e){} }
+function save(){ try{ lastSaved = JSON.stringify(S); localStorage.setItem('wc', lastSaved); }catch(e){} }
 const $ = id => document.getElementById(id);
 const byId = id => R.find(r => r.id === id);
 
@@ -594,6 +596,22 @@ function endDrag(e){
 addEventListener('pointerup', endDrag); addEventListener('pointercancel', endDrag);
 
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),1600); }
+
+// ---------- Live sync between tabs/windows ----------
+let lastSaved = null;
+function resync(){
+  const raw = (()=>{ try{ return localStorage.getItem('wc'); }catch(e){ return null; } })();
+  if (!raw || raw === lastSaved) return; lastSaved = raw;
+  const next = norm(JSON.parse(raw)); if (next.plan.length !== 5) return;
+  S = next;
+  const f = document.activeElement;
+  if (f && f.tagName === 'INPUT' && f.type === 'number') return;   // don't interrupt typing in Macros
+  route();
+}
+addEventListener('storage', e => { if (e.key === 'wc') resync(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) resync(); });
+addEventListener('pageshow', resync);
+addEventListener('focus', resync);
 
 if (S.plan.length!==5 || S.plan.some(id=>!byId(id))) { S.locked=[]; S.cooked=[]; generate(); } else route();
 </script>
