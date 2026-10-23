@@ -608,18 +608,15 @@ function hsl2hex(h, s, l){ h=((h%360)+360)%360; if (h > 60 && h < 170) { l -= 12
 const palCache = {};
 function palette(r){
   const key = r ? r.id : 'none'; if (palCache[key]) return palCache[key];
-  const words = r ? [r.name, ...r.i.filter(x => x[3] !== 'S').map(x => x[0])].map(x => String(x).toLowerCase()) : [];
-  const hs = [];
-  for (const w of words) for (const [re, h] of HUES) if (re.test(w) && !hs.some(x => Math.abs(((x-h+540)%360)-180) < 25)) { hs.push(h); break; }
-  const base = hs[0] ?? TAGHUE[r && r.tag] ?? 265;
-  const seed = [...key].reduce((a,c)=>a+c.charCodeAt(0),0) + (hs[1] ?? 0);
-  // walk round the colour wheel towards the blues/violets/pinks — neighbours blend cleanly, opposites go muddy
-  const up = base >= 60 && base < 300;            // greens, teals, blues, violets head up through blue/purple
-  const arc = (115 + (seed % 4) * 15) * (up ? 1 : -1); // reds, oranges, yellows head down through pink/magenta
-  const at = t => base + arc * t;
-  const second = seed % 3 === 0 ? '#ffffff' : hsl2hex(at(.55), 92, 60);   // about a third of dinners fade to white
-  const p = [hsl2hex(at(0), 92, 58), second];
-  return palCache[key] = p;
+  // random but stable per recipe: hash the id, then pick two hues anywhere on the wheel
+  let h = 2166136261; for (const ch of key) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; }
+  const rnd = () => { h ^= h << 13; h >>>= 0; h ^= h >> 17; h ^= h << 5; h >>>= 0; return h / 4294967296; };
+  // 12 hue families that each look distinct (the raw wheel has a huge stretch of green)
+  const FAM = [2, 20, 38, 52, 80, 135, 172, 198, 222, 255, 282, 318];
+  const i1 = Math.floor(rnd() * 12), step = [2,3,4,5,7,8,9,10][Math.floor(rnd() * 8)];  // skip neighbours and direct opposites
+  const h1 = FAM[i1] + (rnd()*10 - 5), h2 = FAM[(i1 + step) % 12] + (rnd()*10 - 5);
+  const second = rnd() < .25 ? '#ffffff' : hsl2hex(h2, 85 + rnd()*10, 56 + rnd()*8);
+  return palCache[key] = [hsl2hex(h1, 85 + rnd()*10, 55 + rnd()*7), second];
 }
 const lum = hex => { const n = parseInt(hex.slice(1),16), c = [n>>16, n>>8&255, n&255].map(v => { v/=255; return v<=.03928 ? v/12.92 : ((v+.055)/1.055)**2.4; }); return .2126*c[0]+.7152*c[1]+.0722*c[2]; };
 function gradStyle(r, i){
