@@ -180,19 +180,19 @@ ol.method li::before{content:counter(s);flex:none;width:26px;height:26px;border-
 .srclink{margin-top:14px}
 
 /* ethereal, slowly drifting gradients coloured by each recipe */
-.grad{position:relative;overflow:hidden;isolation:isolate;background:var(--g1)}
-.grad::before,.grad::after{content:"";position:absolute;inset:-60%;z-index:-1;pointer-events:none}
+.grad{position:relative;overflow:hidden;isolation:isolate;background:linear-gradient(140deg,var(--g1) 0%,var(--g3) 45%,var(--g2) 100%)}
+.grad::before,.grad::after{content:"";position:absolute;inset:-35%;z-index:-1;pointer-events:none}
 .grad::before{background:
-  radial-gradient(closest-side at 28% 32%,var(--g2),transparent 72%),
-  radial-gradient(closest-side at 72% 38%,var(--g3),transparent 72%),
-  radial-gradient(closest-side at 38% 76%,var(--g4),transparent 72%),
-  radial-gradient(closest-side at 78% 78%,var(--g2),transparent 70%);
-  filter:blur(34px) saturate(1.15);animation:drift 22s ease-in-out infinite alternate;animation-delay:var(--d,0s)}
+  radial-gradient(closest-side at 25% 28%,var(--g1),transparent 75%),
+  radial-gradient(closest-side at 78% 22%,var(--g2),transparent 75%),
+  radial-gradient(closest-side at 70% 75%,var(--g4),transparent 75%),
+  radial-gradient(closest-side at 22% 80%,var(--g3),transparent 75%);
+  filter:blur(70px) saturate(1.35);animation:drift 22s ease-in-out infinite alternate;animation-delay:var(--d,0s)}
 .grad::after{background:
-  radial-gradient(closest-side at 60% 20%,color-mix(in srgb,var(--g3) 80%,#fff),transparent 70%),
-  radial-gradient(closest-side at 20% 70%,color-mix(in srgb,var(--g1) 70%,#fff),transparent 70%);
-  filter:blur(40px);opacity:.55;mix-blend-mode:soft-light;animation:drift2 30s ease-in-out infinite alternate;animation-delay:var(--d,0s)}
-.tile.grad::before{filter:blur(7px) saturate(1.15)} .tile.grad::after{filter:blur(9px)}
+  radial-gradient(closest-side at 55% 45%,var(--g2),transparent 70%),
+  radial-gradient(closest-side at 15% 30%,var(--g4),transparent 70%);
+  filter:blur(80px);opacity:.45;mix-blend-mode:screen;animation:drift2 30s ease-in-out infinite alternate;animation-delay:var(--d,0s)}
+.tile.grad::before{filter:blur(14px) saturate(1.35)} .tile.grad::after{filter:blur(16px)}
 .progress i.grad::before{filter:blur(4px)} .progress i.grad::after{display:none}
 .dots i{overflow:hidden;position:relative;background:linear-gradient(135deg,var(--g1),var(--g3))}
 .hero.grad{box-shadow:0 18px 40px -18px color-mix(in srgb,var(--g2) 70%,transparent)}
@@ -200,7 +200,7 @@ ol.method li::before{content:counter(s);flex:none;width:26px;height:26px;border-
 .hero.grad .chip{background:color-mix(in srgb,var(--on,#fff) 18%,transparent)}
 .hero.grad .mbar{background:color-mix(in srgb,var(--on,#fff) 22%,transparent)} .hero.grad .mbar i{background:var(--on,#fff)}
 .hero.done.grad::before,.hero.done.grad::after{opacity:.18}
-.row.cooked .tile.grad::before,.row.cooked .tile.grad::after{opacity:.25;filter:grayscale(1) blur(7px)}
+.row.cooked .tile.grad::before,.row.cooked .tile.grad::after{opacity:.25;filter:grayscale(1) blur(14px)}
 ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));color:var(--on,#fff)}
 @keyframes drift{0%{transform:translate(-8%,-6%) rotate(0deg) scale(1)}50%{transform:translate(6%,5%) rotate(35deg) scale(1.18)}100%{transform:translate(-4%,7%) rotate(-18deg) scale(1.06)}}
 @keyframes drift2{0%{transform:translate(6%,4%) rotate(0deg)}100%{transform:translate(-7%,-6%) rotate(-40deg) scale(1.2)}}
@@ -557,37 +557,39 @@ const packStr = bp => bp ? bp.buy.map(b=>(b.n>1?b.n+' × ':'')+b.label).join(' +
 
 
 // ---------- Recipe colour palettes (for the animated gradients) ----------
-// Ordered most-specific first. Each dinner takes the colours of its ingredients, in recipe order.
+// Each recipe sets a starting hue from its main ingredients; the palette is then built around it
+// with a saturated cool accent (blue / violet / magenta / pink) so neighbouring colours never blur together.
 const HUES = [
- [/salmon/,'#ff8a65'],[/prawn/,'#ff9e7a'],[/tuna/,'#c44d58'],[/\bcod\b|haddock|white fish/,'#cfe4f2'],
- [/gochujang|kimchi|sriracha/,'#d7263d'],[/harissa|chorizo|paprika|peri peri|piri/,'#e0482f'],[/tikka|tandoori/,'#f0663a'],
- [/turmeric|curry|korma|jalfrezi|golden/,'#f4b41a'],[/teriyaki|soy|marmite|caramel|bbq|balsamic/,'#7a4a2b'],
- [/satay|peanut/,'#d08c4a'],[/coconut/,'#f4ecd8'],[/lemon/,'#ffe45c'],[/lime/,'#a8e05f'],[/mango|orange/,'#ffb547'],
- [/beetroot|pomegranate|red onion/,'#b5174e'],[/tomato|passata|tikka|chilli\b/,'#ef4335'],[/pepper/,'#ff8c2e'],
- [/pesto|basil|herb|coriander|parsley|mint|dill|green/,'#4caf50'],[/spinach|kale|cavolo|broccoli|tenderstem|pak choi|edamame|peas|courgette|cucumber|sugar snap|avocado/,'#5cb85c'],
- [/sweet potato|squash|carrot|butternut/,'#ff9a3c'],[/mushroom/,'#a1887f'],[/aubergine/,'#5e3a6e'],[/cabbage/,'#9ccc65'],
- [/beef|steak/,'#8e2f2f'],[/pork/,'#e8a28b'],[/turkey/,'#e6b89c'],[/chicken/,'#f2c48d'],[/feta|halloumi|yog|cream|cheese|parmesan/,'#fff6e8'],
- [/rice|orzo|pasta|gnocchi|noodle|couscous|quinoa|potato|wrap|bread/,'#f3dfb0'],[/bean|chickpea|lentil/,'#d9b38c'],
+ [/salmon/,10],[/prawn/,14],[/tuna/,350],[/\bcod\b|haddock|white fish/,200],[/gochujang|kimchi|sriracha/,352],[/harissa|chorizo|paprika|peri peri|piri/,6],
+ [/tikka|tandoori/,18],[/turmeric|curry|korma|jalfrezi|golden/,42],[/teriyaki|soy|marmite|caramel|bbq/,24],[/satay|peanut/,30],[/coconut/,185],
+ [/lemon/,52],[/lime/,85],[/mango|orange/,36],[/beetroot|pomegranate/,330],[/tomato|passata/,4],[/pepper/,22],[/pesto|basil/,115],
+ [/herb|coriander|parsley|mint|dill/,135],[/spinach|kale|cavolo|broccoli|tenderstem|pak choi|edamame|peas|courgette|cucumber|sugar snap|avocado|cabbage/,145],
+ [/sweet potato|squash|carrot|butternut/,28],[/mushroom|aubergine/,280],[/beef|steak/,345],[/pork/,325],[/turkey/,20],[/chicken/,34],[/halloumi|feta/,48],
 ];
-const TAGHUE = { chicken:['#f2c48d','#ffb547','#ffe0b2'], beef:['#8e2f2f','#ef4335','#ffb547'], pork:['#e8a28b','#b5174e','#ffd3b6'], fish:['#7ec8e3','#cfe4f2','#a8e05f'],
-  turkey:['#e6b89c','#ef4335','#4caf50'], veg:['#5cb85c','#ffe45c','#ff9a3c'], private:['#9aa0ff','#c3b4f0','#f4ecd8'] };
+const TAGHUE = { chicken:34, beef:345, pork:325, fish:200, turkey:20, veg:135, private:265 };
+function hsl2hex(h, s, l){ h=((h%360)+360)%360; if (h > 60 && h < 170) { l -= 12; s -= 8; } s/=100; l/=100;
+  const k=n=>(n+h/30)%12, a=s*Math.min(l,1-l), f=n=>l-a*Math.max(-1,Math.min(k(n)-3,9-k(n),1));
+  return '#'+[f(0),f(8),f(4)].map(x=>Math.round(x*255).toString(16).padStart(2,'0')).join(''); }
 const palCache = {};
 function palette(r){
-  if (!r) return TAGHUE.private;
-  if (palCache[r.id]) return palCache[r.id];
-  const words = [r.name, ...r.i.filter(x => x[3] !== 'S').map(x => x[0])].map(x => String(x).toLowerCase());
-  const out = [];
-  for (const w of words) for (const [re, hex] of HUES) if (re.test(w) && !out.includes(hex)) { out.push(hex); break; }
-  (TAGHUE[r.tag] || TAGHUE.chicken).forEach(h => { if (out.length < 3 && !out.includes(h)) out.push(h); });
-  return palCache[r.id] = out.slice(0, 4);
+  const key = r ? r.id : 'none'; if (palCache[key]) return palCache[key];
+  const words = r ? [r.name, ...r.i.filter(x => x[3] !== 'S').map(x => x[0])].map(x => String(x).toLowerCase()) : [];
+  const hs = [];
+  for (const w of words) for (const [re, h] of HUES) if (re.test(w) && !hs.some(x => Math.abs(((x-h+540)%360)-180) < 25)) { hs.push(h); break; }
+  const base = hs[0] ?? TAGHUE[r && r.tag] ?? 265;
+  const seed = [...key].reduce((a,c)=>a+c.charCodeAt(0),0) + (hs[1] ?? 0);
+  // walk round the colour wheel towards the blues/violets/pinks — neighbours blend cleanly, opposites go muddy
+  const up = base >= 60 && base < 300;            // greens, teals, blues, violets head up through blue/purple
+  const arc = (115 + (seed % 4) * 15) * (up ? 1 : -1); // reds, oranges, yellows head down through pink/magenta
+  const at = t => base + arc * t;
+  const p = [hsl2hex(at(0), 92, 58), hsl2hex(at(1), 90, 60), hsl2hex(at(.38), 94, 60), hsl2hex(at(.7), 90, 62)];
+  return palCache[key] = p;
 }
 const lum = hex => { const n = parseInt(hex.slice(1),16), c = [n>>16, n>>8&255, n&255].map(v => { v/=255; return v<=.03928 ? v/12.92 : ((v+.055)/1.055)**2.4; }); return .2126*c[0]+.7152*c[1]+.0722*c[2]; };
-// pick the strongest colour as the accent, and dark or light text depending on how pale the mix is
 function gradStyle(r, i){
-  const p = palette(r), g = [p[0], p[1]||p[0], p[2]||p[0], p[3]||p[1]||p[0]];
-  const accent = [...p].sort((a,b) => Math.abs(lum(a)-.25) - Math.abs(lum(b)-.25))[0];
-  const avg = g.reduce((a,h) => a + lum(h), 0) / g.length;
-  return `--c:${accent};--g1:${g[0]};--g2:${g[1]};--g3:${g[2]};--g4:${g[3]};--on:${avg > .42 ? '#14110d' : '#fff'};--off:${avg > .42 ? '#fff' : '#14110d'};--d:${-(i*3.7 % 17).toFixed(1)}s`;
+  const g = palette(r);
+  const avg = g.reduce((a,h) => a + lum(h), 0) / g.length, dark = avg > .5;
+  return `--c:${g[0]};--g1:${g[0]};--g2:${g[1]};--g3:${g[2]};--g4:${g[3]};--on:${dark ? '#14110d' : '#fff'};--off:${dark ? '#fff' : '#14110d'};--d:${-(i*3.7 % 17).toFixed(1)}s`;
 }
 const dayStyle = i => gradStyle(byId(S.plan[i]), i);
 
