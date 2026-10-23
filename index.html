@@ -176,6 +176,7 @@ ol.method li::before{content:counter(s);flex:none;width:26px;height:26px;border-
 .price.alt{color:var(--muted);font-weight:600;padding:4px 6px}
 .price.alt:hover{color:var(--ink)}
 .extras .pd a:hover{text-decoration:underline}
+.srclink{margin-top:14px}
 </style>
 </head>
 <body>
@@ -423,7 +424,9 @@ function put(path,val,ts){ setP(S,path,val); S._mt[path] = ts===undefined ? Date
 function untickAll(ts){ Object.keys(S.ticked).forEach(k=>{ if(S.ticked[k]) put('ticked.'+k,false,ts); }); }
 const esc = t => String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const $ = id => document.getElementById(id);
-const byId = id => R.find(r => r.id === id);
+const byId = id => R.find(r => r.id === id) || (id && String(id).startsWith('mob-') ? HIDDEN(id) : undefined);
+// placeholder for a private recipe this device can't load (sync not turned on yet)
+const HIDDEN = id => ({ id, name:'Private recipe — turn on sync to see it', tag:'private', kcal:700, p:45, c:70, f:22, i:[], m:['This dinner comes from your private recipe library. Turn on Household sync in Macros to load it.'], hidden:true });
 
 function targets(){ const s=S.settings,k=s.share/100; return {kcal:s.kcal*k,p:s.protein*k,c:s.carbs*k,f:s.fat*k}; }
 function scaleFor(r){ return Math.min(1.4, Math.max(0.75, targets().kcal / r.kcal)); }
@@ -439,7 +442,7 @@ function pick(exclude, used){
   for (let i=0;i<pool.length;i++){ x-=w[i]; if(x<=0) return pool[i].id; }
   return pool[pool.length-1].id;
 }
-function tagsOf(ids){ const t={}; ids.forEach(id=>{ if(id){ const g=byId(id).tag; t[g]=(t[g]||0)+1; } }); return t; }
+function tagsOf(ids){ const t={}; ids.forEach(id=>{ const r=id&&byId(id); if(r){ t[r.tag]=(t[r.tag]||0)+1; } }); return t; }
 function generate(initial){
   const ts = initial ? 0 : undefined;   // a brand-new device's starter week never overrides a synced one
   const plan = DAYS.map((_,i)=>S.locked[i]?S.plan[i]:null);
@@ -464,6 +467,7 @@ function fmt(q,u){
   return (Math.round(q*2)/2)+' '+u;
 }
 function portion(q,u,s,n,L=0){
+  if (!q) return '';
   if (u==='tsp'||u==='tbsp') return (q*(n+L))+' '+u;
   if (u==='g'||u==='ml') return Math.round((q*s*n+q*L)/5)*5+' '+u;
   const v=Math.round((q*s*n+q*L)*4)/4, nice=v%1===0?v:v.toFixed(2).replace(/0$/,'');
@@ -480,8 +484,32 @@ function shopping(){
 
 function shopRows(){
   const g=shopping(), rows=[];
-  ['M','V','D','C'].forEach(a => (g[a]||[]).forEach(it => rows.push({...it, shop:(P[it.name]||{}).s||'A', prod:P[it.name], bp:bestPacks(it.name,it.q)})));
+  ['M','V','D','C'].forEach(a => (g[a]||[]).forEach(it => {
+    if (P[it.name]) rows.push({...it, shop:P[it.name].s, prod:P[it.name], bp:bestPacks(it.name,it.q)});
+    else { const c = catRow(it); rows.push({...it, shop:'A', prod:c && {n:c.it.n, u:c.it.u}, bp:c && c.bp}); }
+  }));
   return rows;
+}
+// ingredients from imported recipes: what to look for in the Aldi catalogue (null = no good Aldi match)
+const CAT_ALIAS = {'Rice pouch (cooked)':'basmati rice pouch','Quinoa pouch (cooked)':'quinoa pouch','Puy lentils (cooked)':null,'Grated cheese':'grated mature cheddar',
+  'Single cream':'single cream','Natural yogurt':'fat free natural yogurt','Butter':'salted butter','Eggs':'eggs','Tortilla wraps':'white tortilla wraps','Bread':'medium sliced wholemeal bread',
+  'Cucumber':'cucumber','Tomatoes':'salad tomatoes','Vine tomatoes':'vine ripened tomatoes','Cauliflower':'cauliflower','Orzo':'orzo pasta','Mascarpone':'mascarpone',
+  'Cooked beetroot':'cooked beetroot','Peanut butter':'smooth peanut butter','Light cream cheese':null,'Fresh herbs':null,'Chicken mince':null,'Beef minute steak':null};
+function sizeOf(sz){ const m=String(sz).match(/^([\d.]+)\s*(kg|g|ml|l)\b/i); if(m){ const q=+m[1], u=m[2].toLowerCase(); return u==='kg'?{q:q*1000,u:'g'}:u==='l'?{q:q*1000,u:'ml'}:{q,u}; }
+  return /^\d+$/.test(sz) ? {q:+sz,u:''} : null; }
+const catCache = {};
+function catRow(it){
+  if (!(it.name in CAT_ALIAS)) return null;
+  const q = CAT_ALIAS[it.name]; if (!q) return null;
+  const key = it.name; if (!(key in catCache)) catCache[key] = candidates(q)[0] || null;
+  const c = catCache[key]; if (!c) return null;
+  const sz = sizeOf(c.sz); let n;
+  if (it.u === 'slice') n = Math.ceil(it.q/20 - 1e-9);
+  else if (sz && sz.u === it.u) n = Math.ceil(it.q/sz.q - 1e-9);
+  else if (sz && sz.u === '' && it.u === '') n = Math.ceil(it.q/sz.q - 1e-9);
+  else n = it.u === '' ? Math.ceil(it.q - 1e-9) : 1;
+  n = Math.max(1, n);
+  return { it:c, bp:{ buy:[{label:c.sz||'pack', n, price:c.pr}], cost:n*c.pr } };
 }
 function totals(rows=shopRows()){ const t={A:0,S:0,X:0}; rows.forEach(r=>{ if(r.bp) t[r.shop]+=r.bp.cost; });
   extrasList().forEach(([,v])=>{ const c=extraInfo(v).cost; if(c!=null) t.X+=c; }); t.A+=t.X; t.all=t.A+t.S; return t; }
@@ -535,7 +563,7 @@ function viewWeek(){
         return `<a class="row ${S.cooked[i]?'cooked':''} ${i===hi?'active':''}" data-i="${i}" href="#/recipe/${i}" style="--c:${COL[i]}">
           <div class="tile">${i+1}</div>
           <div class="rbody"><div class="rtitle">${x.name}${S.locked[i]?'<span class="lockdot">LOCKED</span>':''}</div>
-          <div class="rmeta">${DAYS[i].slice(0,3)} · ≈${k0(mm.kcal)} kcal, ≈${k0(mm.p)}g protein</div></div>
+          <div class="rmeta">${DAYS[i].slice(0,3)} · ≈${k0(mm.kcal)} kcal, ≈${k0(mm.p)}g protein${x.mins?` · ${x.mins} min`:''}${x.by?` · ${x.by}`:''}</div></div>
           <span class="slot" data-slot="${i}">${S.lunch[i]?`<span class="sticker" data-from="${i}">+ Lunch</span>`:'<span class="lslot">+ lunch</span>'}</span>
           <span class="chev">›</span></a>`; }).join('')}</div>
       <div class="card tray" style="margin-top:12px">
@@ -560,7 +588,7 @@ function viewRecipe(i){
   const m=scaled(r), n=S.settings.people, L=S.lunch[i]?1:0;
   return `<a class="back" href="#/">‹ This week</a>
   <div style="--c:${COL[i]}">
-    <div class="rhead"><div class="tile">${i+1}</div><div><div class="label" style="margin:2px 0 4px">${DAYS[i]} · ${r.tag}</div><h1>${r.name}</h1></div></div>
+    <div class="rhead"><div class="tile">${i+1}</div><div><div class="label" style="margin:2px 0 4px">${DAYS[i]} · ${r.tag}${r.mins?` · ${r.mins} min`:''}</div><h1>${r.name}</h1></div></div>
     <div class="sub" style="margin-top:0">${macroLine(m)} per portion${Math.abs(m.s-1)>.04?` · scaled ${m.s.toFixed(2).replace(/0$/,'')}× to hit your target`:''}</div>
     <div class="btns" style="margin:0 0 24px">
       <button class="pill" data-act="cook" data-i="${i}">${S.cooked[i]?'Cooked ✓':'Mark cooked'}</button>
@@ -572,7 +600,8 @@ function viewRecipe(i){
       <div class="card"><b>Ingredients</b><span class="small"> · ${n} ${n>1?'people':'person'}${L?' + 1 lunch':''}</span>${L?' <span class="sticker" style="cursor:default">+ Lunch</span>':''}
         ${r.i.map(([nm,q,u])=>`<div class="item" style="cursor:default"><span class="nm">${nm}</span><span class="q">${portion(q,u,m.s,n,L)}</span></div>`).join('')}
       </div>
-      <div><p class="label">Method</p><ol class="method">${r.m.map(x=>`<li><span>${x}</span></li>`).join('')}</ol></div>
+      <div><p class="label">Method${r.src?' (in short)':''}</p><ol class="method">${r.m.map(x=>`<li><span>${x}</span></li>`).join('')}</ol>
+        ${r.src?`<a class="pill ghost srclink" href="${r.src}" target="_blank" rel="noopener">Full recipe on ${r.by} ↗</a>`:''}</div>
     </div>
   </div>`;
 }
@@ -684,7 +713,7 @@ $('app').addEventListener('click', e=>{
     const repo=$('syncRepo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\/$/,''), token=$('syncToken').value.trim();
     if(!/^[\w.-]+\/[\w.-]+$/.test(repo) || !token){ toast('Add the repo and token'); return; }
     SY.cfg={repo,token}; try{ localStorage.setItem('wc-sync', JSON.stringify(SY.cfg)); }catch(e){}
-    route(); syncNow();
+    route(); syncNow(); loadPrivate();
   }
   if(a==='syncnow') syncNow();
   if(a==='syncoff'){ if(!confirm('Stop syncing on this device? Your week stays here.')) return; SY.cfg=null; try{ localStorage.removeItem('wc-sync'); }catch(e){} setSync('off'); route(); }
@@ -771,7 +800,19 @@ addEventListener('focus', resync);
 
 // ---------- Household sync via a private GitHub repo ----------
 const SY = { cfg:(()=>{ try{ return JSON.parse(localStorage.getItem('wc-sync')); }catch(e){ return null; } })(), sha:null, state:'off', last:null, busy:false, again:false, t:null };
-const FILE = 'whatscooking.json';
+const FILE = 'whatscooking.json', PRIV = 'recipes-private.json';
+function addPrivate(list){ if(!Array.isArray(list)) return 0; let n=0; list.forEach(r=>{ if(r && r.id && !R.some(x=>x.id===r.id)){ R.push(r); n++; } }); return n; }
+(()=>{ try{ addPrivate(JSON.parse(localStorage.getItem('wc-priv')||'[]')); }catch(e){} })();
+async function loadPrivate(){
+  if(!SY.cfg) return;
+  try{
+    const r = await fetch(`https://api.github.com/repos/${SY.cfg.repo}/contents/${PRIV}`, { cache:'no-store', headers:{ Authorization:'Bearer '+SY.cfg.token, Accept:'application/vnd.github+json' } });
+    if (r.status !== 200) return;
+    const list = JSON.parse(b64d((await r.json()).content)).recipes || [];
+    try{ localStorage.setItem('wc-priv', JSON.stringify(list)); }catch(e){}
+    if (addPrivate(list)) { const f=document.activeElement; if(!(f && f.tagName==='INPUT')) route(); }
+  }catch(e){}
+}
 const b64e = t => btoa(unescape(encodeURIComponent(t)));
 const b64d = t => decodeURIComponent(escape(atob(t.replace(/\s/g,''))));
 function gh(method, body){
@@ -827,11 +868,11 @@ function setSync(st){
   const el=$('syncstatus'); if(el) el.textContent=syncText();
 }
 setInterval(()=>{ if(SY.cfg && !document.hidden) syncNow(); }, 15000);
-document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && SY.cfg) syncNow(); });
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && SY.cfg){ syncNow(); loadPrivate(); } });
 addEventListener('online', ()=>{ if(SY.cfg) syncNow(); });
 
 if (S.plan.length!==5 || S.plan.some(id=>!byId(id))) { S.locked=[]; S.cooked=[]; generate(true); } else route();
-if (SY.cfg) syncNow();
+if (SY.cfg){ syncNow(); loadPrivate(); }
 </script>
 </body>
 </html>
