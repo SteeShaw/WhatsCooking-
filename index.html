@@ -28,11 +28,22 @@ button{cursor:pointer;border:0;background:none}
 .muted{color:var(--muted)}
 
 /* nav */
-nav{display:flex;align-items:center;gap:4px;margin-bottom:28px}
-.brand{font-weight:800;font-size:19px;letter-spacing:-.02em;margin-right:18px}
-.tab{white-space:nowrap;padding:6px 14px;border-radius:99px;font-size:15px;font-weight:500;color:var(--muted)}
-.tab:hover{color:var(--ink)}
-.tab.on{background:var(--soft);color:var(--ink)}
+nav{display:flex;align-items:center;gap:12px;margin-bottom:28px;position:relative;z-index:40}
+.brand{font-weight:800;font-size:19px;letter-spacing:-.02em;margin-right:auto}
+.mode{position:relative}
+.modebtn{display:inline-flex;align-items:center;gap:8px;padding:8px 14px 8px 16px;border-radius:99px;background:var(--soft);font-size:15px;font-weight:700;white-space:nowrap}
+.modebtn:hover{background:color-mix(in srgb,var(--soft) 85%,var(--ink) 8%)}
+.modebtn svg{transition:transform .2s}
+.mode.open .modebtn svg{transform:rotate(180deg)}
+.menu{position:absolute;right:0;top:calc(100% + 8px);min-width:250px;padding:6px;border-radius:22px;background:var(--bg);border:1px solid var(--line);box-shadow:0 18px 50px -12px rgba(0,0,0,.25);
+  opacity:0;transform:translateY(-6px) scale(.98);transform-origin:top right;pointer-events:none;visibility:hidden;transition:opacity .16s,transform .16s,visibility 0s .16s}
+.mode.open .menu{opacity:1;transform:none;pointer-events:auto;visibility:visible;transition:opacity .16s,transform .16s}
+.tab{display:flex;flex-direction:column;gap:1px;padding:10px 14px;border-radius:16px;color:var(--ink)}
+.tab b{font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tab span{font-size:13px;color:var(--muted)}
+.tab:hover{background:var(--soft)}
+.tab.on{background:var(--soft)}
+.tab.on b::after{content:"";width:8px;height:8px;border-radius:99px;background:var(--ink)}
 
 h1{font-size:clamp(44px,8vw,68px);font-weight:800;letter-spacing:-.035em;line-height:1;margin:0}
 .sub{font-size:15px;color:var(--muted);margin:8px 0 14px}
@@ -123,7 +134,7 @@ ol.method li::before{content:counter(s);flex:none;width:26px;height:26px;border-
 
 .toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(8px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:99px;font-size:14px;font-weight:600;opacity:0;transition:.2s;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%)}
-@media (max-width:480px){.brand{margin-right:auto;font-size:17px}.tab{padding:5px 8px;font-size:14px}nav{gap:2px}.syncbadge{margin-left:4px}}
+@media (max-width:480px){.brand{font-size:18px}.modebtn{font-size:14px}}
 
 /* lunch stickers */
 .slot{flex:none;display:grid;place-items:center;min-width:74px;height:34px}
@@ -165,7 +176,7 @@ ol.method li::before{content:counter(s);flex:none;width:26px;height:26px;border-
 .card .pill.ghost{background:var(--bg)}
 .sync .field input{font-size:16px;font-weight:500;letter-spacing:0;padding-top:2px}
 .syncbadge[hidden]{display:none}
-.syncbadge{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap}
+.syncbadge{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap}
 .syncbadge::before{content:"";width:8px;height:8px;border-radius:99px;background:var(--dot,#9a9a96)}
 .syncbadge[data-s="ok"]{--dot:#0e9a5c}
 .syncbadge[data-s="syncing"]{--dot:#f5a400}
@@ -241,8 +252,6 @@ ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));colo
 .rhead{display:block}
 .rhead .label{margin:0 0 6px}
 
-.tab .short,.brand .short{display:none}
-@media (max-width:480px){.tab .full,.brand .full{display:none}.tab .short,.brand .short{display:inline}}
 .calnav{display:flex;align-items:center;justify-content:space-between;max-width:420px;margin:6px 0 14px}
 .calnav b{font-size:20px;letter-spacing:-.02em}
 .calnav .pill{padding:6px 14px;font-size:18px}
@@ -290,13 +299,19 @@ ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));colo
 <body>
 <div class="wrap">
   <nav>
-    <a class="brand" href="#/"><span class="full">WhatsCooking</span><span class="short">WC</span></a>
-    <a class="tab" href="#/" data-r="week"><span class="full">This week</span><span class="short">Week</span></a>
-    <a class="tab" href="#/shop" data-r="shop"><span class="full">Shopping</span><span class="short">Shop</span></a>
-    <a class="tab" href="#/mine" data-r="mine"><span class="full">My recipes</span><span class="short">Mine</span></a>
-    <a class="tab" href="#/macros" data-r="macros">Macros</a>
-    <a class="tab" href="#/archive" data-r="archive"><span class="full">Past weeks</span><span class="short">Past</span></a>
+    <a class="brand" href="#/">WhatsCooking</a>
     <a class="syncbadge" id="syncbadge" href="#/macros" hidden></a>
+    <div class="mode">
+      <button class="modebtn" id="modebtn" aria-haspopup="true" aria-expanded="false" aria-controls="menu"><span id="modelabel">This week</span>
+        <svg viewBox="0 0 12 8" width="11" height="8" aria-hidden="true"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="menu" id="menu" role="menu">
+        <a class="tab" role="menuitem" href="#/" data-r="week"><b>This week</b><span>Your five dinners</span></a>
+        <a class="tab" role="menuitem" href="#/shop" data-r="shop"><b>Shopping</b><span>List and prices</span></a>
+        <a class="tab" role="menuitem" href="#/mine" data-r="mine"><b>My recipes</b><span>Build your own</span></a>
+        <a class="tab" role="menuitem" href="#/archive" data-r="archive"><b>Past weeks</b><span>Calendar of what you cooked</span></a>
+        <a class="tab" role="menuitem" href="#/macros" data-r="macros"><b>Macros</b><span>Targets and household sync</span></a>
+      </div>
+    </div>
   </nav>
   <main id="app"></main>
 </div>
@@ -1139,13 +1154,20 @@ function saveRecipe(andAdd){
 function route(){
   const h=location.hash.replace(/^#\/?/,''), [p,arg]=h.split('/');
   const name = p==='shop'?'shop':p==='macros'?'macros':p==='mine'?'mine':(p==='archive'||p==='past')?'archive':'week';
-  document.querySelectorAll('.tab').forEach(a=>a.classList.toggle('on',a.dataset.r===name));
+  document.querySelectorAll('.tab').forEach(a=>{ const on=a.dataset.r===name; a.classList.toggle('on',on); if(on) $('modelabel').textContent=a.querySelector('b').textContent; });
+  menu(false);
   const parts = h.split('/');
   $('app').innerHTML = p==='recipe' ? viewRecipe(+arg) : p==='shop' ? viewShop() : p==='macros' ? viewMacros() : p==='archive' ? viewArchive(arg) : p==='mine' ? (arg==='new' ? viewEditor(null) : arg==='edit' ? viewEditor(parts[2]) : viewMine()) : p==='past' ? viewPast(parts[1], +parts[2]) : viewWeek();
   document.title = (p==='shop'?'Shopping':p==='macros'?'Macros':p==='mine'?'My recipes':name==='archive'?'Past weeks':weekRange()) + ' – WhatsCooking';
   if (p==='mine' && arg==='new' && !$('rf-name').value) $('rf-name').focus();
 }
 addEventListener('hashchange', ()=>{ route(); scrollTo(0,0); });
+// mode menu in the top bar
+function menu(open){ const m=document.querySelector('.mode'); if(!m) return; m.classList.toggle('open',open); $('modebtn').setAttribute('aria-expanded',open); }
+$('modebtn').addEventListener('click', e=>{ e.stopPropagation(); const open=!document.querySelector('.mode').classList.contains('open'); menu(open); if(open) document.querySelector('.tab.on')?.focus(); });
+$('menu').addEventListener('click', e=>{ if(e.target.closest('.tab')) menu(false); });
+document.addEventListener('click', e=>{ if(!e.target.closest('.mode')) menu(false); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape' && document.querySelector('.mode.open')){ menu(false); $('modebtn').focus(); } });
 
 // ---------- Events ----------
 let justDragged=false;
