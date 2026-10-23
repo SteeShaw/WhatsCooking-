@@ -241,8 +241,8 @@ ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));colo
 .rhead{display:block}
 .rhead .label{margin:0 0 6px}
 
-.tab .short{display:none}
-@media (max-width:480px){.tab .full{display:none}.tab .short{display:inline}}
+.tab .short,.brand .short{display:none}
+@media (max-width:480px){.tab .full,.brand .full{display:none}.tab .short,.brand .short{display:inline}}
 .calnav{display:flex;align-items:center;justify-content:space-between;max-width:420px;margin:6px 0 14px}
 .calnav b{font-size:20px;letter-spacing:-.02em}
 .calnav .pill{padding:6px 14px;font-size:18px}
@@ -260,14 +260,40 @@ ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));colo
 .dname{font-size:13px;font-weight:600;line-height:1.2;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .cday:not(.empty):hover{background:color-mix(in srgb,var(--soft) 80%,var(--ink) 6%)}
 @media (max-width:560px){.cal{gap:5px}.cday{min-height:92px;padding:5px;border-radius:12px;gap:4px}.dname{font-size:10.5px;-webkit-line-clamp:2}.dnum{font-size:11px}.sw{border-radius:8px}}
+
+/* my recipes */
+.minebtn{padding:6px 12px;font-size:13px}
+@media (max-width:480px){.minebtn{padding:5px 10px;font-size:12px}}
+#rform .field input,#rform .field select{display:block;width:100%;border:0;background:transparent;outline:none;padding:2px 0 0;font-size:18px;font-weight:600;letter-spacing:0;color:inherit;font-family:inherit}
+#rform .tfield{display:block;margin-bottom:10px}
+#rform .tfield #rf-name{font-size:24px;font-weight:800;letter-spacing:-.02em}
+#rform{max-width:780px}
+#rform .field select{appearance:none;-webkit-appearance:none;cursor:pointer;text-transform:capitalize;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%236b6b6b' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 2px center}
+.fields.three{grid-template-columns:2fr 1fr 1fr;margin-bottom:16px}
+.fields.four{grid-template-columns:repeat(4,1fr);margin-top:12px}
+.mfield{background:var(--bg)!important;padding:10px 12px!important}
+#rform .mfield input{font-size:22px;font-weight:800}
+.ingcard .xhead,.card .xhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.ing{display:grid;grid-template-columns:minmax(0,1fr) 70px 78px 30px;gap:6px;margin-top:8px;align-items:center}
+.ing input,.ing select,.rf-text{border:0;background:var(--bg);border-radius:12px;padding:10px 12px;font-size:16px;outline:none;min-width:0;width:100%;color:inherit;font-family:inherit}
+.ing select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:6px;text-align:center}
+.ing input:focus,.ing select:focus,.rf-text:focus{box-shadow:0 0 0 2px var(--ink) inset}
+.ing-x{color:var(--muted);font-size:15px;border-radius:99px;height:30px}
+.ing-x:hover{color:var(--ink);background:var(--bg)}
+.rf-text{display:block;background:var(--soft);border-radius:18px;padding:14px 16px;resize:vertical;line-height:1.5}
+.item.check{border:0;padding:14px 2px 0}
+.pill.danger{color:#c62d2d}
+@media (max-width:560px){#rform .tfield #rf-name{font-size:20px}.fields.four{grid-template-columns:1fr 1fr}.fields.three{grid-template-columns:1fr 1fr}.fields.three .field:first-child{grid-column:1/-1}
+  .ing{grid-template-columns:minmax(0,1fr) 58px 66px 26px;gap:5px}.ing input,.ing select{padding:9px 9px}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <nav>
-    <a class="brand" href="#/">WhatsCooking</a>
+    <a class="brand" href="#/"><span class="full">WhatsCooking</span><span class="short">WC</span></a>
     <a class="tab" href="#/" data-r="week"><span class="full">This week</span><span class="short">Week</span></a>
     <a class="tab" href="#/shop" data-r="shop"><span class="full">Shopping</span><span class="short">Shop</span></a>
+    <a class="tab" href="#/mine" data-r="mine"><span class="full">My recipes</span><span class="short">Mine</span></a>
     <a class="tab" href="#/macros" data-r="macros">Macros</a>
     <a class="tab" href="#/archive" data-r="archive"><span class="full">Past weeks</span><span class="short">Past</span></a>
     <a class="syncbadge" id="syncbadge" href="#/macros" hidden></a>
@@ -507,7 +533,7 @@ const COL = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)'];
 const DEF = {kcal:2500,protein:160,carbs:260,fat:85,share:30,people:1};
 let S = norm(load());
 function norm(x){ x = x || {};
-  x.settings = {...DEF, ...(x.settings||{})}; x.plan = x.plan||[]; x.locked = x.locked||[]; x.ticked = x.ticked||{}; x.cooked = x.cooked||[]; x.lunch = x.lunch||[]; x.prices = x.prices||{}; x.extras = x.extras||{}; x.history = x.history||{}; x._mt = x._mt||{};
+  x.settings = {...DEF, ...(x.settings||{})}; x.plan = x.plan||[]; x.locked = x.locked||[]; x.ticked = x.ticked||{}; x.cooked = x.cooked||[]; x.lunch = x.lunch||[]; x.prices = x.prices||{}; x.extras = x.extras||{}; x.history = x.history||{}; x.mine = x.mine||{}; x._mt = x._mt||{};
   return x; }
 function load(){ try{ return JSON.parse(localStorage.getItem('wc')); }catch(e){ return null; } }
 function save(push=true){ try{ lastSaved = JSON.stringify(S); localStorage.setItem('wc', lastSaved); }catch(e){} if(push) queuePush(); }
@@ -518,7 +544,7 @@ function put(path,val,ts){ setP(S,path,val); S._mt[path] = ts===undefined ? Date
 function untickAll(ts){ Object.keys(S.ticked).forEach(k=>{ if(S.ticked[k]) put('ticked.'+k,false,ts); }); }
 const esc = t => String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const $ = id => document.getElementById(id);
-const byId = id => R.find(r => r.id === id) || (id && String(id).startsWith('mob-') ? HIDDEN(id) : undefined);
+const byId = id => R.find(r => r.id === id) || (S.mine[id] || undefined) || (id && String(id).startsWith('mob-') ? HIDDEN(id) : undefined);
 // placeholder for a private recipe this device can't load (sync not turned on yet)
 const HIDDEN = id => ({ id, name:'Private recipe — turn on sync to see it', tag:'private', kcal:700, p:45, c:70, f:22, i:[], m:['This dinner comes from your private recipe library. Turn on Household sync in Macros to load it.'], hidden:true });
 
@@ -530,7 +556,7 @@ function score(r){
   return Math.max(0,t.p-m.p)/t.p*3 + Math.abs(m.c-t.c)/t.c*.6 + Math.abs(m.f-t.f)/t.f*.6 + Math.abs(m.kcal-t.kcal)/t.kcal;
 }
 function pick(exclude, used){
-  let pool = R.filter(r=>!exclude.includes(r.id));
+  let pool = [...R, ...mineList().filter(r=>r.pick!==false)].filter(r=>!exclude.includes(r.id));
   const fresh = pool.filter(r=>(used[r.tag]||0)<2); if (fresh.length) pool = fresh;
   const w = pool.map(r=>Math.exp(-score(r)*4)); let x = Math.random()*w.reduce((a,b)=>a+b,0);
   for (let i=0;i<pool.length;i++){ x-=w[i]; if(x<=0) return pool[i].id; }
@@ -595,8 +621,8 @@ function sizeOf(sz){ const m=String(sz).match(/^([\d.]+)\s*(kg|g|ml|l)\b/i); if(
   return /^\d+$/.test(sz) ? {q:+sz,u:''} : null; }
 const catCache = {};
 function catRow(it){
-  if (!(it.name in CAT_ALIAS)) return null;
-  const q = CAT_ALIAS[it.name]; if (!q) return null;
+  const q = it.name in CAT_ALIAS ? CAT_ALIAS[it.name] : isCustomIng(it.name) ? it.name : null;
+  if (!q) return null;
   const key = it.name; if (!(key in catCache)) catCache[key] = candidates(q)[0] || null;
   const c = catCache[key]; if (!c) return null;
   const sz = sizeOf(c.sz); let n;
@@ -706,7 +732,7 @@ function viewWeek(){
         <div class="hero-top">
           <div class="hero-head">
             <div class="day">${nx===null?'Last up':'Up next'} · ${DAYS[hi]}</div>
-            <h2>${r.name}</h2>
+            <h2>${esc(r.name)}</h2>
             <div class="eyebrow"><span class="chip">${r.tag}</span>${r.mins?`<span class="chip">${r.mins} min</span>`:''}${Math.abs(m.s-1)>.04?`<span class="chip">${m.s.toFixed(2).replace(/0$/,'')}× portion</span>`:''}${S.lunch[hi]?'<span class="sticker" data-from="'+hi+'">+ Lunch</span>':''}</div>
           </div>
           ${imgTag(r,'hero-photo')}
@@ -726,7 +752,7 @@ function viewWeek(){
       <div>${S.plan.map((id,i)=>{ const x=byId(id), mm=scaled(x);
         return `<a class="row ${S.cooked[i]?'cooked':''} ${i===hi?'active':''}" data-i="${i}" href="#/recipe/${i}" style="${dayStyle(i)}">
           <div class="tile grad">${imgTag(x,'')}</div>
-          <div class="rbody"><div class="rday">${DAYS[i]}</div><div class="rtitle">${x.name}</div>
+          <div class="rbody"><div class="rday">${DAYS[i]}</div><div class="rtitle">${esc(x.name)}</div>
           <div class="rmeta">≈${k0(mm.kcal)} kcal · ${k0(mm.p)}g protein${x.mins?` · ${x.mins} min`:''}${x.by?` · ${x.by}`:''}</div></div>
           <button class="lock ${S.locked[i]?'on':''}" data-act="lock" data-i="${i}" aria-pressed="${!!S.locked[i]}" aria-label="${S.locked[i]?'Unlock':'Lock'} ${DAYS[i]}" title="${S.locked[i]?'Locked — stays when you shuffle':'Lock to keep it when you shuffle'}">${LOCK_SVG(S.locked[i])}</button>
           <span class="slot" data-slot="${i}">${S.lunch[i]?`<span class="sticker" data-from="${i}">+ Lunch</span>`:'<span class="lslot">+ lunch</span>'}</span>
@@ -754,20 +780,21 @@ function viewRecipe(i){
   return `<a class="back" href="#/">‹ This week</a>
   <div style="${dayStyle(i)}">
     ${photoOf(r) ? `<div class="banner grad">${imgTag(r,'')}</div>` : ''}
-    <div class="rhead"><div><div class="label" style="margin:2px 0 4px">${DAYS[i]} · ${r.tag}${r.mins?` · ${r.mins} min`:''}</div><h1>${r.name}</h1></div></div>
+    <div class="rhead"><div><div class="label" style="margin:2px 0 4px">${DAYS[i]} · ${r.tag}${r.mins?` · ${r.mins} min`:''}</div><h1>${esc(r.name)}</h1></div></div>
     <div class="sub" style="margin-top:0">${macroLine(m)} per portion${r.est?' (estimated)':''}${Math.abs(m.s-1)>.04?` · scaled ${m.s.toFixed(2).replace(/0$/,'')}× to hit your target`:''}</div>
     <div class="btns" style="margin:0 0 24px">
       <button class="pill" data-act="cook" data-i="${i}">${S.cooked[i]?'Cooked ✓':'Mark cooked'}</button>
       <button class="pill ghost" data-act="lunch" data-i="${i}">${L?'Remove lunch portion':'+ Lunch portion'}</button>
       <button class="pill ghost" data-act="lock" data-i="${i}">${S.locked[i]?'Unlock':'Lock this dinner'}</button>
       <button class="pill ghost" data-act="swap" data-i="${i}" ${S.locked[i]?'disabled style="opacity:.4"':''}>Swap</button>
+      ${r.mine && !r.deleted ? `<a class="pill ghost" href="#/mine/edit/${r.id}">Edit recipe</a>` : ''}
     </div>
     <div class="grid">
       <div class="card"><b>Ingredients</b><span class="small"> · ${n} ${n>1?'people':'person'}${L?' + 1 lunch':''}</span>${L?' <span class="sticker" style="cursor:default">+ Lunch</span>':''}
-        ${r.i.map(([nm,q,u])=>`<div class="item" style="cursor:default"><span class="nm">${nm}</span><span class="q">${portion(q,u,m.s,n,L)}</span></div>`).join('')}
+        ${r.i.map(([nm,q,u])=>`<div class="item" style="cursor:default"><span class="nm">${esc(nm)}</span><span class="q">${portion(q,u,m.s,n,L)}</span></div>`).join('')}
       </div>
-      <div><p class="label">Method${r.src?' (in short)':''}</p><ol class="method">${r.m.map(x=>`<li><span>${x}</span></li>`).join('')}</ol>
-        ${r.src?`<a class="pill ghost srclink" href="${r.src}" target="_blank" rel="noopener">Full recipe on ${r.by} ↗</a>`:''}</div>
+      <div><p class="label">Method${r.src?' (in short)':''}</p><ol class="method">${r.m.map(x=>`<li><span>${esc(x)}</span></li>`).join('')}</ol>
+        ${r.src?`<a class="pill ghost srclink" href="${esc(r.src)}" target="_blank" rel="noopener">${r.mine?'Recipe link':'Full recipe on '+r.by} ↗</a>`:''}</div>
     </div>
   </div>`;
 }
@@ -803,7 +830,7 @@ function viewShop(){
     ${ex.length?`<div class="btns" style="margin-top:10px"><button class="pill" data-act="checkx">Check prices</button></div>`:''}
   </section>
   ${shopSec('A')}${shopSec('S')}
-  ${g.S?`<div class="card small"><b style="color:var(--ink)">Check you have</b><p style="margin-top:4px">${g.S.map(x=>x.name).join(', ')}</p></div>`:''}`;
+  ${g.S?`<div class="card small"><b style="color:var(--ink)">Check you have</b><p style="margin-top:4px">${[...new Set(g.S.map(x=>x.name))].map(esc).join(', ')}</p></div>`:''}`;
 }
 function aisle(a,list){
   return `<div class="aisle"><h3>${A[a]}<span class="muted" style="font-weight:500">${list.length}</span></h3>${list.map(it=>{
@@ -880,13 +907,13 @@ function viewPast(key, i){
   return `<a class="back" href="#/archive/${key.slice(0,7)}">‹ Past weeks</a>
   <div style="${gradStyle(r, i)}">
     ${photoOf(r) ? `<div class="banner grad">${imgTag(r,'')}</div>` : ''}
-    <div class="rhead"><div><div class="label">${d.toLocaleDateString('en-GB',{weekday:'long', day:'numeric', month:'long'})}${w.cooked && w.cooked[i] ? ' · cooked ✓' : ''}</div><h1>${r.name}</h1></div></div>
+    <div class="rhead"><div><div class="label">${d.toLocaleDateString('en-GB',{weekday:'long', day:'numeric', month:'long'})}${w.cooked && w.cooked[i] ? ' · cooked ✓' : ''}</div><h1>${esc(r.name)}</h1></div></div>
     <div class="sub" style="margin-top:0">${macroLine(m)} per portion${r.est?' (estimated)':''}</div>
-    <div class="btns" style="margin:0 0 24px"><button class="pill" data-act="again" data-id="${r.id}">Cook this again this week</button>${r.src?`<a class="pill ghost" href="${r.src}" target="_blank" rel="noopener">Full recipe on ${r.by} ↗</a>`:''}</div>
+    <div class="btns" style="margin:0 0 24px"><button class="pill" data-act="again" data-id="${r.id}">Cook this again this week</button>${r.src?`<a class="pill ghost" href="${esc(r.src)}" target="_blank" rel="noopener">${r.mine?'Recipe link':'Full recipe on '+r.by} ↗</a>`:''}</div>
     <div class="grid">
       <div class="card"><b>Ingredients</b><span class="small"> · per portion</span>
-        ${r.i.map(([nm,q,u])=>`<div class="item" style="cursor:default"><span class="nm">${nm}</span><span class="q">${portion(q,u,m.s,1)}</span></div>`).join('')}</div>
-      <div><p class="label">Method${r.src?' (in short)':''}</p><ol class="method">${r.m.map(x=>`<li><span>${x}</span></li>`).join('')}</ol></div>
+        ${r.i.map(([nm,q,u])=>`<div class="item" style="cursor:default"><span class="nm">${esc(nm)}</span><span class="q">${portion(q,u,m.s,1)}</span></div>`).join('')}</div>
+      <div><p class="label">Method${r.src?' (in short)':''}</p><ol class="method">${r.m.map(x=>`<li><span>${esc(x)}</span></li>`).join('')}</ol></div>
     </div>
   </div>`;
 }
@@ -899,14 +926,224 @@ function cookAgain(id){
   location.hash = '#/'; toast(`Added to ${DAYS[j]}`);
 }
 
+
+// ---------- My recipes (built by hand, synced with the rest of the week) ----------
+const mineList = () => Object.values(S.mine).filter(r => r && r.id && !r.deleted).sort((a,b) => a.name.localeCompare(b.name));
+const TAGS = ['chicken','beef','pork','lamb','turkey','fish','veg','other'];
+const UNITS = [['g','g'],['ml','ml'],['','×'],['tin','tin'],['clove','clove'],['slice','slice'],['tsp','tsp'],['tbsp','tbsp']];
+// what every known ingredient is usually measured in and which aisle it lives in (from all the recipes in the app)
+function knownIngs(){
+  const m = {}; [...R, ...mineList()].forEach(r => (r.i||[]).forEach(([n,q,u,a]) => { if (!m[n]) m[n] = {u, a}; else if (q && !m[n].q) m[n].u = u; if (q) m[n].q = true; }));
+  Object.keys(P).forEach(n => { if (!m[n]) m[n] = {u:'g', a:'C'}; });
+  return m;
+}
+const isCustomIng = n => mineList().some(r => r.i.some(x => x[0] === n));
+// aisle for an ingredient nobody has used before: guess from the shop catalogue
+function guessAisle(name, u, q){
+  const k = knownIngs()[name]; if (k) return k.a;
+  if (!q || u === 'tsp') return 'S';
+  const c = candidates(name)[0]; if (!c) return 'C';
+  if (/^[MVD]$/.test(c.a)) return c.a;
+  if (/^S-(Veg|Fruit|Fresh herbs)$/.test(c.a)) return 'V';
+  if (/^S-(Dairy|Chilled|Deli)$/.test(c.a)) return 'D';
+  if (c.a === 'S-Fish') return 'M';
+  return 'C';
+}
+
+// Typical values per 100 g (or 100 ml): [match, kcal, protein, carbs, fat, grams per item, grams per tin]
+const NUT = [
+ [/stock cube|stock pot|bouillon/,250,10,20,15,10],[/\bstock\b/,5,0.5,0.5,0.2],[/vinegar/,20,0,1,0],[/soy sauce/,55,8,5,0],[/oyster sauce/,100,2,22,0.2],[/fish sauce|hot sauce|sriracha|peri peri sauce|tabasco|worcester/,40,1.5,7,0.5],
+ [/teriyaki|hoisin|sweet chilli|bbq|barbecue|ketchup/,170,1.5,40,0.3],[/jam|chutney|marmalade/,240,0.4,58,0.1],[/peanut butter|nut butter|almond butter/,600,25,13,50],[/coconut milk.*light|light coconut/,75,0.7,1.5,7.5,null,400],[/coconut milk|coconut cream|creamed coconut/,180,1.5,3,18,null,400],
+ [/pomegranate/,80,1.5,18,1],[/molasses/,290,0,75,0],[/coconut/,180,1.5,3,18,null,400],[/fried onion|crispy onion/,600,6,40,44],
+ [/spring onion|scallion/,32,1.8,6,0.2,15],[/sugar snap|mange ?tout/,42,3,7,0.2],[/edamame/,120,11,7,5],[/green bean|fine bean|runner bean/,31,1.8,5,0.2],[/cornflour|plain flour|self.raising|\bflour\b/,350,1,85,1],
+ [/egg noodle|noodle nest/,360,13,70,2.5],[/rice noodle/,360,6,80,0.6],[/tuna steak/,110,25,0,1,110],[/gammon steak/,140,20,0,6,150],[/pork mince/,200,19,0,14],[/lamb mince/,240,17,0,19],[/peppercorn|black pepper|white pepper/,250,10,64,3],
+ [/chicken breast|chicken fillet|chicken strips/,106,24,0,1.1,170],[/chicken thigh/,125,20,0,4.8,90],[/chicken mince/,120,21,0,4],[/chicken drumstick|chicken leg/,170,18,0,11,110],[/chicken/,120,22,0,3.5,150],
+ [/turkey mince/,120,22,0,3.5],[/turkey/,105,24,0,1,150],
+ [/beef mince.*(10|12)|mince.*(10|12)%/,180,20,0,11],[/beef mince.*(15|20)|mince.*(15|20)%/,230,18,0,17],[/beef mince|steak mince|mince/,125,21,0,5],
+ [/steak|beef strips|sirloin|rump|beef/,150,23,0,6.5,200],[/pork (tenderloin|fillet)/,109,21,0,2.2],[/pork|gammon/,150,20,0,8,150],
+ [/lamb/,200,20,0,13,150],[/chorizo/,455,24,2,38],[/bacon|pancetta/,215,16,0.5,16,30],[/sausage/,250,13,9,18,57],[/ham/,110,18,1.5,3.5,30],
+ [/salmon/,200,20,0,13,120],[/tinned tuna|tuna chunks|tuna in|can.*tuna/,110,25,0,1,110,110],[/tuna/,110,25,0,1,110],[/prawn|shrimp/,70,15,0,1],[/mackerel/,230,19,0,17,100],
+ [/\bcod\b|haddock|basa|pollock|hake|white fish|sea bass|seabass/,80,18,0,0.7,130],[/fish/,100,18,0,3,130],
+ [/egg white/,48,11,0.7,0.2,33],[/\beggs?\b/,143,12.6,0.7,9.5,58],[/tofu/,120,13,1.5,7],
+ [/halloumi.*light|light.*halloumi/,245,26,1.5,15],[/halloumi/,320,22,2,25],[/feta/,265,14,1,22],[/lighter cheddar|light cheese|lighter.*cheese/,315,27,0.1,22,20],
+ [/parmesan|parmigiano|\bgrana\b/,390,33,0,29],[/mozzarella/,250,18,1,19,125],[/cottage cheese/,90,11,3.5,3.5],[/cream cheese|soft cheese/,160,7,5,12],[/mascarpone/,420,5,4,42],
+ [/cheddar|grated cheese|cheese/,415,25,0.1,35,20],[/greek.*(0%|fat free)|(0%|fat free).*greek/,57,10,3.6,0.2],[/skyr/,64,11,4,0.2],[/greek/,130,6,4,10],
+ [/yogh?urt/,60,5.5,7,1],[/milk/,47,3.5,4.8,1.7],[/double cream/,445,1.7,2.7,48],[/single cream/,190,2.6,3.5,19],[/soured cream|sour cream/,190,3,4,18],[/cr[eè]me fra[iî]che/,300,2.4,2.6,30],[/butter(?! ?bean)(?!nut)/,740,0.6,0.6,82],
+  [/rice pouch|microwave rice|cooked rice/,160,3.5,32,2,250],[/quinoa pouch|cooked quinoa/,170,5.5,27,4,250],[/quinoa/,370,14,64,6],[/rice/,355,7.5,78,1],
+ [/instant noodle|ramen/,450,9,60,19,85],[/noodle/,350,10,70,2],[/gnocchi/,150,3.5,33,0.3],[/couscous/,360,13,72,1.5],[/orzo|pasta|spaghetti|penne|fusilli|linguine|tagliatelle|macaroni|lasagne/,355,12.5,70,1.5],
+ [/wrap|tortilla/,290,8.5,50,6,62],[/pitta/,265,9,52,1.5,60],[/naan/,285,8.5,48,6,130],[/bagel/,260,10,50,1.5,85],[/sourdough|bread|roll|bun|ciabatta/,245,9,45,2.5,40],
+ [/sweet potato/,86,1.6,20,0.1,200],[/new potato|baby potato/,70,1.6,15,0.3,40],[/potato/,77,2,17,0.1,200],[/\boats?\b|porridge/,375,11,60,8],
+ [/red lentil|lentil.*dry|dried lentil/,330,24,50,1.5],[/lentil/,120,9,17,0.5,null,265],[/chickpea/,120,7,15,2.5,null,240],[/bean(?!s? sprout)(?! ?curd)(?!.*green)/,100,7,14,0.5,null,240],
+ [/chopped tomato|plum tomato|tinned tomato/,22,1.1,3.7,0.2,null,400],[/passata/,30,1.3,5,0.2,null,500],[/tomato pur[eé]e|tomato paste/,80,4.5,13,0.3],[/sun.?dried tomato/,210,4,20,13],
+ [/sweetcorn|\bcorn\b/,80,2.8,14,1.5,null,200],[/peas/,70,6,9,1],
+ [/onion/,40,1.1,8,0.1,150],[/pepper(?!corn)|capsicum/,30,1,5,0.3,160],[/garlic/,150,6,30,0.5,5],[/ginger/,80,1.8,15,0.8,30],[/carrot/,40,0.6,8,0.3,80],[/courgette|zucchini/,17,1.2,2.5,0.3,200],
+ [/tenderstem|broccoli/,35,3,4,0.5,300],[/spinach/,23,3,1.5,0.4],[/kale|cavolo/,35,3,3,1],[/cabbage|sprout/,25,1.3,4,0.1,600],[/mushroom/,22,3,0.5,0.3,15],[/cherry tomato/,18,0.9,3,0.2,15],[/tomato/,18,0.9,3,0.2,85],
+ [/cucumber/,12,0.6,2,0.1,300],[/lettuce|salad|rocket|leaves/,15,1.3,2,0.2,200],[/stir.?fry veg|mixed veg|vegetables/,35,2,5,0.3],[/aubergine|eggplant/,25,1,4,0.2,250],
+ [/cauliflower/,25,2,3,0.3,600],[/leek/,30,1.5,5,0.3,150],[/pak choi|bok choy/,13,1.5,1.2,0.2,120],[/butternut|squash|pumpkin(?! seed)/,45,1,10,0.1,900],
+ [/celery/,16,0.7,3,0.2,40],[/asparagus/,20,2.2,3.9,0.1,20],[/avocado/,190,1.9,1.9,19.5,140],[/beetroot/,45,1.7,8,0.1,80],
+ [/lemon/,29,1,9,0.3,100],[/lime/,30,0.7,10,0.2,60],[/chilli(?! (powder|flakes|sauce))/,40,2,8,0.4,15],[/herb|coriander|parsley|basil|mint|dill|chive/,40,3,5,0.5,30],
+ [/banana/,89,1.1,23,0.3,120],[/apple(?! cider)/,52,0.3,14,0.2,150],[/berr|grape/,50,0.8,11,0.3],[/mango/,60,0.8,15,0.4,250],[/orange/,47,0.9,12,0.1,150],[/raisin|sultana|cranberr.*dried/,300,3,70,0.5],
+ [/olive oil|vegetable oil|sunflower oil|rapeseed oil|sesame oil|coconut oil|\boil\b/,900,0,0,100],[/tahini/,600,17,10,55],
+ [/nuts|almond|cashew|peanut|walnut/,600,20,15,52],[/seed/,570,25,15,48],[/olive/,145,1,4,15,4],
+ [/green pesto|^pesto/,450,5,4,45],[/red pesto/,350,4,10,32],[/curry paste|tikka paste|korma paste|thai.*paste/,180,3,12,13],[/harissa/,120,2,10,7],[/gochujang/,210,4,45,1.5],
+ [/honey|maple|syrup/,330,0.4,82,0],[/sugar/,400,0,100,0],
+ [/mayo/,700,1,1.5,75],[/mustard/,150,7,6,11],[/salsa/,35,1.4,6,0.2],
+ [/gravy/,400,6,60,15],[/marmite|yeast extract/,260,40,24,0],
+ [/kimchi|sauerkraut/,30,2,4,0.5],[/jalape/,25,1,4,0.5],[/artichoke/,90,2,4,7],[/white wine|red wine|wine/,80,0.1,2.6,0],[/chocolate|cocoa/,540,7,55,31],[/protein powder|whey/,380,75,8,6,30],
+ [/salt|pepper|paprika|cumin|turmeric|oregano|thyme|seasoning|spice|powder|flakes|cinnamon|garam|curry|cajun|fajita/,300,10,50,8,null,null],
+];
+const nutOf = name => { const n = String(name).toLowerCase(); const row = NUT.find(x => x[0].test(n)); return row || null; };
+function gramsOf(row, q, u){
+  if (u === 'g' || u === 'ml') return q;
+  if (u === 'tsp') return q * (row[1] > 600 ? 4.5 : 5);
+  if (u === 'tbsp') return q * (row[1] > 600 ? 13.5 : 15);
+  if (u === 'clove') return q * (row[5] || 5);
+  if (u === 'slice') return q * (row[5] && row[5] < 60 ? row[5] : 35);
+  if (u === 'tin') return q * (row[6] || 400);
+  if (u === '') return row[5] ? q * row[5] : null;
+  return null;
+}
+// per-portion ingredients → estimated macros per portion
+function estimate(ings){
+  const tot = {kcal:0,p:0,c:0,f:0}, missed = []; let hit = 0, counted = 0;
+  ings.forEach(([n,q,u]) => { if (!n) return; counted++;
+    if (!q) { hit++; return; }                        // "to taste" — nothing to add
+    const row = nutOf(n), g = row && gramsOf(row, q, u);
+    if (g == null) { missed.push(n); return; }
+    hit++; tot.kcal += row[1]*g/100; tot.p += row[2]*g/100; tot.c += row[3]*g/100; tot.f += row[4]*g/100; });
+  return { kcal:Math.round(tot.kcal), p:Math.round(tot.p), c:Math.round(tot.c), f:Math.round(tot.f), hit, counted, missed };
+}
+function parseQty(t){
+  t = String(t||'').trim().replace(',', '.').replace(/½/,'.5').replace(/¼/,'.25').replace(/¾/,'.75').replace(/⅓/,'.33');
+  let m = t.match(/^(\d+)\s+(\d+)\/(\d+)$/); if (m) return +m[1] + m[2]/m[3];
+  m = t.match(/^(\d+)\/(\d+)$/); if (m) return m[1]/m[2];
+  m = t.match(/^(\d*)(\.\d+)?$/); if (m && t) return parseFloat((m[1]||'0') + (m[2]||''));
+  return NaN;
+}
+const nice = v => { const r = Math.round(v*100)/100; return String(r); };
+
+function viewMine(){
+  const list = mineList();
+  return `<h1>My recipes</h1>
+  <div class="sub">${list.length ? `${list.length} recipe${list.length>1?'s':''} of your own · they join the weekly shuffle and the shopping list` : 'Build your own dinners — they join the weekly shuffle and the shopping list, priced at Aldi.'}</div>
+  <div class="btns" style="margin:0 0 18px"><a class="pill" href="#/mine/new">+ New recipe</a></div>
+  ${list.length ? `<div>${list.map((r,i) => `<a class="row" href="#/mine/edit/${r.id}" style="${gradStyle(r,i)}">
+      <div class="tile grad">${imgTag(r,'')}</div>
+      <div class="rbody"><div class="rday">${esc(r.tag)}${r.pick===false?' · not in the shuffle':''}</div><div class="rtitle">${esc(r.name)}</div>
+      <div class="rmeta">≈${k0(r.kcal)} kcal · ${k0(r.p)}g protein${r.mins?` · ${r.mins} min`:''} · ${r.i.length} ingredient${r.i.length>1?'s':''}</div></div>
+      <button class="pill ghost minebtn" data-act="mineadd" data-id="${r.id}">Add to week</button>
+      <span class="chev">›</span></a>`).join('')}</div>`
+  : `<div class="card"><b>How it works</b><p class="small" style="margin-top:4px">Add the ingredients for the whole dish and how many it serves. WhatsCooking works out a portion, estimates the macros, and prices the shopping at Aldi (or Sainsbury's when Aldi doesn't sell it).</p></div>`}`;
+}
+
+function draftLoad(key){ try{ const d = JSON.parse(localStorage.getItem('wc-draft')); return d && d.key === key ? d.r : null; }catch(e){ return null; } }
+function draftSave(){ const f = $('rform'); if (!f) return; try{ localStorage.setItem('wc-draft', JSON.stringify({ key:f.dataset.key, r:readForm() })); }catch(e){} }
+function draftClear(){ try{ localStorage.removeItem('wc-draft'); }catch(e){} }
+
+function ingRow(n, q, u){
+  return `<div class="ing"><input class="ing-n" list="ingnames" placeholder="Ingredient" value="${esc(n||'')}" autocomplete="off" enterkeyhint="next">
+    <input class="ing-q" inputmode="decimal" placeholder="Qty" value="${q===''||q==null?'':esc(q)}" enterkeyhint="next">
+    <select class="ing-u" aria-label="Unit">${UNITS.map(([v,l]) => `<option value="${v}" ${v===(u==null?'g':u)?'selected':''}>${l}</option>`).join('')}</select>
+    <button type="button" class="ing-x" data-act="ingdel" aria-label="Remove ingredient">✕</button></div>`;
+}
+function viewEditor(id){
+  const src = id ? S.mine[id] : null;
+  if (id && (!src || src.deleted)) return viewMine();
+  const key = id || 'new', d = draftLoad(key);
+  // the form edits whole-dish quantities; recipes store them per portion
+  const r = d || (src ? { ...src, serves:src.serves||1, i:src.i.map(([n,q,u]) => [n, q ? nice(q*(src.serves||1)) : '', u]), m:(src.m||[]).join('\n') }
+                      : { name:'', tag:'chicken', mins:'', serves:2, i:[['','','g'],['','','g'],['','','g']], m:'', kcal:'', p:'', c:'', f:'', src:'', img:'', pick:true });
+  const names = Object.keys(knownIngs()).sort((a,b) => a.localeCompare(b));
+  const mf = (k, l) => `<label class="field mfield"><span>${l}</span><input id="rf-${k}" class="rf-m" inputmode="numeric" value="${r[k]===''||r[k]==null?'':esc(r[k])}"></label>`;
+  return `<a class="back" href="#/mine">‹ My recipes</a>
+  <h1>${src ? 'Edit recipe' : 'New recipe'}</h1>
+  <form id="rform" data-key="${key}" data-est="${r.est?1:''}" onsubmit="return false">
+    <label class="field tfield"><span>Name</span><input id="rf-name" value="${esc(r.name||'')}" placeholder="e.g. Harissa traybake" autocomplete="off"></label>
+    <div class="fields three">
+      <label class="field sfield"><span>Main</span><select id="rf-tag">${TAGS.map(t => `<option ${t===r.tag?'selected':''}>${t}</option>`).join('')}</select></label>
+      <label class="field sfield"><span>Minutes</span><input id="rf-mins" inputmode="numeric" value="${esc(r.mins||'')}" placeholder="30"></label>
+      <label class="field sfield"><span>Serves</span><input id="rf-serves" inputmode="numeric" value="${esc(r.serves||1)}"></label>
+    </div>
+    <section class="card ingcard"><div class="xhead"><b>Ingredients</b><span class="small">for the whole dish</span></div>
+      <div id="ings">${r.i.map(x => ingRow(...x)).join('')}</div>
+      <datalist id="ingnames">${names.map(n => `<option value="${esc(n)}">`).join('')}</datalist>
+      <button type="button" class="pill ghost" data-act="ingadd" style="margin-top:10px">+ Add ingredient</button>
+      <p class="small" style="margin:10px 0 0">Pick from the suggestions where you can — those are already matched to Aldi products. Leave the qty blank for things like salt and pepper.</p>
+    </section>
+    <p class="label" style="margin-top:22px">Method</p>
+    <textarea id="rf-m" class="rf-text" rows="5" placeholder="One step per line">${esc(r.m||'')}</textarea>
+    <div class="card" style="margin-top:18px">
+      <div class="xhead"><b>Macros per serving</b><button type="button" class="pill" data-act="ingest">Estimate from ingredients</button></div>
+      <div class="fields four">${mf('kcal','kcal')}${mf('p','Protein g')}${mf('c','Carbs g')}${mf('f','Fat g')}</div>
+      <p class="small" id="estnote" style="margin:10px 0 0">${r.est ? 'Estimated from the ingredients — change any number if you know better.' : 'Type them in, or let WhatsCooking estimate them from typical values.'}</p>
+    </div>
+    <label class="field tfield" style="margin-top:18px"><span>Recipe link (optional)</span><input id="rf-src" value="${esc(r.src||'')}" placeholder="https://…" autocomplete="off" autocapitalize="off" inputmode="url"></label>
+    <label class="field tfield"><span>Photo link (optional)</span><input id="rf-img" value="${esc(r.img||'')}" placeholder="https://…/photo.jpg" autocomplete="off" autocapitalize="off" inputmode="url"></label>
+    <label class="item check" style="cursor:pointer"><input type="checkbox" id="rf-pick" ${r.pick!==false?'checked':''}><span class="nm">Include it when picking a new week</span></label>
+    <div class="btns" style="margin-top:20px">
+      <button type="button" class="pill" data-act="rsave">Save recipe</button>
+      <button type="button" class="pill ghost" data-act="rsaveadd">Save and add to this week</button>
+      ${src ? `<button type="button" class="pill ghost danger" data-act="rdel">Delete</button>` : ''}
+    </div>
+  </form>`;
+}
+function readForm(){
+  const v = id => ($(id) ? $(id).value : '').trim();
+  const i = [...document.querySelectorAll('#ings .ing')].map(row => [row.querySelector('.ing-n').value.trim(), row.querySelector('.ing-q').value.trim(), row.querySelector('.ing-u').value]);
+  return { name:v('rf-name'), tag:v('rf-tag'), mins:v('rf-mins'), serves:v('rf-serves'), i, m:$('rf-m') ? $('rf-m').value : '',
+    kcal:v('rf-kcal'), p:v('rf-p'), c:v('rf-c'), f:v('rf-f'), src:v('rf-src'), img:v('rf-img'), pick:$('rf-pick') ? $('rf-pick').checked : true, est:!!($('rform') && $('rform').dataset.est) };
+}
+// form values → per-portion ingredient list (or an error message)
+function formIngs(d){
+  const serves = Math.max(1, Math.min(20, Math.round(parseFloat(d.serves) || 1)));
+  const out = [];
+  for (const [n, qs, u] of d.i){ if (!n) continue;
+    const q = qs === '' ? 0 : parseQty(qs);
+    if (!isFinite(q) || q < 0) return { err:`Check the amount for ${n}` };
+    const per = Math.round(q / serves * 1000) / 1000;
+    out.push([n, per, u, guessAisle(n, u, q)]); }
+  return { serves, ings:out };
+}
+function runEstimate(){
+  const d = readForm(), fi = formIngs(d); if (fi.err){ toast(fi.err); return null; }
+  if (!fi.ings.length){ toast('Add some ingredients first'); return null; }
+  const e = estimate(fi.ings);
+  ['kcal','p','c','f'].forEach(k => { $('rf-'+k).value = e[k]; });
+  $('rform').dataset.est = '1';
+  $('estnote').innerHTML = `Estimated from ${e.hit} of ${e.counted} ingredients using typical values${e.missed.length ? ` — couldn't work out <b>${e.missed.map(esc).join(', ')}</b>, so add those yourself if they matter` : ''}. Change any number if you know better.`;
+  draftSave(); return e;
+}
+function saveRecipe(andAdd){
+  const f = $('rform'); if (!f) return;
+  const d = readForm(); if (!d.name){ toast('Give it a name'); $('rf-name').focus(); return; }
+  const fi = formIngs(d); if (fi.err){ toast(fi.err); return; }
+  if (!fi.ings.length){ toast('Add at least one ingredient'); return; }
+  let mac = { kcal:parseFloat(d.kcal), p:parseFloat(d.p), c:parseFloat(d.c), f:parseFloat(d.f) }, est = d.est;
+  if (!(mac.kcal > 0)){ const e = runEstimate(); if (!e || e.kcal < 80){ toast('Add the calories per serving'); $('rf-kcal').focus(); return; } mac = e; est = true; }
+  ['p','c','f'].forEach(k => { if (!(mac[k] >= 0)) mac[k] = 0; });
+  const id = f.dataset.key === 'new' ? 'my-' + Date.now().toString(36) + Math.random().toString(36).slice(2,5) : f.dataset.key;
+  const link = u => /^https?:\/\/\S+$/i.test(u) ? u : '';
+  const r = { id, name:d.name.slice(0,80), tag:TAGS.includes(d.tag) ? d.tag : 'other', kcal:Math.round(mac.kcal), p:Math.round(mac.p), c:Math.round(mac.c), f:Math.round(mac.f),
+    ...(parseInt(d.mins) > 0 ? { mins:parseInt(d.mins) } : {}), serves:fi.serves, i:fi.ings,
+    m:d.m.split('\n').map(s => s.replace(/^\s*(\d+[.)]|[-•*])\s*/, '').trim()).filter(Boolean),
+    ...(link(d.src) ? { src:link(d.src) } : {}), ...(link(d.img) ? { img:link(d.img) } : {}),
+    by:'Yours', mine:true, pick:d.pick, ...(est ? { est:true } : {}) };
+  if (!r.m.length) r.m = ['No method added yet — tap Edit recipe to add the steps.'];
+  delete catCache[r.id];
+  put('mine.' + id, r); save(); draftClear();
+  if (andAdd){ cookAgain(id); return; }
+  location.hash = '#/mine'; toast(f.dataset.key === 'new' ? `Saved ${r.name}` : 'Recipe updated');
+}
+
 // ---------- Router ----------
 function route(){
   const h=location.hash.replace(/^#\/?/,''), [p,arg]=h.split('/');
-  const name = p==='shop'?'shop':p==='macros'?'macros':(p==='archive'||p==='past')?'archive':'week';
+  const name = p==='shop'?'shop':p==='macros'?'macros':p==='mine'?'mine':(p==='archive'||p==='past')?'archive':'week';
   document.querySelectorAll('.tab').forEach(a=>a.classList.toggle('on',a.dataset.r===name));
   const parts = h.split('/');
-  $('app').innerHTML = p==='recipe' ? viewRecipe(+arg) : p==='shop' ? viewShop() : p==='macros' ? viewMacros() : p==='archive' ? viewArchive(arg) : p==='past' ? viewPast(parts[1], +parts[2]) : viewWeek();
-  document.title = (p==='shop'?'Shopping':p==='macros'?'Macros':name==='archive'?'Past weeks':weekRange()) + ' – WhatsCooking';
+  $('app').innerHTML = p==='recipe' ? viewRecipe(+arg) : p==='shop' ? viewShop() : p==='macros' ? viewMacros() : p==='archive' ? viewArchive(arg) : p==='mine' ? (arg==='new' ? viewEditor(null) : arg==='edit' ? viewEditor(parts[2]) : viewMine()) : p==='past' ? viewPast(parts[1], +parts[2]) : viewWeek();
+  document.title = (p==='shop'?'Shopping':p==='macros'?'Macros':p==='mine'?'My recipes':name==='archive'?'Past weeks':weekRange()) + ' – WhatsCooking';
+  if (p==='mine' && arg==='new' && !$('rf-name').value) $('rf-name').focus();
 }
 addEventListener('hashchange', ()=>{ route(); scrollTo(0,0); });
 
@@ -929,6 +1166,14 @@ $('app').addEventListener('click', e=>{
   if(a==='delx'){ put('extras.'+b.dataset.id,null); save(); route(); }
   if(a==='checkx') checkExtras(false);
   if(a==='again') cookAgain(b.dataset.id);
+  if(a==='mineadd') cookAgain(b.dataset.id);
+  if(a==='ingadd'){ $('ings').insertAdjacentHTML('beforeend', ingRow('','','g')); const rows=$('ings').querySelectorAll('.ing'); rows[rows.length-1].querySelector('.ing-n').focus(); draftSave(); }
+  if(a==='ingdel'){ const row=b.closest('.ing'); if($('ings').children.length>1) row.remove(); else row.querySelectorAll('input').forEach(x=>x.value=''); draftSave(); }
+  if(a==='ingest') runEstimate();
+  if(a==='rsave') saveRecipe(false);
+  if(a==='rsaveadd') saveRecipe(true);
+  if(a==='rdel'){ const id=$('rform').dataset.key, r=S.mine[id]; if(!r || !confirm(`Delete ${r.name}? Past weeks that used it keep it.`)) return;
+    put('mine.'+id, {...r, deleted:true}); save(); draftClear(); location.hash='#/mine'; toast('Recipe deleted'); }
   if(a==='altx'){ const id=b.dataset.id, v=S.extras[id], c=candidates(v.t); if(c.length<2){ toast('No other matches'); return; }
     const i=c.findIndex(o=>o.key===v.m), nx=c[(i+1)%c.length]; const nv={...v, m:nx.key}; delete nv.p; put('extras.'+id, nv); save(); route(); toast(nx.n+(nx.sz?' · '+nx.sz:'')); }
   if(a==='xprice'){ const id=b.dataset.id, v=S.extras[id], x=extraInfo(v), unit=x.cost!=null?x.cost/x.qty:null;
@@ -955,12 +1200,17 @@ $('app').addEventListener('click', e=>{
     const txt=['A','S'].map(sh=>{ const l=rows.filter(r=>r.shop===sh); if(!l.length) return '';
       return SHOP[sh].toUpperCase()+` (${gbp(t[sh])})\n`+l.map(r=>`- ${r.prod?r.prod.n:r.name} — ${packStr(r.bp)} ${r.bp?gbp(r.bp.cost):''}`).join('\n'); }).filter(Boolean).join('\n\n')
       +(extrasList().length?'\n\nALSO\n'+extrasList().map(([,v])=>{ const x=extraInfo(v); return '- '+v.t+(x.it?` (${x.it.n})`:'')+(x.cost!=null?' '+gbp(x.cost):''); }).join('\n'):'')
-      +(g.S?'\n\nCHECK YOU HAVE\n'+g.S.map(x=>'- '+x.name).join('\n'):'')+`\n\nEstimated total ${gbp(t.all)}`;
+      +(g.S?'\n\nCHECK YOU HAVE\n'+[...new Set(g.S.map(x=>x.name))].map(x=>'- '+x).join('\n'):'')+`\n\nEstimated total ${gbp(t.all)}`;
     navigator.clipboard.writeText(txt).then(()=>toast('List copied')).catch(()=>toast('Copy failed'));
   }
 
 });
-$('app').addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.id==='xtra'){ e.preventDefault(); addExtra(); } });
+$('app').addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.id==='xtra'){ e.preventDefault(); addExtra(); return; }
+  const t=e.target; if(e.key!=='Enter' || !t.closest('#rform') || t.tagName==='TEXTAREA') return; e.preventDefault();
+  if(t.classList.contains('ing-n')) t.closest('.ing').querySelector('.ing-q').focus();
+  else if(t.classList.contains('ing-q')){ const row=t.closest('.ing'), nx=row.nextElementSibling;
+    if(nx) nx.querySelector('.ing-n').focus(); else { $('ings').insertAdjacentHTML('beforeend', ingRow('','','g')); $('ings').lastElementChild.querySelector('.ing-n').focus(); } }
+});
 function addExtra(){
   const el=$('xtra'); const t=el && el.value.trim(); if(!t) return;
   const v = matchExtra({t, done:false}), it = v.m ? byKey(v.m) : null;
@@ -969,10 +1219,16 @@ function addExtra(){
 }
 const extrasList = () => Object.entries(S.extras).filter(([,v])=>v && v.t);
 $('app').addEventListener('change', e=>{
+  if(e.target.closest('#rform')){ draftSave(); return; }
   const x=e.target.dataset.extra; if(x){ put('extras.'+x,{...S.extras[x],done:e.target.checked}); save(); route(); return; }
   const k=e.target.dataset.key; if(!k) return; put('ticked.'+k,e.target.checked); save(); route();
 });
 $('app').addEventListener('input', e=>{
+  if(e.target.closest('#rform')){ const t=e.target;
+    if(t.classList.contains('rf-m')) $('rform').dataset.est='';
+    if(t.classList.contains('ing-n')){ const k=knownIngs()[t.value.trim()], row=t.closest('.ing');
+      if(k && !row.querySelector('.ing-q').value) row.querySelector('.ing-u').value=k.u; }
+    draftSave(); return; }
   const id=e.target.id; if(!(id in S.settings)) return;
   const v=parseFloat(e.target.value); if(!isFinite(v)||v<=0) return;
   put('settings.'+id,v); save(); const el=$('tgt'); if(el) el.innerHTML=tgt(targets());
@@ -1017,6 +1273,7 @@ function resync(){
   S = next;
   const f = document.activeElement;
   if (f && f.tagName === 'INPUT' && f.type === 'number') return;   // don't interrupt typing in Macros
+  if ($('rform')) return;                                            // or a recipe being built
   route();
 }
 addEventListener('storage', e => { if (e.key === 'wc') resync(); });
@@ -1030,7 +1287,7 @@ const FILE = 'whatscooking.json', PRIV = 'recipes-private.json';
 function addPrivate(list){ if(!Array.isArray(list)) return 0; let n=0; list.forEach(r=>{ if(r && r.id && !R.some(x=>x.id===r.id)){ R.push(r); n++; } }); return n; }
 (()=>{ try{ addPrivate(JSON.parse(localStorage.getItem('wc-priv')||'[]')); }catch(e){} })();
 let PHOTOS = (()=>{ try{ return JSON.parse(localStorage.getItem('wc-photos')||'{}'); }catch(e){ return {}; } })();
-const photoOf = r => r && PHOTOS[r.id] || '';
+const photoOf = r => r && (PHOTOS[r.id] || r.img) || '';
 const imgTag = (r, cls) => { const u = photoOf(r); return u ? `<img class="${cls}" src="${esc(u)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">` : ''; };
 async function loadPrivate(){
   if(!SY.cfg) return;
@@ -1044,7 +1301,7 @@ async function loadPrivate(){
     const ph = await fetch(`https://api.github.com/repos/${SY.cfg.repo}/contents/photos.json`, { cache:'no-store', headers:{ Authorization:'Bearer '+SY.cfg.token, Accept:'application/vnd.github+json' } });
     if (ph.status === 200){ const map = JSON.parse(b64d((await ph.json()).content)).photos || {};
       newPhotos = JSON.stringify(map) !== JSON.stringify(PHOTOS); PHOTOS = map; try{ localStorage.setItem('wc-photos', JSON.stringify(map)); }catch(e){} }
-    if (added || newPhotos) { const f=document.activeElement; if(!(f && f.tagName==='INPUT')) route(); }
+    if (added || newPhotos) { const f=document.activeElement; if(!(f && f.tagName==='INPUT') && !$('rform')) route(); }
   }catch(e){}
 }
 const b64e = t => btoa(unescape(encodeURIComponent(t)));
@@ -1056,7 +1313,7 @@ function gh(method, body){
 function allPaths(){
   const ps=['plan','week']; Object.keys(S.history).forEach(k=>ps.push('history.'+k)); Object.keys(S.settings).forEach(k=>ps.push('settings.'+k));
   for(let i=0;i<5;i++) ps.push('cooked.'+i,'locked.'+i,'lunch.'+i);
-  ['ticked','prices','extras'].forEach(a=>Object.keys(S[a]).forEach(k=>ps.push(a+'.'+k)));
+  ['ticked','prices','extras','mine'].forEach(a=>Object.keys(S[a]).forEach(k=>ps.push(a+'.'+k)));
   return ps;
 }
 // take whichever side changed each piece most recently
@@ -1080,7 +1337,7 @@ async function syncNow(){
       else if (r.status===404){ SY.sha=null; const now=Date.now(); allPaths().forEach(p=>{ if(S._mt[p]==null || S._mt[p]===0) S._mt[p]=now; }); }
       else if (r.status===401||r.status===403){ setSync('auth'); return; }
       else throw new Error('GET '+r.status);
-      if (remote && mergeIn(remote)){ save(false); const f=document.activeElement; if(!(f && f.tagName==='INPUT')) route(); }
+      if (remote && mergeIn(remote)){ save(false); const f=document.activeElement; if(!(f && f.tagName==='INPUT') && !$('rform')) route(); }
       if (remote && !needsPush(remote)){ setSync('ok'); return; }
       const w = await gh('PUT', { message:'Sync '+new Date().toISOString(), content:b64e(JSON.stringify(S)), ...(SY.sha?{sha:SY.sha}:{}) });
       if (w.status===200||w.status===201){ SY.sha=(await w.json()).content.sha; setSync('ok'); return; }
