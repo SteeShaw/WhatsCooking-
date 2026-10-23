@@ -108,7 +108,7 @@ ol.method li::before{content:counter(s);flex:none;width:26px;height:26px;border-
 .item input:checked{background:var(--ok);border-color:var(--ok)}
 .item input:checked::after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:translateY(-1px) rotate(45deg)}
 .item .nm{flex:1}
-.item .q{color:var(--muted);font-size:15px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.item .q{color:var(--muted);font-size:15px;white-space:nowrap}
 .item.done .nm{color:var(--muted);text-decoration:line-through}
 .dots{display:flex;gap:3px}
 .dots i{width:8px;height:8px;border-radius:3px;background:var(--c)}
@@ -141,6 +141,19 @@ ol.method li::before{content:counter(s);flex:none;width:26px;height:26px;border-
 .tray .stack .sticker{position:absolute;left:4px;top:6px}
 .tray .stack .sticker.under{transform:rotate(5deg);left:10px;top:4px;opacity:.6;pointer-events:none;box-shadow:none}
 .hero .sticker{margin-left:2px;cursor:default}
+
+.shop-sec{margin-bottom:28px}
+.shop-sec .shophead{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid var(--ink);margin-bottom:12px;padding-bottom:6px}
+.shop-sec h2{font-size:30px;font-weight:800;letter-spacing:-.03em;margin:0}
+.subtotal{font-size:22px;font-weight:800}
+.nm{display:flex;flex-direction:column;min-width:0}
+.pn{font-weight:600;line-height:1.25}
+.pn a:hover{text-decoration:underline}
+.pd{font-size:13px;color:var(--muted)}
+.price{font-family:inherit;font-weight:700;font-size:15px;padding:4px 8px;border-radius:8px}
+.price:hover{background:var(--soft)}
+.price.edited{background:#fff3c4;color:#111}
+.totals .stats{grid-template-columns:repeat(3,1fr)}
 </style>
 </head>
 <body>
@@ -186,7 +199,7 @@ const R = [
   i:[['Chicken thighs (skinless)',180,'g','M'],['Chorizo',30,'g','M'],['Paella or risotto rice',75,'g','C'],['Frozen peas',60,'g','C'],['Peppers',1,'','V'],['Chicken stock cube',0.5,'','C'],['Smoked paprika',1,'tsp','S']],
   m:['Brown chicken and chorizo, add pepper.','Stir in rice, paprika and 250ml stock per portion.','Simmer 18 min, add peas for the last 3.']},
  {id:'pork',name:'Honey soy pork & rice',tag:'pork',kcal:650,p:55,c:75,f:10,
-  i:[['Pork tenderloin',200,'g','M'],['Basmati rice',75,'g','C'],['Pak choi',1,'','V'],['Soy sauce',1,'tbsp','S'],['Honey',1,'tsp','C'],['Garlic',1,'clove','V']],
+  i:[['Pork tenderloin',200,'g','M'],['Basmati rice',75,'g','C'],['Pak choi',1,'','V'],['Soy sauce',1,'tbsp','S'],['Honey',1,'tsp','S'],['Garlic',1,'clove','V']],
   m:['Slice pork thinly; mix soy, honey and garlic.','Stir-fry pork 5 min, add pak choi and sauce.','Serve over rice.']},
  {id:'dal',name:'Red lentil & chickpea dal',tag:'veg',kcal:650,p:32,c:92,f:14,
   i:[['Red lentils',80,'g','C'],['Chickpeas',0.5,'tin','C'],['Light coconut milk',100,'ml','C'],['Spinach',50,'g','V'],['Onion',0.5,'','V'],['Basmati rice',50,'g','C'],['Curry powder',1,'tbsp','S']],
@@ -213,13 +226,95 @@ const R = [
   i:[['Halloumi (light)',80,'g','D'],['Couscous',75,'g','C'],['Chickpeas',0.5,'tin','C'],['Courgette',0.5,'','V'],['Peppers',1,'','V'],['Lemon',0.5,'','V']],
   m:['Roast chopped veg and chickpeas at 200°C for 20 min.','Make couscous with boiling water, fluff with lemon.','Fry halloumi slices and serve on top.']},
 ];
+// ---------- Shop products (prices checked 23 Oct 2026) ----------
+// packs: [size in the recipe's unit, price £, label]. perKg = sold by weight.
+const PRICED = '23 Oct 2026';
+const AL = 'https://www.aldi.co.uk/product/';
+const P = {
+ 'Chicken breast':           {s:'A', n:'Ashfields Chicken Breast Fillets', packs:[[300,2.29,'300g'],[650,4.69,'650g'],[1000,6.69,'1kg'],[2000,12.29,'2kg']], u:AL+'ashfields-chicken-breast-fillets-000000000000383730'},
+ 'Chicken thighs (skinless)':{s:'A', n:'Ashfields Chicken Thigh Fillets', packs:[[600,4.39,'600g'],[900,5.39,'900g']], u:AL+'ashfields-chicken-thigh-fillets-000000000000416054'},
+ 'Turkey mince':             {s:'A', n:'Ashfields Extra Lean Turkey Mince 2%', packs:[[500,3.99,'500g']], u:AL+'ashfields-british-extra-lean-turkey-mince-2-fat-000000000000387741'},
+ 'Lean beef mince (5%)':     {s:'A', n:'Ashfields Lean Beef Steak Mince 5%', packs:[[250,2.55,'250g'],[500,5.05,'500g'],[750,7.49,'750g']], u:AL+'ashfields-british-lean-beef-steak-mince-5-fat-000000000000575278'},
+ 'Sirloin steak':            {s:'A', n:'Ashfields Sirloin Steak 30 Day Matured', packs:[[227,6.29,'227g'],[195,4.49,'195g (21 day)']], u:AL+'ashfields-100-british-sirloin-steak-30-day-matured-000000000000382071'},
+ 'Pork tenderloin':          {s:'A', n:'Ashfields Lean Pork Fillet', perKg:6.95, u:AL+'ashfields-british-lean-pork-fillet-000000000000386133'},
+ 'Salmon fillet':            {s:'A', n:'The Fishmonger Boneless Salmon Fillets', packs:[[2,3.59,'2 pack'],[4,6.85,'4 pack']], u:AL+'the-fishmonger-boneless-salmon-fillets-4-pack-000000000000525810'},
+ 'Cod fillet':               {s:'A', n:'Specially Selected Cod Loins', packs:[[260,5.49,'2 × 130g']], u:AL+'specially-selected-skinless-boneless-cod-loins-2-pack-000000000000387371'},
+ 'King prawns':              {s:'A', n:'Specially Selected Raw Peeled Argentinian Prawns (frozen)', packs:[[250,3.89,'250g']], u:AL+'specially-selected-raw-peeled-argentinian-prawns-000000000457636002'},
+ 'Tinned tuna':              {s:'A', n:'The Fishmonger Tuna Chunks in Spring Water', packs:[[1,0.65,'145g tin']], u:AL+'the-fishmonger-tuna-chunks-in-spring-water-000000000000227567'},
+ 'Lean beef strips':         {s:'S', n:"Sainsbury's Stir Fry Beef", packs:[[350,6.25,'350g']]},
+ 'Chorizo':                  {s:'S', n:"Sainsbury's Chorizo Ring Mild", packs:[[225,2.60,'225g']]},
+
+ 'Peppers':                  {s:'A', n:"Nature's Pick Mixed Peppers", packs:[[3,1.75,'3 pack']], u:AL+'nature-s-pick-mixed-peppers-000000000000275392'},
+ 'Onion':                    {s:'A', n:"Nature's Pick Brown Onions", packs:[[6,0.59,'1kg (≈6)']], u:AL+'nature-s-pick-brown-onions-000000000000339777'},
+ 'Garlic':                   {s:'A', n:"Nature's Pick Garlic", packs:[[40,0.59,'4 bulbs']], u:AL+'nature-s-pick-garlic-000000000000273810'},
+ 'New potatoes':             {s:'A', n:"Nature's Pick British Baby Potatoes", packs:[[1000,0.99,'1kg']], u:AL+'nature-s-pick-british-baby-potatoes-000000000000339748'},
+ 'Sweet potato':             {s:'A', n:"Nature's Pick Sweet Potato", packs:[[300,0.69,'1 (≈300g)']], u:AL+'nature-s-pick-sweet-potato-000000000000272476'},
+ 'Broccoli':                 {s:'A', n:"Nature's Pick British Broccoli", packs:[[350,0.86,'1 head (≈350g)']], u:AL+'nature-s-pick-british-broccoli-000000000000339776'},
+ 'Spinach':                  {s:'A', n:"Nature's Pick Baby Spinach", packs:[[240,1.09,'240g']], u:AL+'nature-s-pick-baby-spinach-000000000000339750'},
+ 'Salad leaves':             {s:'A', n:"Nature's Pick Rocket & Baby Leaf", packs:[[90,0.99,'90g']], u:AL+'nature-s-pick-rocket-baby-leaf-salad-000000000000339755'},
+ 'Cherry tomatoes':          {s:'A', n:"Nature's Pick Cherry Tomatoes", packs:[[330,0.95,'330g']], u:AL+'nature-s-pick-cherry-tomatoes-000000000000275529'},
+ 'Ginger':                   {s:'A', n:"Nature's Pick Ginger", packs:[[40,0.99,'125g root']], u:AL+'nature-s-pick-ginger-000000000000266261'},
+ 'Stir-fry veg':             {s:'A', n:'Ready, Set…Cook! Oriental Style Stir Fry', packs:[[320,0.99,'320g'],[600,1.29,'600g (Sweet & Crunchy)']], u:AL+'ready-set-cook-oriental-style-stir-fry-000000000334802001'},
+ 'Lemon':                    {s:'A', n:'Everyday Essentials Wonky Lemons', packs:[[4,0.89,'4 pack']], u:AL+'everyday-essentials-wonky-lemons-000000000000268496'},
+ 'Lime':                     {s:'A', n:"Nature's Pick Limes", packs:[[5,1.15,'5 pack']], u:AL+'nature-s-pick-limes-000000000000285988'},
+ 'Red onion':                {s:'S', n:"Sainsbury's Red Onions", packs:[[3,0.95,'3 pack']]},
+ 'Tenderstem broccoli':      {s:'S', n:"Sainsbury's Tenderstem Broccoli", packs:[[200,1.60,'200g'],[330,2.00,'330g']]},
+ 'Courgette':                {s:'S', n:"Sainsbury's Courgettes", packs:[[2,1.45,'500g (≈2)']]},
+ 'Spring onions':            {s:'S', n:"Sainsbury's Spring Onions", packs:[[8,0.65,'bunch']]},
+ 'Pak choi':                 {s:'S', n:"Sainsbury's Pak Choi", packs:[[2,1.55,'250g (≈2)']]},
+
+ 'Greek yogurt (0%)':        {s:'A', n:'Brooklea Fat Free Greek Style Yogurt', packs:[[500,0.95,'500g']], u:AL+'brooklea-fat-free-greek-style-yogurt-000000000422093'},
+ 'Feta':                     {s:'A', n:'Emporium Greek Feta', packs:[[200,1.69,'200g']], u:AL+'emporium-greek-feta-000000000000557625'},
+ 'Halloumi (light)':         {s:'A', n:'Emporium Halloumi (regular — no light version)', packs:[[225,1.99,'225g']], u:AL+'emporium-halloumi-plain-225g-000000000000612513'},
+ 'Parmesan':                 {s:'A', n:'Specially Selected Parmigiano Reggiano', packs:[[170,3.29,'170g']], u:AL+'specially-selected-parmigiano-reggiano-pdo-000000000000504638'},
+ 'Lighter cheddar':          {s:'S', n:"Sainsbury's Lighter Mature Cheese", packs:[[400,2.95,'400g']]},
+
+ 'Basmati rice':             {s:'A', n:'Worldwide Foods Basmati Rice', packs:[[1000,1.79,'1kg']], u:AL+'worldwide-foods-basmati-rice-000000000000262344'},
+ 'Pasta':                    {s:'A', n:'Cucina Penne Pasta', packs:[[500,0.69,'500g'],[1000,1.19,'1kg fusilli']], u:AL+'cucina-penne-pasta-500g-000000000000308638'},
+ 'Red lentils':              {s:'A', n:'Worldwide Foods Red Lentils', packs:[[500,0.89,'500g']], u:AL+'worldwide-foods-red-lentils-000000000000336258'},
+ 'Egg noodles':              {s:'A', n:'Ready, Set…Cook! Egg Noodles (fresh, 410g)', packs:[[205,1.09,'410g fresh']], u:AL+'ready-set-cook-egg-noodles-000000000000339840'},
+ 'Chopped tomatoes':         {s:'A', n:'Cucina Chopped Tomatoes', packs:[[1,0.45,'400g tin']], u:AL+'cucina-chopped-tomatoes-in-a-rich-tomato-juice-000000000000278588'},
+ 'Kidney beans':             {s:'A', n:'Four Seasons Red Kidney Beans', packs:[[0.6,0.39,'240g tin']], u:AL+'four-seasons-red-kidney-beans-in-water-000000000000284569'},
+ 'Sweetcorn':                {s:'A', n:'Four Seasons Supersweet Sweetcorn', packs:[[200,0.55,'285g tin']], u:AL+'four-seasons-supersweet-sweetcorn-in-water-000000000000274512'},
+ 'Frozen peas':              {s:'A', n:'Specially Selected Petits Pois (frozen)', packs:[[700,1.09,'700g']], u:AL+'specially-selected-petits-pois-000000000000365781'},
+ 'Couscous':                 {s:'S', n:"Sainsbury's Cous Cous", packs:[[500,1.30,'500g']]},
+ 'Paella or risotto rice':   {s:'S', n:"Sainsbury's Spanish Paella Rice", packs:[[500,2.55,'500g']]},
+ 'Passata':                  {s:'S', n:"Sainsbury's Passata", packs:[[500,0.60,'500g']]},
+ 'Black beans':              {s:'S', n:"Sainsbury's Black Beans in Water", packs:[[1,0.45,'400g tin']]},
+ 'Chickpeas':                {s:'S', n:"Sainsbury's Chickpeas in Water", packs:[[1,0.41,'400g tin']]},
+ 'Light coconut milk':       {s:'S', n:"Sainsbury's Coconut Milk Light", packs:[[400,0.75,'400ml']]},
+ 'Chicken stock cube':       {s:'S', n:"Sainsbury's Chicken Stock Cubes", packs:[[10,1.10,'10 pack']]},
+ 'Green pesto':              {s:'S', n:"Sainsbury's Green Pesto", packs:[[190,0.89,'190g jar']]},
+ 'Tikka paste':              {s:'S', n:"Sainsbury's Fragrant Tikka Curry Paste", packs:[[13,2.15,'200g jar']]},
+ 'Salsa':                    {s:'S', n:"Sainsbury's Mild Salsa", packs:[[200,1.35,'200g']]},
+ 'Edamame beans':            {s:'S', n:"Sainsbury's Edamame Beans (frozen)", packs:[[500,2.88,'500g']]},
+};
+const SHOP = {A:'Aldi', S:"Sainsbury's"};
+
+// Cheapest way to cover `need` from the pack sizes (single size, or big packs + one smaller top-up)
+function bestPacks(key, need){
+  const p = P[key]; if (!p) return null;
+  if (p.perKg){ const price = priceOf(key, 'kg', p.perKg); return {buy:[{label:`≈${Math.round(need/10)*10}g by weight`, n:1}], cost: need/1000*price, perKg:true}; }
+  const packs = p.packs.map(([size,price,label]) => ({size, label, price: priceOf(key, label, price)}));
+  let best = null;
+  const consider = (buy) => { const cost = buy.reduce((a,b)=>a+b.n*b.price,0), got = buy.reduce((a,b)=>a+b.n*b.size,0);
+    if (!best || cost < best.cost - 1e-9 || (Math.abs(cost-best.cost)<1e-9 && got < best.got)) best = {buy:buy.filter(b=>b.n), cost, got}; };
+  packs.forEach(a => consider([{...a, n:Math.max(1,Math.ceil(need/a.size - 1e-9))}]));
+  packs.forEach(big => packs.forEach(small => { if (small.size >= big.size) return;
+    const nb = Math.floor(need/big.size), rem = need - nb*big.size; if (!nb || rem <= 0) return;
+    consider([{...big, n:nb}, {...small, n:Math.ceil(rem/small.size - 1e-9)}]); }));
+  return best;
+}
+function priceOf(key, label, base){ const o = S.prices && S.prices[key+'|'+label]; return (typeof o === 'number' && o >= 0) ? o : base; }
+const gbp = v => '£' + v.toFixed(2);
+
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
 const COL = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)'];
 
 // ---------- State ----------
 const DEF = {kcal:2500,protein:160,carbs:260,fat:85,share:30,people:1};
 let S = load() || {};
-S.settings = {...DEF, ...(S.settings||{})}; S.plan = S.plan||[]; S.locked = S.locked||[]; S.ticked = S.ticked||{}; S.cooked = S.cooked||[]; S.lunch = S.lunch||[];
+S.settings = {...DEF, ...(S.settings||{})}; S.plan = S.plan||[]; S.locked = S.locked||[]; S.ticked = S.ticked||{}; S.cooked = S.cooked||[]; S.lunch = S.lunch||[]; S.prices = S.prices||{};
 function load(){ try{ return JSON.parse(localStorage.getItem('wc')); }catch(e){ return null; } }
 function save(){ try{ localStorage.setItem('wc', JSON.stringify(S)); }catch(e){} }
 const $ = id => document.getElementById(id);
@@ -276,6 +371,14 @@ function shopping(){
   Object.values(g).forEach(x=>x.sort((a,b)=>a.name.localeCompare(b.name))); return g;
 }
 
+function shopRows(){
+  const g=shopping(), rows=[];
+  ['M','V','D','C'].forEach(a => (g[a]||[]).forEach(it => rows.push({...it, shop:(P[it.name]||{}).s||'A', prod:P[it.name], bp:bestPacks(it.name,it.q)})));
+  return rows;
+}
+function totals(rows=shopRows()){ const t={A:0,S:0}; rows.forEach(r=>{ if(r.bp) t[r.shop]+=r.bp.cost; }); t.all=t.A+t.S; return t; }
+const packStr = bp => bp ? bp.buy.map(b=>(b.n>1?b.n+' × ':'')+b.label).join(' + ') : '';
+
 // ---------- Helpers ----------
 const k0 = v => Math.round(v);
 const macroLine = m => `≈${k0(m.kcal)} kcal, ≈${k0(m.p)}g protein, ${k0(m.c)}g carbs, ${k0(m.f)}g fat`;
@@ -300,7 +403,7 @@ function viewWeek(){
 
   return `
   <h1>${weekRange()}</h1>
-  <div class="sub">${done} of 5 cooked · ${items} things to buy · ${S.settings.people} ${S.settings.people>1?'people':'person'}${lunches()?` + ${lunches()} lunch${lunches()>1?'es':''}`:''}</div>
+  <div class="sub">${done} of 5 cooked · ${items} things to buy (≈${gbp(totals().all)}) · ${S.settings.people} ${S.settings.people>1?'people':'person'}${lunches()?` + ${lunches()} lunch${lunches()>1?'es':''}`:''}</div>
   <div class="progress">${prog}</div>
   ${nx===null?`<div class="note">🎉 <b>All five cooked.</b> Pick next week when you're ready.</div>`:''}
   <div class="grid">
@@ -367,21 +470,36 @@ function viewRecipe(i){
 }
 
 function viewShop(){
-  const g=shopping(), all=Object.values(g).flat().filter(x=>x.a!=='S'), got=all.filter(x=>S.ticked[x.name+'|'+x.u]).length;
+  const rows=shopRows(), t=totals(rows), g=shopping();
+  const got=rows.filter(x=>S.ticked[x.name+'|'+x.u]).length;
+  const shopSec = sh => {
+    const list=rows.filter(r=>r.shop===sh); if(!list.length) return '';
+    const left=list.filter(r=>r.a==='M'||r.a==='V'), right=list.filter(r=>r.a==='D'||r.a==='C');
+    const col = items => ['M','V','D','C'].map(a=>{ const its=items.filter(r=>r.a===a); return its.length?aisle(a,its):''; }).join('');
+    return `<section class="shop-sec"><div class="shophead"><h2>${SHOP[sh]}</h2><span class="subtotal">${gbp(t[sh])}</span></div>
+      <div class="grid">${list.length>6?`<div>${col(left)}</div><div>${col(right)}</div>`:`<div>${col(list)}</div>`}</div></section>`;
+  };
   return `<h1>Shopping</h1>
-  <div class="sub">${got} of ${all.length} in the basket · for ${weekRange()}${lunches()?` · includes ${lunches()} lunch${lunches()>1?'es':''}`:''}</div>
-  <div class="btns" style="margin:0 0 24px"><button class="pill" data-act="copy">Copy list</button>${got?`<button class="pill ghost" data-act="untick">Untick all</button>`:''}</div>
-  <div class="grid">
-    <div>${['M','V'].filter(a=>g[a]).map(a=>aisle(a,g[a])).join('')}</div>
-    <div>${['D','C'].filter(a=>g[a]).map(a=>aisle(a,g[a])).join('')}
-      ${g.S?`<div class="card small"><b style="color:var(--ink)">Check you have</b><p style="margin-top:4px">${g.S.map(x=>x.name).join(', ')}</p></div>`:''}</div>
-  </div>`;
+  <div class="sub">${got} of ${rows.length} in the basket · for ${weekRange()}${lunches()?` · includes ${lunches()} lunch${lunches()>1?'es':''}`:''}</div>
+  <div class="card totals"><div class="stats">
+      <div class="stat"><b>${gbp(t.all)}</b><span>estimated total</span></div>
+      <div class="stat"><b>${gbp(t.A)}</b><span>Aldi</span></div>
+      <div class="stat"><b>${gbp(t.S)}</b><span>Sainsbury's</span></div></div>
+    <div class="small" style="margin-top:8px">Prices checked ${PRICED}. Tap a price to change it to what you paid.</div></div>
+  <div class="btns" style="margin:14px 0 26px"><button class="pill" data-act="copy">Copy list</button>${got?`<button class="pill ghost" data-act="untick">Untick all</button>`:''}</div>
+  ${shopSec('A')}${shopSec('S')}
+  ${g.S?`<div class="card small"><b style="color:var(--ink)">Check you have</b><p style="margin-top:4px">${g.S.map(x=>x.name).join(', ')}</p></div>`:''}`;
 }
 function aisle(a,list){
   return `<div class="aisle"><h3>${A[a]}<span class="muted" style="font-weight:500">${list.length}</span></h3>${list.map(it=>{
-    const key=it.name+'|'+it.u, done=S.ticked[key];
-    return `<label class="item ${done?'done':''}"><input type="checkbox" data-key="${key}" ${done?'checked':''}><span class="nm">${it.name}</span>
-      <span class="dots">${[...it.days].sort().map(d=>`<i style="--c:${COL[d]}" title="${DAYS[d]}"></i>`).join('')}</span><span class="q">${fmt(it.q,it.u)}</span></label>`;
+    const key=it.name+'|'+it.u, done=S.ticked[key], pr=it.prod, bp=it.bp;
+    const title = pr ? (pr.u ? `<a href="${pr.u}" target="_blank" rel="noopener">${pr.n}</a>` : pr.n) : it.name;
+    const lbl = bp ? (bp.perKg ? 'kg' : bp.buy[bp.buy.length-1].label) : '';
+    const edited = pr && S.prices[it.name+'|'+lbl] != null;
+    return `<label class="item ${done?'done':''}"><input type="checkbox" data-key="${key}" ${done?'checked':''}>
+      <span class="nm"><span class="pn">${title}</span><span class="pd">Need ${fmt(it.q,it.u).replace('× ','')} · buy ${packStr(bp)||'—'}</span></span>
+      <span class="dots">${[...it.days].sort().map(d=>`<i style="--c:${COL[d]}" title="${DAYS[d]}"></i>`).join('')}</span>
+      ${bp?`<button class="price ${edited?'edited':''}" data-act="price" data-key="${it.name}" data-label="${lbl}">${gbp(bp.cost)}</button>`:''}</label>`;
   }).join('')}</div>`;
 }
 
@@ -422,10 +540,21 @@ $('app').addEventListener('click', e=>{
   if(a==='lock'){ S.locked[i]=!S.locked[i]; save(); route(); }
   if(a==='lunch') setLunch(i,!S.lunch[i]);
   if(a==='untick'){ S.ticked={}; save(); route(); }
+  if(a==='price'){
+    const k=b.dataset.key, l=b.dataset.label, pr=P[k], cur=priceOf(k,l, l==='kg'?pr.perKg:(pr.packs.find(x=>x[2]===l)||[])[1]);
+    const v=prompt(`${pr.n} — ${l==='kg'?'price per kg':l}\nWhat did it cost? (leave blank to reset)`, cur.toFixed(2));
+    if(v===null) return; const x=parseFloat(String(v).replace('£',''));
+    if(String(v).trim()==='') delete S.prices[k+'|'+l]; else if(isFinite(x)&&x>=0) S.prices[k+'|'+l]=x; else return;
+    save(); route();
+  }
   if(a==='copy'){
-    const g=shopping(), txt=['M','V','D','C'].filter(x=>g[x]).map(x=>A[x].toUpperCase()+'\n'+g[x].map(it=>`- ${it.name} ${fmt(it.q,it.u)}`).join('\n')).join('\n\n')+(g.S?'\n\nCHECK YOU HAVE\n'+g.S.map(x=>'- '+x.name).join('\n'):'');
+    const rows=shopRows(), t=totals(rows), g=shopping();
+    const txt=['A','S'].map(sh=>{ const l=rows.filter(r=>r.shop===sh); if(!l.length) return '';
+      return SHOP[sh].toUpperCase()+` (${gbp(t[sh])})\n`+l.map(r=>`- ${r.prod?r.prod.n:r.name} — ${packStr(r.bp)} ${r.bp?gbp(r.bp.cost):''}`).join('\n'); }).filter(Boolean).join('\n\n')
+      +(g.S?'\n\nCHECK YOU HAVE\n'+g.S.map(x=>'- '+x.name).join('\n'):'')+`\n\nEstimated total ${gbp(t.all)}`;
     navigator.clipboard.writeText(txt).then(()=>toast('List copied')).catch(()=>toast('Copy failed'));
   }
+
 });
 $('app').addEventListener('change', e=>{
   const k=e.target.dataset.key; if(!k) return; S.ticked[k]=e.target.checked; save(); route();
