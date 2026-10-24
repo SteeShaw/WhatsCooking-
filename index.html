@@ -443,6 +443,12 @@ body.storemode .ishead{padding-top:calc(14px + env(safe-area-inset-top))}
 .im-in{display:block;width:100%;border:0;background:var(--bg);border-radius:14px;padding:11px 14px;font-size:16px;margin-top:10px;color:inherit;font-family:inherit;outline:none;resize:vertical}
 .im-in:focus{box-shadow:0 0 0 2px var(--ink) inset}
 .importc .btns{align-items:center;gap:12px}
+/* shopped for */
+.shopped{display:inline-flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;font-weight:700;color:var(--muted);padding:3px 9px 3px 5px;border-radius:99px;border:1.5px solid var(--line);background:var(--bg)}
+.shopped .sbox{width:14px;height:14px;border-radius:5px;border:1.5px solid var(--line);display:grid;place-items:center}
+.shopped.on{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 40%,transparent);background:color-mix(in srgb,var(--ok) 8%,var(--bg))}
+.shopped.on .sbox{background:var(--ok);border-color:var(--ok)}
+.shopped.on .sbox::after{content:"";width:4px;height:7px;border:solid #fff;border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg)}
 </style>
 </head>
 <body>
@@ -701,7 +707,7 @@ const COL = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)'];
 const DEF = {kcal:2500,protein:160,carbs:260,fat:85,share:30,people:1};
 let S = norm(load());
 function norm(x){ x = x || {};
-  x.settings = {...DEF, ...(x.settings||{})}; x.plan = x.plan||[]; x.locked = x.locked||[]; x.ticked = x.ticked||{}; x.cooked = x.cooked||[]; x.lunch = x.lunch||[]; x.prices = x.prices||{}; x.extras = x.extras||{}; x.history = x.history||{}; x.mine = x.mine||{}; x.loved = x.loved||{}; x.on = Array.isArray(x.on) && x.on.length===7 ? x.on : [...DEF_ON]; while (x.plan.length < 7) x.plan.push(null); x.sweets = x.sweets||{}; x._mt = x._mt||{};
+  x.settings = {...DEF, ...(x.settings||{})}; x.plan = x.plan||[]; x.locked = x.locked||[]; x.ticked = x.ticked||{}; x.cooked = x.cooked||[]; x.lunch = x.lunch||[]; x.prices = x.prices||{}; x.extras = x.extras||{}; x.history = x.history||{}; x.mine = x.mine||{}; x.loved = x.loved||{}; x.shopped = x.shopped||[]; x.on = Array.isArray(x.on) && x.on.length===7 ? x.on : [...DEF_ON]; while (x.plan.length < 7) x.plan.push(null); x.sweets = x.sweets||{}; x._mt = x._mt||{};
   return x; }
 function load(){ try{ return JSON.parse(localStorage.getItem('wc')); }catch(e){ return null; } }
 function save(push=true){ try{ lastSaved = JSON.stringify(S); localStorage.setItem('wc', lastSaved); }catch(e){} if(push) queuePush(); }
@@ -739,7 +745,7 @@ function generate(initial){
 function swap(i){
   const others=S.plan.filter((id,j)=>id && j!==i);
   const plan=[...S.plan]; plan[i]=pick([...others,S.plan[i]].filter(Boolean),tagsOf(others));
-  put('plan',plan); put('cooked.'+i,false); untickAll(); save(); route();
+  put('plan',plan); put('cooked.'+i,false); put('shopped.'+i,false); untickAll(); save(); route();
   toast('Shuffled '+DAYS[i]);
 }
 
@@ -763,7 +769,7 @@ function portion(q,u,s,n,L=0){
 }
 function shopping(){
   const n=S.settings.people, items={};
-  S.plan.forEach((id,di)=>{ const r=byId(id); if(!r) return; const s=scaleFor(r), L=S.lunch[di]?1:0;
+  S.plan.forEach((id,di)=>{ const r=byId(id); if(!r || S.shopped[di]) return; /* already bought for this dinner */ const s=scaleFor(r), L=S.lunch[di]?1:0;
     r.i.forEach(([name,q,u,a])=>{ const key=name+'|'+u, mult=(a==='S'||u==='tsp'||u==='tbsp'||u==='pack')?n+L:n*s+L;
       items[key]=items[key]||{name,u,a,q:0,days:new Set()}; items[key].q+=q*mult; items[key].days.add(di); }); });
   sweetsList().forEach(r => r.i.forEach(([name,q,u,a]) => { const key=name+'|'+u;
@@ -902,7 +908,7 @@ function rollover(){
   if (S.week >= cur) return false;
   archiveWeek(S.week);
   put('week', cur);
-  DAYS.forEach((_,i) => { put('locked.'+i, false); put('lunch.'+i, false); put('on.'+i, DEF_ON[i]); });
+  DAYS.forEach((_,i) => { put('locked.'+i, false); put('lunch.'+i, false); put('on.'+i, DEF_ON[i]); put('shopped.'+i, false); });
   put('shopDone', false);
   Object.keys(S.sweets).forEach(id => { if (S.sweets[id]) put('sweets.'+id, false); });
   // breakfast & lunch items are bought every week: keep them, just untick; one-off added items go once bought
@@ -960,7 +966,8 @@ function viewWeek(){
           <span class="grip" data-grip="${i}" title="Drag to move to another day" aria-label="Drag ${DAYS[i]}">${GRIP_SVG}</span>
           <div class="tile grad">${imgTag(x,'')}</div>
           <div class="rbody"><div class="rday">${DAYS[i]}</div><div class="rtitle">${esc(x.name)}</div>
-          <div class="rmeta">${isLoved(x.id)?'<span class="lovedot">♥</span> ':''}≈${k0(mm.kcal)} kcal · ${k0(mm.p)}g protein${x.mins?` · ${x.mins} min`:''}${x.by?` · ${x.by}`:''}</div></div>
+          <div class="rmeta">${isLoved(x.id)?'<span class="lovedot">♥</span> ':''}≈${k0(mm.kcal)} kcal · ${k0(mm.p)}g protein${x.mins?` · ${x.mins} min`:''}${x.by?` · ${x.by}`:''}</div>
+          <button class="shopped ${S.shopped[i]?'on':''}" data-act="shopped" data-i="${i}" aria-pressed="${!!S.shopped[i]}"><span class="sbox"></span>Shopped for</button></div>
           <div class="acts">
           <button class="ract" data-act="swap" data-i="${i}" ${S.locked[i]?'disabled':''} title="Shuffle — random dinner" aria-label="Shuffle ${DAYS[i]}">${SHUF_SVG}<span>Shuffle</span></button>
           <button class="ract" data-act="choose" data-i="${i}" title="Choose from all recipes" aria-label="Choose ${DAYS[i]}'s dinner">${LIST_SVG}<span>Choose</span></button>
@@ -1738,7 +1745,7 @@ function viewPick(i){
 function setDay(i, id){
   const plan = [...S.plan], j = plan.indexOf(id);
   if (j >= 0 && j !== i){ plan[j] = plan[i]; put('cooked.'+j, false); }   // already in the week: swap the two nights
-  plan[i] = id; put('plan', plan); put('cooked.'+i, false); untickAll(); save();
+  plan[i] = id; put('plan', plan); put('cooked.'+i, false); put('shopped.'+i, false); untickAll(); save();
   location.hash = '#/'; toast(`${DAYS[i]}: ${byId(id).name}${j>=0 && j!==i ? ` (swapped with ${DAYS[j]})` : ''}`);
 }
 
@@ -1756,7 +1763,7 @@ function route(){
 }
 addEventListener('hashchange', ()=>{ route(); scrollTo(0,0); });
 // new version check: GitHub Pages caches for 10 minutes, so look for a newer build and offer a refresh
-const BUILD = '2026-10-24-1740';
+const BUILD = '2026-10-24-1825';
 async function checkUpdate(){ try{ const h = await fetch(location.pathname + '?v=' + Date.now(), { cache:'no-store' }).then(r => r.text());
   const m = h.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD && !$('upd')){ const d = document.createElement('button'); d.id='upd'; d.className='updbar'; d.textContent='New version ready — tap to update'; d.onclick=()=>location.reload(); document.body.appendChild(d); } }catch(e){} }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); }); setTimeout(checkUpdate, 3000);
@@ -1795,7 +1802,8 @@ $('app').addEventListener('click', e=>{
   if(a==='unswap'){ const r=byId(S.plan[i]); if(r && r.variant){ const plan=[...S.plan]; plan[i]=r.base; put('plan',plan); put('mine.'+r.id, {...r, deleted:true}); untickAll(); save(); route(); toast('Back to '+((byId(r.base)||{}).name||'the original')); } return; }
   if(a==='sview'){ if(b.dataset.v==='store'){ goFull(true); location.hash='#/store'; return; } SV='shop'; try{ localStorage.setItem('wc-shopview', SV); }catch(e){} route(); return; }
   if(a==='storedone'){ if(!S.shopDone){ put('shopDone', true); save(); toast('Shop done — list locked'); } location.hash='#/shop'; return; }
-  if(a==='clear'){ const plan=[...S.plan]; plan[i]=null; put('plan',plan); put('cooked.'+i,false); put('locked.'+i,false); put('lunch.'+i,false); untickAll(); save(); route(); toast(`Cleared ${DAYS[i]}`); }
+  if(a==='shopped'){ put('shopped.'+i, !S.shopped[i]); untickAll(); save(); route(); toast(S.shopped[i] ? `${DAYS[i]}'s ingredients are off the shopping list` : `${DAYS[i]}'s ingredients are back on the list`); return; }
+  if(a==='clear'){ put('shopped.'+i,false); const plan=[...S.plan]; plan[i]=null; put('plan',plan); put('cooked.'+i,false); put('locked.'+i,false); put('lunch.'+i,false); untickAll(); save(); route(); toast(`Cleared ${DAYS[i]}`); }
   if(a==='onday'){ put('on.'+i,true); const plan=[...S.plan]; plan[i]=pick(plan.filter(Boolean),tagsOf(plan)); put('plan',plan); put('cooked.'+i,false); untickAll(); save(); route(); toast(`${DAYS[i]} added — tap Choose to pick something else`); }
   if(a==='offday'){ put('on.'+i,false); const plan=[...S.plan]; plan[i]=null; put('plan',plan); put('lunch.'+i,false); save(); route(); toast(`${DAYS[i]} taken out of the week`); }
   if(a==='choose'){ PF={q:'',tag:'all',n:60}; location.hash='#/pick/'+i; }
@@ -1928,7 +1936,7 @@ addEventListener('pointerup', endRowDrag); addEventListener('pointercancel', end
 function moveDay(a, b){
   if(a===b) return;
   const plan=[...S.plan]; [plan[a],plan[b]]=[plan[b],plan[a]]; put('plan',plan);
-  ['cooked','locked','lunch'].forEach(k=>{ const x=!!S[k][a], y=!!S[k][b]; put(k+'.'+a,y); put(k+'.'+b,x); });
+  ['cooked','locked','lunch','shopped'].forEach(k=>{ const x=!!S[k][a], y=!!S[k][b]; put(k+'.'+a,y); put(k+'.'+b,x); });
   save(); route(); toast(plan[a] ? `Swapped ${DAYS[a]} and ${DAYS[b]}` : `Moved to ${DAYS[b]}`);
 }
 
@@ -2029,7 +2037,7 @@ function gh(method, body){
 }
 function allPaths(){
   const ps=['plan','week','shopDone']; Object.keys(S.history).forEach(k=>ps.push('history.'+k)); Object.keys(S.settings).forEach(k=>ps.push('settings.'+k));
-  for(let i=0;i<7;i++) ps.push('cooked.'+i,'locked.'+i,'lunch.'+i,'on.'+i);
+  for(let i=0;i<7;i++) ps.push('cooked.'+i,'locked.'+i,'lunch.'+i,'on.'+i,'shopped.'+i);
   ['ticked','prices','extras','mine','loved','sweets'].forEach(a=>Object.keys(S[a]).forEach(k=>ps.push(a+'.'+k)));
   return ps;
 }
