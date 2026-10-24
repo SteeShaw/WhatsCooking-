@@ -711,11 +711,13 @@ function fmt(q,u){
   if (u==='tin'){ const v=Math.ceil(q*2)/2; return v+(v===1?' tin':' tins'); }
   if (u==='clove'){ const v=Math.ceil(q); return v+(v===1?' clove':' cloves'); }
   if (u==='') return '× '+Math.ceil(q);
+  if (u==='pack'){ const v=Math.ceil(q-1e-9); return v+(v===1?' pack':' packs'); }
   return (Math.round(q*2)/2)+' '+u;
 }
 function portion(q,u,s,n,L=0){
   if (!q) return '';
   if (u==='tsp'||u==='tbsp') return (q*(n+L))+' '+u;
+  if (u==='pack'){ const v=Math.round(q*(n+L)*4)/4; return v+(v>1?' packs':' pack'); }
   if (u==='g'||u==='ml') return Math.round((q*s*n+q*L)/5)*5+' '+u;
   const v=Math.round((q*s*n+q*L)*4)/4, nice=v%1===0?v:v.toFixed(2).replace(/0$/,'');
   return u===''?nice:nice+' '+u+(v>1?'s':'');
@@ -723,7 +725,7 @@ function portion(q,u,s,n,L=0){
 function shopping(){
   const n=S.settings.people, items={};
   S.plan.forEach((id,di)=>{ const r=byId(id); if(!r) return; const s=scaleFor(r), L=S.lunch[di]?1:0;
-    r.i.forEach(([name,q,u,a])=>{ const key=name+'|'+u, mult=(a==='S'||u==='tsp'||u==='tbsp')?n+L:n*s+L;
+    r.i.forEach(([name,q,u,a])=>{ const key=name+'|'+u, mult=(a==='S'||u==='tsp'||u==='tbsp'||u==='pack')?n+L:n*s+L;
       items[key]=items[key]||{name,u,a,q:0,days:new Set()}; items[key].q+=q*mult; items[key].days.add(di); }); });
   sweetsList().forEach(r => r.i.forEach(([name,q,u,a]) => { const key=name+'|'+u;
       items[key]=items[key]||{name,u,a,q:0,days:new Set()}; items[key].q += a==='S' ? 0 : q*(r.serves||1); items[key].sweet=true; }));
@@ -734,7 +736,9 @@ function shopping(){
 function shopRows(){
   const g=shopping(), rows=[];
   ['M','V','D','C'].forEach(a => (g[a]||[]).forEach(it => {
-    if (P[it.name]) rows.push({...it, shop:P[it.name].s, prod:P[it.name], bp:bestPacks(it.name,it.q)});
+    if (P[it.name] && it.u==='pack' && P[it.name].packs){ const [ , pr, lbl] = P[it.name].packs[0], n = Math.max(1, Math.ceil(it.q - 1e-9)), price = priceOf(it.name, lbl, pr);
+      rows.push({...it, shop:P[it.name].s, prod:P[it.name], bp:{buy:[{label:lbl, n, price}], cost:n*price}}); }
+    else if (P[it.name]) rows.push({...it, shop:P[it.name].s, prod:P[it.name], bp:bestPacks(it.name,it.q)});
     else { const c = catRow(it); rows.push({...it, shop:c ? c.it.shop : 'A', prod:c && {n:c.it.n, u:c.it.u}, bp:c && c.bp}); }
   }));
   return rows;
@@ -760,7 +764,7 @@ function catRow(it){
   if (it.u === 'slice') n = Math.ceil(it.q/20 - 1e-9);
   else if (sz && sz.u === it.u) n = Math.ceil(it.q/sz.q - 1e-9);
   else if (sz && sz.u === '' && it.u === '') n = Math.ceil(it.q/sz.q - 1e-9);
-  else n = it.u === '' ? Math.ceil(it.q - 1e-9) : 1;
+  else n = (it.u === '' || it.u === 'pack') ? Math.ceil(it.q - 1e-9) : 1;
   n = Math.max(1, n);
   return { it:c, bp:{ buy:[{label:c.sz||'pack', n, price:c.pr}], cost:n*c.pr } };
 }
@@ -1229,7 +1233,7 @@ function cookAgain(id){
 // ---------- My recipes (built by hand, synced with the rest of the week) ----------
 const mineList = () => Object.values(S.mine).filter(r => r && r.id && !r.deleted && !r.variant).sort((a,b) => a.name.localeCompare(b.name));
 const TAGS = ['chicken','beef','pork','lamb','turkey','fish','tofu','veg','other'];
-const UNITS = [['g','g'],['ml','ml'],['','×'],['tin','tin'],['clove','clove'],['slice','slice'],['tsp','tsp'],['tbsp','tbsp']];
+const UNITS = [['g','g'],['ml','ml'],['','×'],['pack','pack'],['tin','tin'],['clove','clove'],['slice','slice'],['tsp','tsp'],['tbsp','tbsp']];
 // what every known ingredient is usually measured in and which aisle it lives in (from all the recipes in the app)
 function knownIngs(){
   const m = {}; [...R, ...mineList()].forEach(r => (r.i||[]).forEach(([n,q,u,a]) => { if (!m[n]) m[n] = {u, a}; else if (q && !m[n].q) m[n].u = u; if (q) m[n].q = true; }));
@@ -1300,14 +1304,21 @@ function gramsOf(row, q, u){
   if (u === 'slice') return q * (row[5] && row[5] < 60 ? row[5] : 35);
   if (u === 'tin') return q * (row[6] || 400);
   if (u === '') return row[5] ? q * row[5] : null;
+  if (u === 'pack') return null;
   return null;
 }
 // per-portion ingredients → estimated macros per portion
+// how much is in "a pack": the size of the shop product it matches (g or ml), if we know it
+function packGrams(name, q){
+  if (P[name] && P[name].packs){ const z = sizeOf(P[name].packs[0][2]); if (z && (z.u === 'g' || z.u === 'ml')) return z.q * q; }
+  const al = name in CAT_ALIAS ? CAT_ALIAS[name] : name, it = al ? (al[0] === '=' ? byKey(al.slice(1)) : candidates(al)[0]) : null, sz = it && sizeOf(it.sz);
+  return sz && (sz.u === 'g' || sz.u === 'ml') ? sz.q * q : null;
+}
 function estimate(ings){
   const tot = {kcal:0,p:0,c:0,f:0}, missed = []; let hit = 0, counted = 0;
   ings.forEach(([n,q,u]) => { if (!n) return; counted++;
     if (!q) { hit++; return; }                        // "to taste" — nothing to add
-    const row = nutOf(n), g = row && gramsOf(row, q, u);
+    const row = nutOf(n), g = row && (u === 'pack' ? packGrams(n, q) : gramsOf(row, q, u));
     if (g == null) { missed.push(n); return; }
     hit++; tot.kcal += row[1]*g/100; tot.p += row[2]*g/100; tot.c += row[3]*g/100; tot.f += row[4]*g/100; });
   return { kcal:Math.round(tot.kcal), p:Math.round(tot.p), c:Math.round(tot.c), f:Math.round(tot.f), hit, counted, missed };
