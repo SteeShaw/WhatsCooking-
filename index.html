@@ -979,6 +979,10 @@ function retitle(title, from, to){
       return title.replace(re, matchCase(m[0], tt)); } }
   return title;
 }
+// "Beef chilli & rice" + chorizo + spinach → "Beef chilli & rice with chorizo & spinach"
+const addWord = n => core(n);
+const listJoin = a => a.length < 2 ? a.join('') : a.slice(0,-1).join(', ') + ' & ' + a[a.length-1];
+function withAdds(nm0, adds){ const extra = (adds||[]).filter(a => !new RegExp(`\\b${addWord(a).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}`, 'i').test(nm0)).map(addWord); return extra.length ? `${nm0} with ${listJoin(extra)}` : nm0; }
 function swapIngredient(i, k, toName, qty, unit){
   const cur = byId(S.plan[i]); if (!cur) return;
   const base = cur.variant ? byId(cur.base) : cur;
@@ -989,7 +993,10 @@ function swapIngredient(i, k, toName, qty, unit){
   const a = estimate([cur.i[k]]), b = estimate([[toName, per, unit]]), known = !a.missed.length && !b.missed.length;
   const d = k2 => known ? b[k2] - a[k2] : 0;
   const v = { ...cur, id: cur.variant ? cur.id : 'var-' + Date.now().toString(36) + Math.random().toString(36).slice(2,5),
-    name: retitle(cur.name, from, toName), i: ing, kcal: Math.max(150, Math.round(cur.kcal + d('kcal'))), p: Math.max(0, Math.round(cur.p + d('p'))),
+    ...(() => { const adds = [...(cur.adds||[])], ai = adds.indexOf(from), nm0 = cur.nm0 || cur.name;
+      if (ai >= 0){ adds[ai] = toName; return { nm0, adds, name: withAdds(nm0, adds) }; }
+      const n0 = retitle(nm0, from, toName); return { nm0: n0, adds, name: withAdds(n0, adds) }; })(),
+    i: ing, kcal: Math.max(150, Math.round(cur.kcal + d('kcal'))), p: Math.max(0, Math.round(cur.p + d('p'))),
     c: Math.max(0, Math.round(cur.c + d('c'))), f: Math.max(0, Math.round(cur.f + d('f'))), est: true, variant: true, mine: true, base: base.id,
     swaps: [...(cur.swaps || []), [from, toName]], by: base.by };
   delete catCache[toName];
@@ -1005,12 +1012,13 @@ function addIngredient(i, name, qty, unit){
   const per = (unit==='g'||unit==='ml') ? qty / s : qty, add = [name, Math.round(per*1000)/1000, unit, guessAisle(name, unit, per)];
   const e = estimate([add]), ok = !e.missed.length;
   const v = { ...cur, id: cur.variant ? cur.id : 'var-' + Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+    nm0: cur.nm0 || cur.name, adds: [...(cur.adds||[]), name], name: withAdds(cur.nm0 || cur.name, [...(cur.adds||[]), name]),
     i: [...cur.i, add], kcal: Math.round(cur.kcal + (ok ? e.kcal : 0)), p: Math.round(cur.p + (ok ? e.p : 0)), c: Math.round(cur.c + (ok ? e.c : 0)), f: Math.round(cur.f + (ok ? e.f : 0)),
     est: true, variant: true, mine: true, base: base.id, swaps: [...(cur.swaps || []), ['+', name]], by: base.by };
   delete catCache[name];
   put('mine.' + v.id, v);
   if (S.plan[i] !== v.id){ const plan = [...S.plan]; plan[i] = v.id; put('plan', plan); }
-  untickAll(); save(); route(); toast(`Added ${name}${ok ? '' : ' — macros not adjusted (unknown ingredient)'}`);
+  untickAll(); save(); route(); toast(`Now: ${v.name}${ok ? '' : ' (macros not adjusted)'}`);
 }
 
 function emptyRow(i){
