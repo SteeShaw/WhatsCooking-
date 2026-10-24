@@ -436,6 +436,8 @@ body.storemode .wrap{padding-top:0}
 .instore .ctag{display:none}
 .isbody.locked{opacity:.45;filter:grayscale(1)}
 .isdone{display:flex;margin:10px auto 40px;padding:14px 26px;font-size:16px}
+.updbar{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:90;background:var(--ok);color:#fff;font-weight:700;font-size:14px;padding:12px 18px;border-radius:99px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+body.storemode .ishead{padding-top:calc(14px + env(safe-area-inset-top))}
 </style>
 </head>
 <body>
@@ -1620,7 +1622,7 @@ function setDay(i, id){
 function route(){
   const h=location.hash.replace(/^#\/?/,''), [p,arg]=h.split('/');
   const name = p==='shop'?'shop':p==='macros'?'macros':p==='mine'?'mine':(p==='archive'||p==='past')?'archive':'week';
-  document.body.classList.toggle('storemode', p==='store'); keepAwake(p==='store');
+  document.body.classList.toggle('storemode', p==='store'); keepAwake(p==='store'); if (p!=='store') goFull(false);
   document.querySelectorAll('.tab').forEach(a=>{ const on=a.dataset.r===name; a.classList.toggle('on',on); if(on) $('modelabel').textContent=a.querySelector('b').textContent; });
   menu(false);
   const parts = h.split('/');
@@ -1629,6 +1631,15 @@ function route(){
   if (p==='mine' && arg==='new' && !$('rf-name').value) $('rf-name').focus();
 }
 addEventListener('hashchange', ()=>{ route(); scrollTo(0,0); });
+// new version check: GitHub Pages caches for 10 minutes, so look for a newer build and offer a refresh
+const BUILD = '2026-10-24-1615';
+async function checkUpdate(){ try{ const h = await fetch(location.pathname + '?v=' + Date.now(), { cache:'no-store' }).then(r => r.text());
+  const m = h.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD && !$('upd')){ const d = document.createElement('button'); d.id='upd'; d.className='updbar'; d.textContent='New version ready — tap to update'; d.onclick=()=>location.reload(); document.body.appendChild(d); } }catch(e){} }
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); }); setTimeout(checkUpdate, 3000);
+// true full screen where the phone allows it (Android, iPad, desktop); on iPhone the home-screen app already hides Safari's bars
+function goFull(on){ try{ const d=document, el=d.documentElement;
+  if (on && !d.fullscreenElement && !d.webkitFullscreenElement) (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el, { navigationUI:'hide' })?.catch?.(()=>{});
+  if (!on && (d.fullscreenElement || d.webkitFullscreenElement)) (d.exitFullscreen || d.webkitExitFullscreen)?.call(d)?.catch?.(()=>{}); }catch(e){} }
 // keep the screen on while shopping
 let WL = null;
 async function keepAwake(on){ try{ if (on && !WL && navigator.wakeLock){ WL = await navigator.wakeLock.request('screen'); WL.addEventListener('release', () => { WL = null; }); } else if (!on && WL){ await WL.release(); WL = null; } }catch(e){} }
@@ -1658,7 +1669,7 @@ $('app').addEventListener('click', e=>{
   if(a==='doswap'){ const f=$('sw-'+b.dataset.k), n=f.querySelector('.sw-n').value.trim(), q=parseQty(f.querySelector('.sw-q').value), u=f.querySelector('.sw-u').value;
     if(!n){ toast('Type what to swap it for'); f.querySelector('.sw-n').focus(); return; } swapIngredient(i, +b.dataset.k, n, isFinite(q)?q:0, u); return; }
   if(a==='unswap'){ const r=byId(S.plan[i]); if(r && r.variant){ const plan=[...S.plan]; plan[i]=r.base; put('plan',plan); put('mine.'+r.id, {...r, deleted:true}); untickAll(); save(); route(); toast('Back to '+((byId(r.base)||{}).name||'the original')); } return; }
-  if(a==='sview'){ if(b.dataset.v==='store'){ location.hash='#/store'; return; } SV='shop'; try{ localStorage.setItem('wc-shopview', SV); }catch(e){} route(); return; }
+  if(a==='sview'){ if(b.dataset.v==='store'){ goFull(true); location.hash='#/store'; return; } SV='shop'; try{ localStorage.setItem('wc-shopview', SV); }catch(e){} route(); return; }
   if(a==='storedone'){ if(!S.shopDone){ put('shopDone', true); save(); toast('Shop done — list locked'); } location.hash='#/shop'; return; }
   if(a==='clear'){ const plan=[...S.plan]; plan[i]=null; put('plan',plan); put('cooked.'+i,false); put('locked.'+i,false); put('lunch.'+i,false); untickAll(); save(); route(); toast(`Cleared ${DAYS[i]}`); }
   if(a==='onday'){ put('on.'+i,true); const plan=[...S.plan]; plan[i]=pick(plan.filter(Boolean),tagsOf(plan)); put('plan',plan); put('cooked.'+i,false); untickAll(); save(); route(); toast(`${DAYS[i]} added — tap Choose to pick something else`); }
