@@ -377,6 +377,24 @@ ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));colo
 .addday{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:14px 0 4px}
 .addday .pill{padding:7px 12px}
 @media (max-width:360px){.ract{padding:0 7px;gap:4px}.acts{gap:4px}.row .slot .lslot{padding:4px 6px}}
+/* drag to reorder */
+.grip{flex:none;width:18px;margin-right:-6px;color:var(--muted);display:grid;place-items:center;cursor:grab;touch-action:none;align-self:stretch;opacity:.6}
+.grip:hover{opacity:1;color:var(--ink)}
+.grip.off{visibility:hidden}
+.rfloat{position:fixed;z-index:60;pointer-events:none;background:var(--bg);border-radius:16px;box-shadow:0 18px 40px -10px rgba(0,0,0,.35);padding-left:10px;padding-right:10px;opacity:.96}
+.rghost{opacity:.3}
+.rdrop{outline:2px dashed var(--ink);outline-offset:4px;border-radius:14px}
+/* ingredient swaps */
+.iswap{flex:none;width:30px;height:30px;border-radius:99px;color:var(--muted);font-size:15px}
+.iswap:hover{background:var(--bg);color:var(--ink)}
+.swapform{display:flex;gap:6px;padding:8px 0 12px;border-bottom:1px solid var(--line)}
+.swapform[hidden]{display:none}
+.swapform input,.swapform select{min-width:0;border:0;background:var(--bg);border-radius:12px;padding:9px 10px;font-size:15px;color:inherit;font-family:inherit;outline:none}
+.swapform .sw-n{flex:1}
+.swapform .sw-q{width:58px}
+.swapform .sw-u{width:64px;appearance:none;-webkit-appearance:none;text-align:center}
+.swapform input:focus,.swapform select:focus{box-shadow:0 0 0 2px var(--ink) inset}
+.varnote{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:-8px 0 20px}
 </style>
 </head>
 <body>
@@ -777,6 +795,7 @@ function gradStyle(r, i){
 const LOCK_SVG = on => on
   ? '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M7 10V7a5 5 0 0 1 10 0v3h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/></svg>'
   : '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M8 10V7a4 4 0 0 1 7.6-1.7M6 10h12a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z"/></svg>';
+const GRIP_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><g fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></g></svg>';
 const SHUF_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const LIST_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
 const dayStyle = i => gradStyle(byId(S.plan[i]), i);
@@ -873,7 +892,8 @@ function viewWeek(){
       <div>${onDays().map(i=>{ const id=S.plan[i];
         if (!id) return emptyRow(i);
         const x=byId(id), mm=scaled(x);
-        return `<a class="row ${S.cooked[i]?'cooked':''} ${i===hi?'active':''}" data-i="${i}" href="#/recipe/${i}" style="${dayStyle(i)}">
+        return `<a class="row ${S.cooked[i]?'cooked':''} ${i===hi?'active':''}" data-i="${i}" data-day="${i}" href="#/recipe/${i}" style="${dayStyle(i)}">
+          <span class="grip" data-grip="${i}" title="Drag to move to another day" aria-label="Drag ${DAYS[i]}">${GRIP_SVG}</span>
           <div class="tile grad">${imgTag(x,'')}</div>
           <div class="rbody"><div class="rday">${DAYS[i]}</div><div class="rtitle">${esc(x.name)}</div>
           <div class="rmeta">${isLoved(x.id)?'<span class="lovedot">♥</span> ':''}≈${k0(mm.kcal)} kcal · ${k0(mm.p)}g protein${x.mins?` · ${x.mins} min`:''}${x.by?` · ${x.by}`:''}</div></div>
@@ -907,8 +927,42 @@ function viewWeek(){
   </div>`;
 }
 
+// ---------- Swapping ingredients ----------
+const CUT = /\b(lean|skinless|boneless|fresh|frozen|cooked|tinned|chopped|light|lighter|fat free|smoked|raw|king|large|small|baby|fillets?|breasts?|thighs?|strips|steaks?|loins?|tenderloin|mince|minced|chunks|pieces|pouch|tin|jar|\d+%)\b/g;
+const clean = n => String(n).toLowerCase().replace(/\(.*?\)/g,'').replace(/[^a-z0-9%&' -]/g,' ').replace(/\s+/g,' ').trim();
+const core = n => clean(n).replace(CUT,' ').replace(/\s+/g,' ').trim() || clean(n);
+const sing1 = w => /(ss|us|is)$/i.test(w) ? w : w.replace(/(ies)$/,'y').replace(/(oes)$/,'o').replace(/s$/,'');
+function matchCase(src, rep){ if (src === src.toUpperCase()) return rep.toUpperCase(); if (src[0] === src[0].toUpperCase()) return rep.replace(/\b\w/g, c => c.toUpperCase()); return rep; }
+// put the new ingredient's name where the old one appears in the title
+function retitle(title, from, to){
+  const tries = [[clean(from), clean(to)], [core(from), core(to)], ...core(from).split(' ').filter(w => w.length > 2).sort((a,b)=>b.length-a.length).map(w => [w, core(to)])];
+  for (const [f, t] of tries){ if (!f || !t) continue;
+    const re = new RegExp(`\\b(${f.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}|${sing1(f)})(e?s)?\\b`, 'i'), m = title.match(re);
+    if (m){ const adj = !/s$/i.test(m[0]) && /^ [a-z]/i.test(title.slice(m.index + m[0].length)), tt = adj ? t.replace(/(\w+)$/, w => sing1(w)) : t;   // "chickpea dal" → "butter bean dal"
+      return title.replace(re, matchCase(m[0], tt)); } }
+  return title;
+}
+function swapIngredient(i, k, toName, qty, unit){
+  const cur = byId(S.plan[i]); if (!cur) return;
+  const base = cur.variant ? byId(cur.base) : cur;
+  const [from, , , ] = cur.i[k], s = scaleFor(cur);
+  const per = (unit==='g'||unit==='ml') ? qty / s : qty;        // the form shows scaled grams; recipes store unscaled
+  const ing = cur.i.map((x,j) => j === k ? [toName, Math.round(per*1000)/1000, unit, guessAisle(toName, unit, per)] : x);
+  // nudge the macros by the difference between the two ingredients, where both are known
+  const a = estimate([cur.i[k]]), b = estimate([[toName, per, unit]]), known = !a.missed.length && !b.missed.length;
+  const d = k2 => known ? b[k2] - a[k2] : 0;
+  const v = { ...cur, id: cur.variant ? cur.id : 'var-' + Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+    name: retitle(cur.name, from, toName), i: ing, kcal: Math.max(150, Math.round(cur.kcal + d('kcal'))), p: Math.max(0, Math.round(cur.p + d('p'))),
+    c: Math.max(0, Math.round(cur.c + d('c'))), f: Math.max(0, Math.round(cur.f + d('f'))), est: true, variant: true, mine: true, base: base.id,
+    swaps: [...(cur.swaps || []), [from, toName]], by: base.by };
+  delete catCache[toName];
+  put('mine.' + v.id, v);
+  if (S.plan[i] !== v.id){ const plan = [...S.plan]; plan[i] = v.id; put('plan', plan); }
+  untickAll(); save(); route(); toast(v.name !== cur.name ? `Now: ${v.name}` : `Swapped ${from} for ${toName}`);
+}
+
 function emptyRow(i){
-  return `<div class="row erow"><div class="tile etile">+</div>
+  return `<div class="row erow" data-day="${i}"><span class="grip off">${GRIP_SVG}</span><div class="tile etile">+</div>
     <div class="rbody"><div class="rday">${DAYS[i]}</div><div class="rtitle" style="color:var(--muted)">No dinner</div></div>
     <div class="acts">
       <button class="ract" data-act="swap" data-i="${i}" title="Random dinner">${SHUF_SVG}<span>Shuffle</span></button>
@@ -941,11 +995,18 @@ function viewRecipe(i){
       <button class="pill ghost" data-act="lock" data-i="${i}">${S.locked[i]?'Unlock':'Lock this dinner'}</button>
       <button class="pill ghost" data-act="swap" data-i="${i}" ${S.locked[i]?'disabled style="opacity:.4"':''}>Shuffle</button>
       <a class="pill ghost" href="#/pick/${i}">Choose</a>
-      ${r.mine && !r.deleted ? `<a class="pill ghost" href="#/mine/edit/${r.id}">Edit recipe</a>` : ''}
+      ${r.mine && !r.deleted && !r.variant ? `<a class="pill ghost" href="#/mine/edit/${r.id}">Edit recipe</a>` : ''}
     </div>
+    ${r.variant ? `<div class="note varnote"><span>Swapped from <b>${esc((byId(r.base)||{}).name||'the original')}</b>: ${r.swaps.map(([a,b])=>`${esc(a)} → ${esc(b)}`).join(', ')}</span><button class="pill ghost" data-act="unswap" data-i="${i}">Undo swaps</button></div>` : ''}
     <div class="grid">
       <div class="card"><b>Ingredients</b><span class="small"> · ${n} ${n>1?'people':'person'}${L?' + 1 lunch':''}</span>${L?' <span class="sticker" style="cursor:default">+ Lunch</span>':''}
-        ${r.i.map(([nm,q,u])=>`<div class="item" style="cursor:default"><span class="nm">${esc(nm)}</span><span class="q">${portion(q,u,m.s,n,L)}</span></div>`).join('')}
+        ${r.i.map(([nm,q,u,a],k)=>`<div class="item" style="cursor:default"><span class="nm">${esc(nm)}</span><span class="q">${portion(q,u,m.s,n,L)}</span>${r.hidden?'':`<button class="iswap" data-act="iswap" data-i="${i}" data-k="${k}" title="Swap ${esc(nm)}" aria-label="Swap ${esc(nm)}">⇄</button>`}</div>
+          <div class="swapform" id="sw-${k}" hidden><input class="sw-n" list="swapnames" placeholder="Swap ${esc(nm)} for…" autocomplete="off" enterkeyhint="done">
+            <input class="sw-q" inputmode="decimal" value="${q ? nice(u==='g'||u==='ml' ? Math.round(q*m.s) : q) : ''}" aria-label="Amount per person">
+            <select class="sw-u">${UNITS.map(([v,l])=>`<option value="${v}" ${v===u?'selected':''}>${l}</option>`).join('')}</select>
+            <button class="pill" data-act="doswap" data-i="${i}" data-k="${k}">Swap</button></div>`).join('')}
+        <datalist id="swapnames">${Object.keys(knownIngs()).sort().map(x=>`<option value="${esc(x)}">`).join('')}</datalist>
+        <p class="small" style="margin-top:10px">Tap ⇄ to swap an ingredient — the recipe name updates to match. Amounts are per person.</p>
       </div>
       <div><p class="label">Method${r.src?' (in short)':''}</p><ol class="method">${r.m.map(x=>`<li><span>${esc(x)}</span></li>`).join('')}</ol>
         ${r.src?`<a class="pill ghost srclink" href="${esc(r.src)}" target="_blank" rel="noopener">${r.mine?'Recipe link':'Full recipe on '+r.by} ↗</a>`:''}</div>
@@ -1089,7 +1150,7 @@ function cookAgain(id){
 
 
 // ---------- My recipes (built by hand, synced with the rest of the week) ----------
-const mineList = () => Object.values(S.mine).filter(r => r && r.id && !r.deleted).sort((a,b) => a.name.localeCompare(b.name));
+const mineList = () => Object.values(S.mine).filter(r => r && r.id && !r.deleted && !r.variant).sort((a,b) => a.name.localeCompare(b.name));
 const TAGS = ['chicken','beef','pork','lamb','turkey','fish','tofu','veg','other'];
 const UNITS = [['g','g'],['ml','ml'],['','×'],['tin','tin'],['clove','clove'],['slice','slice'],['tsp','tsp'],['tbsp','tbsp']];
 // what every known ingredient is usually measured in and which aisle it lives in (from all the recipes in the app)
@@ -1098,7 +1159,7 @@ function knownIngs(){
   Object.keys(P).forEach(n => { if (!m[n]) m[n] = {u:'g', a:'C'}; });
   return m;
 }
-const isCustomIng = n => mineList().some(r => r.i.some(x => x[0] === n));
+const isCustomIng = n => Object.values(S.mine).some(r => r && !r.deleted && r.i && r.i.some(x => x[0] === n));
 // aisle for an ingredient nobody has used before: guess from the shop catalogue
 function guessAisle(name, u, q){
   const k = knownIngs()[name]; if (k) return k.a;
@@ -1409,6 +1470,10 @@ $('app').addEventListener('click', e=>{
   const i=+b.dataset.i, a=b.dataset.act;
   if(a==='gen'){ generate(); toast('New week picked'); if(location.hash.includes('macros')) location.hash='#/'; }
   if(a==='swap'){ if(S.locked[i]){ toast(DAYS[i]+' is locked'); return; } swap(i); if(location.hash.startsWith('#/pick')) location.hash='#/'; }
+  if(a==='iswap'){ const f=$('sw-'+b.dataset.k); document.querySelectorAll('.swapform').forEach(x=>{ if(x!==f) x.hidden=true; }); f.hidden=!f.hidden; if(!f.hidden) f.querySelector('.sw-n').focus(); return; }
+  if(a==='doswap'){ const f=$('sw-'+b.dataset.k), n=f.querySelector('.sw-n').value.trim(), q=parseQty(f.querySelector('.sw-q').value), u=f.querySelector('.sw-u').value;
+    if(!n){ toast('Type what to swap it for'); f.querySelector('.sw-n').focus(); return; } swapIngredient(i, +b.dataset.k, n, isFinite(q)?q:0, u); return; }
+  if(a==='unswap'){ const r=byId(S.plan[i]); if(r && r.variant){ const plan=[...S.plan]; plan[i]=r.base; put('plan',plan); put('mine.'+r.id, {...r, deleted:true}); untickAll(); save(); route(); toast('Back to '+((byId(r.base)||{}).name||'the original')); } return; }
   if(a==='clear'){ const plan=[...S.plan]; plan[i]=null; put('plan',plan); put('cooked.'+i,false); put('locked.'+i,false); put('lunch.'+i,false); untickAll(); save(); route(); toast(`Cleared ${DAYS[i]}`); }
   if(a==='onday'){ put('on.'+i,true); const plan=[...S.plan]; plan[i]=pick(plan.filter(Boolean),tagsOf(plan)); put('plan',plan); put('cooked.'+i,false); untickAll(); save(); route(); toast(`${DAYS[i]} added — tap Choose to pick something else`); }
   if(a==='offday'){ put('on.'+i,false); const plan=[...S.plan]; plan[i]=null; put('plan',plan); put('lunch.'+i,false); save(); route(); toast(`${DAYS[i]} taken out of the week`); }
@@ -1470,6 +1535,7 @@ $('app').addEventListener('click', e=>{
 
 });
 $('app').addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.id==='xtra'){ e.preventDefault(); addExtra(); return; }
+  if(e.key==='Enter' && e.target.closest('.swapform')){ e.preventDefault(); e.target.closest('.swapform').querySelector('[data-act=doswap]').click(); return; }
   if(e.key==='Enter' && e.target.classList.contains('bin')){ e.preventDefault(); addExtra(e.target.dataset.cat); return; }
   if((e.key==='Enter'||e.key===' ') && e.target.classList.contains('prow')){ e.preventDefault(); e.target.click(); return; }
   const t=e.target; if(e.key!=='Enter' || !t.closest('#rform') || t.tagName==='TEXTAREA') return; e.preventDefault();
@@ -1496,6 +1562,7 @@ $('app').addEventListener('change', e=>{
 });
 $('app').addEventListener('input', e=>{
   if(e.target.id==='shoplock'){ e.target.parentElement.style.setProperty('--v', e.target.value); return; }
+  if(e.target.classList.contains('sw-n')){ const k=knownIngs()[e.target.value.trim()]; if(k) e.target.parentElement.querySelector('.sw-u').value=k.u; return; }
   if(e.target.id==='dq'){ DF=e.target.value; $('dlist').innerHTML=sweetList(); return; }
   if(e.target.id==='pq'){ PF.q=e.target.value; $('plist').innerHTML=pickList(+location.hash.split('/')[2]); return; }
   if(e.target.closest('#rform')){ const t=e.target;
@@ -1508,6 +1575,39 @@ $('app').addEventListener('input', e=>{
   put('settings.'+id,v); save(); const el=$('tgt'); if(el) el.innerHTML=tgt(targets());
 });
 function setLunch(i,on,quiet){ put('lunch.'+i,on); save(); route(); if(!quiet) toast(on?`Lunch added to ${DAYS[i]}`:`Lunch removed from ${DAYS[i]}`); }
+
+// drag a dinner by its grip onto another day: the two days swap (cooked, locked and lunch go with them)
+let rdrag=null;
+$('app').addEventListener('pointerdown', e=>{
+  const g=e.target.closest('[data-grip]'); if(!g || e.button>0) return;
+  e.preventDefault(); e.stopPropagation(); g.setPointerCapture?.(e.pointerId);
+  const row=g.closest('.row'), r=row.getBoundingClientRect();
+  rdrag={from:+g.dataset.grip, row, dy:e.clientY-r.top, x:r.left, w:r.width, el:null, target:null, y0:e.clientY};
+}, true);
+addEventListener('pointermove', e=>{
+  if(!rdrag) return;
+  if(!rdrag.el){ if(Math.abs(e.clientY-rdrag.y0)<4) return;
+    rdrag.el=rdrag.row.cloneNode(true); rdrag.el.classList.add('rfloat'); rdrag.el.style.width=rdrag.w+'px'; rdrag.el.style.left=rdrag.x+'px'; document.body.appendChild(rdrag.el); rdrag.row.classList.add('rghost'); }
+  rdrag.el.style.top=(e.clientY-rdrag.dy)+'px';
+  rdrag.el.style.display='none'; const over=document.elementFromPoint(e.clientX,e.clientY)?.closest('.row[data-day]'); rdrag.el.style.display='';
+  if(rdrag.target && rdrag.target!==over) rdrag.target.classList.remove('rdrop');
+  rdrag.target = over && over!==rdrag.row ? over : null; if(rdrag.target) rdrag.target.classList.add('rdrop');
+  if(e.clientY < 60) scrollBy(0,-12); else if(e.clientY > innerHeight-60) scrollBy(0,12);
+});
+function endRowDrag(){
+  if(!rdrag) return; const d=rdrag; rdrag=null;
+  d.el?.remove(); d.row.classList.remove('rghost'); d.target?.classList.remove('rdrop');
+  if(!d.el) return;
+  justDragged=true; setTimeout(()=>justDragged=false,350);
+  if(d.target) moveDay(d.from, +d.target.dataset.day);
+}
+addEventListener('pointerup', endRowDrag); addEventListener('pointercancel', endRowDrag);
+function moveDay(a, b){
+  if(a===b) return;
+  const plan=[...S.plan]; [plan[a],plan[b]]=[plan[b],plan[a]]; put('plan',plan);
+  ['cooked','locked','lunch'].forEach(k=>{ const x=!!S[k][a], y=!!S[k][b]; put(k+'.'+a,y); put(k+'.'+b,x); });
+  save(); route(); toast(plan[a] ? `Swapped ${DAYS[a]} and ${DAYS[b]}` : `Moved to ${DAYS[b]}`);
+}
 
 let drag=null;
 $('app').addEventListener('pointerdown', e=>{
