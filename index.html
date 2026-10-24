@@ -395,6 +395,15 @@ ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));colo
 .swapform .sw-u{width:64px;appearance:none;-webkit-appearance:none;text-align:center}
 .swapform input:focus,.swapform select:focus{box-shadow:0 0 0 2px var(--ink) inset}
 .varnote{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:-8px 0 20px}
+/* in-store view */
+.seg{display:flex;background:var(--soft);border-radius:99px;padding:4px;margin:0 0 18px}
+.seg button{flex:1;padding:9px 0;border-radius:99px;font-weight:700;font-size:14px;color:var(--muted)}
+.seg button.on{background:var(--bg);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.storesec{margin-bottom:22px}
+.storesec h3{display:flex;justify-content:space-between;align-items:baseline;font-size:20px;letter-spacing:-.02em;border-bottom:2px solid var(--ink);padding-bottom:6px;margin-bottom:4px}
+.storesec h3 .muted{font-size:13px;font-weight:600}
+.subsec{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:14px 0 2px}
+.shopS{color:#f06c00;font-weight:700}
 </style>
 </head>
 <body>
@@ -1047,7 +1056,8 @@ function viewShop(){
     <input type="range" id="shoplock" min="0" max="100" step="1" value="${done?100:0}" aria-label="${done?'Shop done — slide left to unlock the list':'Slide right when the shop is done'}"></div>
   <div class="btns" style="margin:14px 0 26px"><button class="pill" data-act="copy">Copy list</button>${got && !done?`<button class="pill ghost" data-act="untick">Untick all</button>`:''}</div>
   <div class="shopbody ${done?'locked':''}" ${done?'inert':''}>
-  <section class="card extras"><div class="xhead"><b>Added items</b>${ex.length?`<span class="subx">${gbp(t.X)}</span>`:''}</div>
+  <div class="seg" role="tablist"><button class="${SV==='shop'?'on':''}" data-act="sview" data-v="shop" role="tab">By shop</button><button class="${SV==='store'?'on':''}" data-act="sview" data-v="store" role="tab">In store</button></div>
+  ${SV==='store' ? storeView(rows) : `<section class="card extras"><div class="xhead"><b>Added items</b>${ex.length?`<span class="subx">${gbp(t.X)}</span>`:''}</div>
     <div class="addrow"><input id="xtra" placeholder="Milk, bin bags, snacks…" autocomplete="off" enterkeyhint="done"><button class="pill" data-act="addx">Add</button></div>
     ${ex.map(([id,v])=>{ const x=extraInfo(v), it=x.it;
       const sub = it ? `${SHOP[it.shop||'A']} · ${it.u?`<a href="${it.u}" target="_blank" rel="noopener">${esc(it.n)}</a>`:esc(it.n)}${it.sz?' · '+esc(it.sz):''}${x.qty>1?` · ×${x.qty}`:''}`
@@ -1059,10 +1069,62 @@ function viewShop(){
         <button class="price alt" data-act="delx" data-id="${id}" aria-label="Remove ${esc(v.t)}">✕</button></label>`; }).join('')}
     ${ex.length?`<div class="btns" style="margin-top:10px"><button class="pill" data-act="checkx">Check prices</button></div>`:''}
   </section>
-  ${shopSec('A')}${shopSec('S')}
+  ${shopSec('A')}${shopSec('S')}`}
   ${g.S?`<div class="card small"><b style="color:var(--ink)">Check you have</b><p style="margin-top:4px">${[...new Set(g.S.map(x=>x.name))].map(esc).join(', ')}</p></div>`:''}
   </div>`;
 }
+// ---------- In-store view: one list in the order you walk round Aldi ----------
+let SV = (()=>{ try{ return localStorage.getItem('wc-shopview') || 'shop'; }catch(e){ return 'shop'; } })();
+const STORE = [['fv','Fruit & veg'],['meat','Meat'],['fish','Fish'],['alt','Protein alternatives'],['dairy','Dairy & eggs'],['cup','Food cupboard'],['bakery','Bakery'],['drinks','Drinks'],['home','Household'],['booze','Alcohol'],['freezer','Freezer']];
+const CUPSUB = [['tins','Tins & jars'],['grains','Rice, pasta & grains'],['spices','Spices, stock & seasoning'],['sauces','Sauces, oils & spreads'],['snacks','Snacks, nuts & baking'],['other','Everything else']];
+function storeSection(name, prod, code){
+  const t = (name + ' ' + (prod||'')).toLowerCase(), c = code || '';
+  if (/\bfrozen\b|ice cream|\bchips\b|fries|potato wedges/.test(t) || c === 'F' || c === 'S-Frozen') return ['freezer'];
+  if (/\b(wine|beer|lager|cider|prosecco|gin|vodka|rum|whisky|amaretto|sherry|marsala|liqueur|guinness)\b/.test(t) && !/vinegar/.test(t)) return ['booze'];
+  if (c === 'H' || c === 'T' || /^S-(Toiletries|Baby|Pet)$/.test(c) || /toilet|kitchen (roll|towel)|bin bag|refuse|washing|detergent|bleach|cleaner|\bfoil\b|cling|food bags|shampoo|shower gel|toothpaste|toothbrush|deodorant|nappies|tissues|sponge|dishwasher|laundry|soap|handwash|razor|paracetamol|cat food|dog food/.test(t)) return ['home'];
+  if (c === 'K' || c === 'S-Drinks' || /\b(water|cola|coke|lemonade|juice|squash|tea bags|coffee|soda|tonic|sparkling|oat drink|smoothie)\b/.test(t) && !/coconut water/.test(t)) return ['drinks'];
+  if (/tofu|tempeh|quorn|plant.based|meat.free|vegan mince|seitan|falafel|soya mince/.test(t)) return ['alt'];
+  if (/\btin(ned)?\b|in brine|chopped tomato|passata|\bbeans?\b|chickpea|lentil|coconut milk|sweetcorn|\bjar\b|olives|capers|jalape|sun.?dried|roasted red pepper|artichoke|soup|condensed/.test(t) && !/green bean|runner bean|edamame|coffee bean|vanilla bean|beansprout/.test(t)) return ['cup','tins'];
+  if (/stock|bouillon|gravy/.test(t)) return ['cup','spices'];
+  if (/salmon|\bcod\b|prawn|tuna|mackerel|anchov|haddock|sea bass|\bfish\b|seafood|basa|pollock|hake|trout/.test(t)) return ['fish'];
+  if (c === 'M' || c === 'S-Meat' || /chicken|beef|steak|pork|lamb|turkey|\bmince\b|sausage|bacon|chorizo|pancetta|\bham\b|gammon|duck|meatball|lardons/.test(t)) return ['meat'];
+  if (/breadcrumb|panko/.test(t)) return ['cup','other'];
+  if (c === 'B' || c === 'S-Bakery' || /bread|loaf|\bwraps?\b|tortilla|pitta|naan|bagel|brioche|\bbuns?\b|\brolls?\b|crumpet|croissant|sourdough|ciabatta|flatbread|muffin/.test(t)) return ['bakery'];
+  if (/peanut butter|nut butter|almond butter/.test(t)) return ['cup','sauces'];
+  if (c === 'D' || /^S-(Dairy|Chilled|Deli)$/.test(c) || /milk|cheese|cheddar|yog|cream|butter|\beggs?\b|halloumi|feta|mozzarella|parmesan|ricotta|mascarpone|houmous|hummus|custard|kefir|coleslaw/.test(t)) return ['dairy'];
+  if (c === 'V' || /^S-(Veg|Fruit|Fresh herbs)$/.test(c)) return ['fv'];
+  if (/spice|seasoning|paprika|cumin|turmeric|curry powder|garam|cinnamon|oregano|thyme|chilli flakes|chilli powder|\bsalt\b|peppercorn|dried herbs|five spice|za.atar|sumac|nutmeg|vanilla/.test(t)) return ['cup','spices'];
+  if (/rice|pasta|spaghetti|penne|fusilli|noodle|couscous|orzo|quinoa|\boats\b|porridge|gnocchi|flour|lasagne|cereal|cornflakes|bulgur|polenta/.test(t)) return ['cup','grains'];
+  if (/sauce|\boil\b|vinegar|soy|mayo|ketchup|honey|syrup|paste|mustard|tahini|miso|gochujang|salsa|chutney|\bjam\b|spread|pesto/.test(t)) return ['cup','sauces'];
+  if (/crisps|chocolate|biscuit|digestive|\bnuts\b|seeds|raisin|dried|cereal bar|popcorn|sweets|cocoa|dates|sugar/.test(t)) return ['cup','snacks'];
+  return ['cup','other'];
+}
+// trust the words on the list first; only fall back to the matched product (and its shop aisle) when they say nothing useful
+function sectionFor(name, prod, code, own){ const a = storeSection(name, '', own); return (a[0]==='cup' && a[1]==='other') ? storeSection(name, prod, code || own) : a; }
+function storeView(rows){
+  const items = [];
+  rows.forEach(it => { const key=it.name+'|'+it.u, pr=it.prod, bp=it.bp, lbl = bp ? (bp.perKg ? 'kg' : bp.buy[bp.buy.length-1].label) : '';
+    const sec = it.a==='V' ? ['fv'] : sectionFor(it.name, pr && pr.n, '', it.a==='M' ? 'M' : it.a==='D' ? 'D' : '');
+    items.push({ sec, sort:(pr?pr.n:it.name), html:`<label class="item ${S.ticked[key]?'done':''}"><input type="checkbox" data-key="${key}" ${S.ticked[key]?'checked':''}>
+      <span class="nm"><span class="pn">${pr ? esc(pr.n) : esc(it.name)}</span><span class="pd">${it.shop==='S' && !/^Sainsbury/.test(pr?pr.n:'')?'<b class="shopS">Sainsbury\'s</b> · ':''}Need ${fmt(it.q,it.u).replace('× ','')} · buy ${packStr(bp)||'—'}</span></span>
+      <span class="dots">${[...it.days].sort().map(d=>`<i style="${dayStyle(d)}" title="${DAYS[d]}"></i>`).join('')}</span>
+      ${bp?`<button class="price ${pr && S.prices[it.name+'|'+lbl]!=null?'edited':''}" data-act="price" data-key="${it.name}" data-label="${lbl}">${gbp(bp.cost)}</button>`:''}</label>` }); });
+  extrasList().forEach(([id,v]) => { const x=extraInfo(v), it=x.it;
+    const sec = sectionFor(v.t, it && it.n, it && it.a !== 'R' ? it.a : '', '');
+    items.push({ sec, sort:v.t, html:`<label class="item ${v.done?'done':''}"><input type="checkbox" data-extra="${id}" ${v.done?'checked':''}>
+      <span class="nm"><span class="pn">${esc(v.t)} <span class="ctag">${v.cat||'added'}</span></span><span class="pd">${it ? `${it.shop==='S'?'<b class="shopS">Sainsbury\'s</b> · ':''}${esc(it.n)}${it.sz?' · '+esc(it.sz):''}${x.qty>1?` · ×${x.qty}`:''}` : 'Your item'}</span></span>
+      <button class="price" data-act="xprice" data-id="${id}">${x.cost!=null?gbp(x.cost):'£ –'}</button></label>` }); });
+  const out = STORE.map(([k, title]) => {
+    const here = items.filter(x => x.sec[0] === k).sort((a,b) => a.sort.localeCompare(b.sort)); if (!here.length) return '';
+    const left = here.filter(x => !/class="item done/.test(x.html)).length;
+    const body = k !== 'cup' ? here.map(x => x.html).join('') : CUPSUB.map(([sk, st]) => { const sub = here.filter(x => x.sec[1] === sk); return sub.length ? `<h4 class="subsec">${st}</h4>${sub.map(x=>x.html).join('')}` : ''; }).join('');
+    return `<section class="storesec"><h3><span>${title}</span><span class="muted">${left ? left+' to get' : 'done ✓'}</span></h3>${body}</section>`;
+  }).join('');
+  return `<div class="addrow" style="margin:0 0 18px"><input id="xtra" placeholder="Add something…" autocomplete="off" enterkeyhint="done"><button class="pill" data-act="addx">Add</button></div>
+    ${out || '<p class="small">Nothing on the list yet.</p>'}
+    <p class="small" style="margin:6px 0 18px">Everything in one list, in the order you walk round Aldi. Sainsbury's items are marked.</p>`;
+}
+
 function aisle(a,list){
   return `<div class="aisle"><h3>${A[a]}<span class="muted" style="font-weight:500">${list.length}</span></h3>${list.map(it=>{
     const key=it.name+'|'+it.u, done=S.ticked[key], pr=it.prod, bp=it.bp;
@@ -1489,6 +1551,7 @@ $('app').addEventListener('click', e=>{
   if(a==='doswap'){ const f=$('sw-'+b.dataset.k), n=f.querySelector('.sw-n').value.trim(), q=parseQty(f.querySelector('.sw-q').value), u=f.querySelector('.sw-u').value;
     if(!n){ toast('Type what to swap it for'); f.querySelector('.sw-n').focus(); return; } swapIngredient(i, +b.dataset.k, n, isFinite(q)?q:0, u); return; }
   if(a==='unswap'){ const r=byId(S.plan[i]); if(r && r.variant){ const plan=[...S.plan]; plan[i]=r.base; put('plan',plan); put('mine.'+r.id, {...r, deleted:true}); untickAll(); save(); route(); toast('Back to '+((byId(r.base)||{}).name||'the original')); } return; }
+  if(a==='sview'){ SV=b.dataset.v; try{ localStorage.setItem('wc-shopview', SV); }catch(e){} route(); return; }
   if(a==='clear'){ const plan=[...S.plan]; plan[i]=null; put('plan',plan); put('cooked.'+i,false); put('locked.'+i,false); put('lunch.'+i,false); untickAll(); save(); route(); toast(`Cleared ${DAYS[i]}`); }
   if(a==='onday'){ put('on.'+i,true); const plan=[...S.plan]; plan[i]=pick(plan.filter(Boolean),tagsOf(plan)); put('plan',plan); put('cooked.'+i,false); untickAll(); save(); route(); toast(`${DAYS[i]} added — tap Choose to pick something else`); }
   if(a==='offday'){ put('on.'+i,false); const plan=[...S.plan]; plan[i]=null; put('plan',plan); put('lunch.'+i,false); save(); route(); toast(`${DAYS[i]} taken out of the week`); }
