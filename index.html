@@ -416,6 +416,26 @@ ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));colo
 .qty.multi b{font-size:17px}
 .item.done .qty{opacity:.45}
 .addingbtn{margin-top:12px}
+/* full-screen in-store mode */
+body.storemode nav{display:none}
+body.storemode .wrap{padding-top:0}
+.instore{min-height:100vh}
+.ishead{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top)) 0 10px;background:var(--bg)}
+.isx{width:42px;height:42px;border-radius:99px;background:var(--soft);display:grid;place-items:center;font-size:16px;font-weight:700;flex:none}
+.istitle{flex:1;display:flex;flex-direction:column;line-height:1.15}
+.istitle b{font-size:22px;letter-spacing:-.02em}
+.istitle span{font-size:13px;color:var(--muted)}
+.ispct{font-size:15px;font-weight:800;color:var(--muted)}
+.isbar{position:sticky;top:calc(62px + env(safe-area-inset-top));z-index:20;height:4px;border-radius:9px;background:var(--line);margin-bottom:18px;overflow:hidden}
+.isbar i{display:block;height:100%;background:var(--ok);border-radius:9px;transition:width .3s}
+.instore .storesec h3{position:sticky;top:calc(72px + env(safe-area-inset-top));z-index:10;background:var(--bg);padding-top:8px}
+.instore .item{padding:13px 0;gap:14px}
+.instore .item .pn{font-size:17px;font-weight:600}
+.instore .item.done .pn{text-decoration:line-through}
+.instore .item input{width:26px;height:26px}
+.instore .ctag{display:none}
+.isbody.locked{opacity:.45;filter:grayscale(1)}
+.isdone{display:flex;margin:10px auto 40px;padding:14px 26px;font-size:16px}
 </style>
 </head>
 <body>
@@ -1118,7 +1138,7 @@ function viewShop(){
   </div>`;
 }
 // ---------- In-store view: one list in the order you walk round Aldi ----------
-let SV = (()=>{ try{ return localStorage.getItem('wc-shopview') || 'shop'; }catch(e){ return 'shop'; } })();
+let SV = 'shop';
 const STORE = [['fv','Fruit & veg'],['meat','Meat'],['fish','Fish'],['alt','Protein alternatives'],['dairy','Dairy & eggs'],['cup','Food cupboard'],['bakery','Bakery'],['drinks','Drinks'],['home','Household'],['booze','Alcohol'],['freezer','Freezer']];
 const CUPSUB = [['tins','Tins & jars'],['grains','Rice, pasta & grains'],['spices','Spices, stock & seasoning'],['sauces','Sauces, oils & spreads'],['snacks','Snacks, nuts & baking'],['other','Everything else']];
 function storeSection(name, prod, code){
@@ -1152,30 +1172,45 @@ function qtyBadge(bp, it){
   if (bp.buy.length === 1) return `<span class="qty"><b>${bp.buy[0].n}</b><small>${esc(bp.buy[0].label)}</small></span>`;
   return `<span class="qty multi">${bp.buy.map(x => `<span><b>${x.n}</b><small>${esc(x.label)}</small></span>`).join('')}</span>`;
 }
-function storeView(rows){
+function storeView(rows, full){
   const items = [];
   rows.forEach(it => { const key=it.name+'|'+it.u, pr=it.prod, bp=it.bp, lbl = bp ? (bp.perKg ? 'kg' : bp.buy[bp.buy.length-1].label) : '';
     const sec = it.a==='V' ? ['fv'] : sectionFor(it.name, pr && pr.n, '', it.a==='M' ? 'M' : it.a==='D' ? 'D' : '');
     items.push({ sec, sort:(pr?pr.n:it.name), html:`<label class="item ${S.ticked[key]?'done':''}"><input type="checkbox" data-key="${key}" ${S.ticked[key]?'checked':''}>
       ${qtyBadge(bp, it)}
       <span class="nm"><span class="pn">${pr ? esc(pr.n) : esc(it.name)}</span><span class="pd">${it.shop==='S' && !/^Sainsbury/.test(pr?pr.n:'')?'<b class="shopS">Sainsbury\'s</b> · ':''}for ${fmt(it.q,it.u).replace('× ','')} in the recipes</span></span>
-      <span class="dots">${[...it.days].sort().map(d=>`<i style="${dayStyle(d)}" title="${DAYS[d]}"></i>`).join('')}</span>
-      ${bp?`<button class="price ${pr && S.prices[it.name+'|'+lbl]!=null?'edited':''}" data-act="price" data-key="${it.name}" data-label="${lbl}">${gbp(bp.cost)}</button>`:''}</label>` }); });
+      ${full ? '' : `<span class="dots">${[...it.days].sort().map(d=>`<i style="${dayStyle(d)}" title="${DAYS[d]}"></i>`).join('')}</span>
+      ${bp?`<button class="price ${pr && S.prices[it.name+'|'+lbl]!=null?'edited':''}" data-act="price" data-key="${it.name}" data-label="${lbl}">${gbp(bp.cost)}</button>`:''}`}</label>` }); });
   extrasList().forEach(([id,v]) => { const x=extraInfo(v), it=x.it;
     const sec = sectionFor(v.t, it && it.n, it && it.a !== 'R' ? it.a : '', '');
     items.push({ sec, sort:v.t, html:`<label class="item ${v.done?'done':''}"><input type="checkbox" data-extra="${id}" ${v.done?'checked':''}>
       <span class="qty"><b>${x.qty}</b>${it && it.sz ? `<small>${esc(it.sz)}</small>` : ''}</span>
       <span class="nm"><span class="pn">${esc(v.t)} <span class="ctag">${v.cat||'added'}</span></span><span class="pd">${it ? `${it.shop==='S'?'<b class="shopS">Sainsbury\'s</b> · ':''}${esc(it.n)}` : 'Your item'}</span></span>
-      <button class="price" data-act="xprice" data-id="${id}">${x.cost!=null?gbp(x.cost):'£ –'}</button></label>` }); });
+      ${full ? '' : `<button class="price" data-act="xprice" data-id="${id}">${x.cost!=null?gbp(x.cost):'£ –'}</button>`}</label>` }); });
   const out = STORE.map(([k, title]) => {
     const here = items.filter(x => x.sec[0] === k).sort((a,b) => a.sort.localeCompare(b.sort)); if (!here.length) return '';
     const left = here.filter(x => !/class="item done/.test(x.html)).length;
     const body = k !== 'cup' ? here.map(x => x.html).join('') : CUPSUB.map(([sk, st]) => { const sub = here.filter(x => x.sec[1] === sk); return sub.length ? `<h4 class="subsec">${st}</h4>${sub.map(x=>x.html).join('')}` : ''; }).join('');
     return `<section class="storesec"><h3><span>${title}</span><span class="muted">${left ? left+' to get' : 'done ✓'}</span></h3>${body}</section>`;
   }).join('');
+  if (full){ const left = items.filter(x => !/class="item done/.test(x.html)).length;
+    return { left, total: items.length, html: out || '<p class="small" style="padding:40px 0;text-align:center">Nothing on the list.</p>' }; }
   return `<div class="addrow" style="margin:0 0 18px"><input id="xtra" placeholder="Add something…" autocomplete="off" enterkeyhint="done"><button class="pill" data-act="addx">Add</button></div>
     ${out || '<p class="small">Nothing on the list yet.</p>'}
     <p class="small" style="margin:6px 0 18px">Everything in one list, in the order you walk round Aldi. Sainsbury's items are marked.</p>`;
+}
+
+// full-screen, distraction-free shopping: just the list, in walking order
+function viewStore(){
+  const v = storeView(shopRows(), true), done = v.total - v.left, pct = v.total ? Math.round(done / v.total * 100) : 0;
+  return `<div class="instore">
+    <header class="ishead"><a class="isx" href="#/shop" aria-label="Leave in-store mode">✕</a>
+      <div class="istitle"><b>${v.left ? `${v.left} to get` : 'All done'}</b><span>${done} of ${v.total} in the basket</span></div>
+      <span class="ispct">${pct}%</span></header>
+    <div class="isbar"><i style="width:${pct}%"></i></div>
+    <div class="isbody ${S.shopDone?'locked':''}" ${S.shopDone?'inert':''}>${v.html}</div>
+    ${v.total ? `<button class="pill isdone" data-act="storedone">${S.shopDone ? 'Shop done ✓ — back to the list' : v.left ? 'Finish shop' : 'All in — finish shop'}</button>` : ''}
+  </div>`;
 }
 
 function aisle(a,list){
@@ -1585,14 +1620,19 @@ function setDay(i, id){
 function route(){
   const h=location.hash.replace(/^#\/?/,''), [p,arg]=h.split('/');
   const name = p==='shop'?'shop':p==='macros'?'macros':p==='mine'?'mine':(p==='archive'||p==='past')?'archive':'week';
+  document.body.classList.toggle('storemode', p==='store'); keepAwake(p==='store');
   document.querySelectorAll('.tab').forEach(a=>{ const on=a.dataset.r===name; a.classList.toggle('on',on); if(on) $('modelabel').textContent=a.querySelector('b').textContent; });
   menu(false);
   const parts = h.split('/');
-  $('app').innerHTML = p==='recipe' ? viewRecipe(+arg) : p==='shop' ? viewShop() : p==='macros' ? viewMacros() : p==='archive' ? viewArchive(arg) : p==='pick' ? viewPick(+arg) : p==='sweets' ? viewSweets() : p==='sweet' ? viewSweet(arg) : p==='mine' ? (arg==='new' ? viewEditor(null) : arg==='edit' ? viewEditor(parts[2]) : viewMine()) : p==='past' ? viewPast(parts[1], +parts[2]) : viewWeek();
+  $('app').innerHTML = p==='recipe' ? viewRecipe(+arg) : p==='shop' ? viewShop() : p==='macros' ? viewMacros() : p==='archive' ? viewArchive(arg) : p==='store' ? viewStore() : p==='pick' ? viewPick(+arg) : p==='sweets' ? viewSweets() : p==='sweet' ? viewSweet(arg) : p==='mine' ? (arg==='new' ? viewEditor(null) : arg==='edit' ? viewEditor(parts[2]) : viewMine()) : p==='past' ? viewPast(parts[1], +parts[2]) : viewWeek();
   document.title = (p==='shop'?'Shopping':p==='macros'?'Macros':p==='mine'?'My recipes':name==='archive'?'Past weeks':weekRange()) + ' – WhatsCooking';
   if (p==='mine' && arg==='new' && !$('rf-name').value) $('rf-name').focus();
 }
 addEventListener('hashchange', ()=>{ route(); scrollTo(0,0); });
+// keep the screen on while shopping
+let WL = null;
+async function keepAwake(on){ try{ if (on && !WL && navigator.wakeLock){ WL = await navigator.wakeLock.request('screen'); WL.addEventListener('release', () => { WL = null; }); } else if (!on && WL){ await WL.release(); WL = null; } }catch(e){} }
+document.addEventListener('visibilitychange', () => { if (!document.hidden && location.hash.startsWith('#/store')) keepAwake(true); });
 // mode menu in the top bar
 function menu(open){ const m=document.querySelector('.mode'); if(!m) return; m.classList.toggle('open',open); $('modebtn').setAttribute('aria-expanded',open); }
 $('modebtn').addEventListener('click', e=>{ e.stopPropagation(); const open=!document.querySelector('.mode').classList.contains('open'); menu(open); if(open) document.querySelector('.tab.on')?.focus(); });
@@ -1618,7 +1658,8 @@ $('app').addEventListener('click', e=>{
   if(a==='doswap'){ const f=$('sw-'+b.dataset.k), n=f.querySelector('.sw-n').value.trim(), q=parseQty(f.querySelector('.sw-q').value), u=f.querySelector('.sw-u').value;
     if(!n){ toast('Type what to swap it for'); f.querySelector('.sw-n').focus(); return; } swapIngredient(i, +b.dataset.k, n, isFinite(q)?q:0, u); return; }
   if(a==='unswap'){ const r=byId(S.plan[i]); if(r && r.variant){ const plan=[...S.plan]; plan[i]=r.base; put('plan',plan); put('mine.'+r.id, {...r, deleted:true}); untickAll(); save(); route(); toast('Back to '+((byId(r.base)||{}).name||'the original')); } return; }
-  if(a==='sview'){ SV=b.dataset.v; try{ localStorage.setItem('wc-shopview', SV); }catch(e){} route(); return; }
+  if(a==='sview'){ if(b.dataset.v==='store'){ location.hash='#/store'; return; } SV='shop'; try{ localStorage.setItem('wc-shopview', SV); }catch(e){} route(); return; }
+  if(a==='storedone'){ if(!S.shopDone){ put('shopDone', true); save(); toast('Shop done — list locked'); } location.hash='#/shop'; return; }
   if(a==='clear'){ const plan=[...S.plan]; plan[i]=null; put('plan',plan); put('cooked.'+i,false); put('locked.'+i,false); put('lunch.'+i,false); untickAll(); save(); route(); toast(`Cleared ${DAYS[i]}`); }
   if(a==='onday'){ put('on.'+i,true); const plan=[...S.plan]; plan[i]=pick(plan.filter(Boolean),tagsOf(plan)); put('plan',plan); put('cooked.'+i,false); untickAll(); save(); route(); toast(`${DAYS[i]} added — tap Choose to pick something else`); }
   if(a==='offday'){ put('on.'+i,false); const plan=[...S.plan]; plan[i]=null; put('plan',plan); put('lunch.'+i,false); save(); route(); toast(`${DAYS[i]} taken out of the week`); }
