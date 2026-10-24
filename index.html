@@ -807,9 +807,18 @@ const macroLine = m => `≈${k0(m.kcal)} kcal, ≈${k0(m.p)}g protein, ${k0(m.c)
 const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const dayOf = k => { const [y,m,d] = k.split('-').map(Number); return new Date(y, m-1, d); };
 function mondayOf(d){ const m = new Date(d.getFullYear(), d.getMonth(), d.getDate()); m.setDate(m.getDate() - (m.getDay()+6)%7); return m; }
-// weeks run Sunday to Sunday: a week is keyed by its Sunday; dinners are Sunday–Thursday (older saved weeks were Monday–Friday: start 1)
+// (older weeks were keyed by Sunday; see dinnerDate)
 function sundayOf(d){ const m = new Date(d.getFullYear(), d.getMonth(), d.getDate()); m.setDate(m.getDate() - m.getDay()); return m; }
-const thisWeek = () => iso(sundayOf(new Date()));
+// weeks now run Saturday to Friday: a week is keyed by its Saturday
+function saturdayOf(d){ const m = new Date(d.getFullYear(), d.getMonth(), d.getDate()); m.setDate(m.getDate() - (m.getDay()+1)%7); return m; }
+const thisWeek = () => iso(saturdayOf(new Date()));
+// the date of dinner i in a saved week (older saves used Monday- and Sunday-based weeks)
+function dinnerDate(key, w, i){
+  const k = dayOf(key);
+  if (w && w.start === 'sat') return addDays(k, (i + 1) % 7);   // Sat key: Sat=+0, Sun=+1 … Fri=+6
+  if (w && w.start === 0) return addDays(k, i);                // Sun key: Sun=+0 … Sat=+6
+  return addDays(k, i + 1);                                    // oldest saves: Mon–Fri after a Sunday key
+}
 // older versions keyed weeks by Monday: move those to the Sunday before
 function migrateWeeks(){
   let moved = false;
@@ -817,12 +826,14 @@ function migrateWeeks(){
   Object.entries(S.history).forEach(([k, v]) => { if (!v || dayOf(k).getDay() !== 1) return;
     const sun = iso(addDays(dayOf(k), -1)), ts = S._mt['history.'+k] || 0;
     if (!S.history[sun]) put('history.'+sun, v, ts); put('history.'+k, null, ts); moved = true; });
+  // Sunday-keyed current week → the Saturday that starts the new Saturday–Friday week
+  if (S.week && dayOf(S.week).getDay() === 0){ put('week', iso(addDays(dayOf(S.week), 6)), S._mt.week || 0); moved = true; }
   return moved;
 }
 const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
 function weekRange(key){
-  const sun = key ? dayOf(key) : sundayOf(new Date());
-  const end = addDays(sun, 7);
+  const sun = key ? dayOf(key) : saturdayOf(new Date());
+  const end = addDays(sun, 6);
   const M=x=>x.toLocaleDateString('en-GB',{month:'long'});
   return sun.getMonth()===end.getMonth() ? `${sun.getDate()}–${end.getDate()} ${M(end)}` : `${sun.getDate()} ${M(sun).slice(0,3)} – ${end.getDate()} ${M(end).slice(0,3)}`;
 }
@@ -830,7 +841,7 @@ const lunches = () => filled().filter(i => S.lunch[i]).length;
 // ---------- Weekly archive ----------
 function archiveWeek(key){
   if (!key || !S.plan.some(Boolean)) return;
-  put('history.'+key, { start:0, plan:[...S.plan], names:S.plan.map(id => (byId(id)||{}).name || ''), cooked:DAYS.map((_,i)=>!!S.cooked[i]), lunch:DAYS.map((_,i)=>!!S.lunch[i]) });
+  put('history.'+key, { start:'sat', plan:[...S.plan], names:S.plan.map(id => (byId(id)||{}).name || ''), cooked:DAYS.map((_,i)=>!!S.cooked[i]), lunch:DAYS.map((_,i)=>!!S.lunch[i]) });
 }
 // On the first open of a new week: save last week, then start fresh
 function rollover(){
@@ -1091,20 +1102,23 @@ const tgt = t => `<div class="stat"><b>${k0(t.kcal)}</b><span>kcal</span></div><
 
 // ---------- Past weeks ----------
 function weekData(key){
-  if (key === (S.week || thisWeek())) return { plan:S.plan, cooked:DAYS.map((_,i)=>!!S.cooked[i]), lunch:DAYS.map((_,i)=>!!S.lunch[i]), names:S.plan.map(id=>(byId(id)||{}).name||''), current:true, start:0 };
+  if (key === (S.week || thisWeek())) return { plan:S.plan, cooked:DAYS.map((_,i)=>!!S.cooked[i]), lunch:DAYS.map((_,i)=>!!S.lunch[i]), names:S.plan.map(id=>(byId(id)||{}).name||''), current:true, start:'sat' };
   return S.history[key] || null;
 }
 function viewArchive(ym){
   const now = new Date(); let [y, m] = (ym && /^\d{4}-\d{2}$/.test(ym)) ? ym.split('-').map(Number) : [now.getFullYear(), now.getMonth()+1];
   const first = new Date(y, m-1, 1), last = new Date(y, m, 0), today = iso(now);
   const prev = iso(new Date(y, m-2, 1)).slice(0,7), next = iso(new Date(y, m, 1)).slice(0,7);
-  const weeks = []; for (let sun = sundayOf(first); sun <= last; sun = addDays(sun, 7)) weeks.push(sun);
-  // Sun–Thu always; Friday/Saturday columns appear when a week in view used them
-  const used = c => weeks.some(sun => { const w = weekData(iso(sun)); return w && w.plan[c - (w.start ?? 1)]; });
-  const cols = [0,1,2,3,4, ...[5,6].filter(used)];
+  const weeks = []; for (let sat = saturdayOf(first); sat <= last; sat = addDays(sat, 7)) weeks.push(sat);
+  // every saved dinner, by date
+  const byDate = {}; [[S.week || thisWeek(), weekData(S.week || thisWeek())], ...Object.entries(S.history)].forEach(([key, w]) => { if (!w) return;
+    (w.plan||[]).forEach((id, i) => { if (id) byDate[iso(dinnerDate(key, w, i))] = { key, w, i, id }; }); });
+  // columns run Saturday → Friday; Sun–Thu always, Saturday/Friday only when a dinner in view used them
+  const used = off => weeks.some(sat => byDate[iso(addDays(sat, off))]);
+  const cols = [0,1,2,3,4,5,6].filter(off => (off >= 1 && off <= 5) || used(off));
   const saved = Object.values(S.history).filter(Boolean), cookedCount = saved.reduce((a,w) => a + (w.cooked||[]).filter(Boolean).length, 0);
-  const cell = (sun, col) => {
-    const d = addDays(sun, col), key = iso(sun), w = weekData(key), i = w ? col - (w.start ?? 1) : -1, id = w && i >= 0 && w.plan[i], inMonth = d.getMonth() === m-1;
+  const cell = (sat, off) => {
+    const d = addDays(sat, off), hit = byDate[iso(d)], key = hit && hit.key, w = hit && hit.w, i = hit ? hit.i : -1, id = hit && hit.id, inMonth = d.getMonth() === m-1;
     const cls = `cday ${inMonth?'':'out'} ${iso(d)===today?'today':''}`;
     if (!id) return `<div class="${cls} empty"><span class="dnum">${d.getDate()}</span></div>`;
     const r = byId(id), name = (r && !r.hidden ? r.name : (w.names||[])[i]) || 'Dinner';
@@ -1113,18 +1127,18 @@ function viewArchive(ym){
       <span class="sw grad">${imgTag(r,'')}</span><span class="dname">${esc(name)}</span></a>`;
   };
   return `<h1>Past weeks</h1>
-  <div class="sub">${saved.length ? `${saved.length} week${saved.length>1?'s':''} saved · ${cookedCount} dinners cooked` : 'Each week is saved here automatically when a new one starts on Sunday.'}</div>
+  <div class="sub">${saved.length ? `${saved.length} week${saved.length>1?'s':''} saved · ${cookedCount} dinners cooked` : 'Each week is saved here automatically when a new one starts on Saturday.'}</div>
   <div class="calnav"><a class="pill ghost" href="#/archive/${prev}">‹</a><b>${first.toLocaleDateString('en-GB',{month:'long', year:'numeric'})}</b><a class="pill ghost" href="#/archive/${next}">›</a></div>
   <div class="cal" style="grid-template-columns:repeat(${cols.length},1fr)">
-    ${cols.map(c => `<div class="chead">${DAYS[c].slice(0,3)}</div>`).join('')}
-    ${weeks.map(sun => cols.map(c => cell(sun, c)).join('')).join('')}
+    ${cols.map(off => `<div class="chead">${DAYS[(off + 6) % 7].slice(0,3)}</div>`).join('')}
+    ${weeks.map(sat => cols.map(off => cell(sat, off)).join('')).join('')}
   </div>
   <p class="small" style="margin-top:14px">Tap a dinner to see it again or cook it again this week. ✓ cooked · <span class="ldot"></span> with a lunch portion</p>`;
 }
 function viewPast(key, i){
   if (!key || key === (S.week || thisWeek())) return viewRecipe(i);
   const w = S.history[key]; if (!w) return viewArchive();
-  const r = byId(w.plan[i]), d = addDays(dayOf(key), i + (w.start ?? 1));
+  const r = byId(w.plan[i]), d = dinnerDate(key, w, i);
   if (!r || r.hidden) return `<a class="back" href="#/archive/${key.slice(0,7)}">‹ Past weeks</a><h1>${esc((w.names||[])[i]||'Dinner')}</h1><div class="sub">This recipe isn't available on this device — turn on sync to load your private recipes.</div>`;
   const m = scaled(r);
   return `<a class="back" href="#/archive/${key.slice(0,7)}">‹ Past weeks</a>
@@ -1143,7 +1157,7 @@ function viewPast(key, i){
 // put a past dinner back into this week: the next day that isn't cooked or locked
 function cookAgain(id){
   const todayIdx = new Date().getDay(), open = j => !S.cooked[j] && !S.locked[j];
-  const days = onDays(); let j = days.find(k => k >= todayIdx && open(k)); if (j === undefined) j = days.find(open);
+  const days = onDays(), pos = ORDER.indexOf(todayIdx); let j = days.find(k => ORDER.indexOf(k) >= pos && open(k)); if (j === undefined) j = days.find(open);
   if (j === undefined){ toast('Every night this week is cooked or locked'); return; }
   const plan = [...S.plan]; plan[j] = id; put('plan', plan); put('cooked.'+j, false); untickAll(); save();
   location.hash = '#/'; toast(`Added to ${DAYS[j]}`);
