@@ -644,7 +644,8 @@ const R_ALDI = [{"id":"aldi-cajun-chicken-pasta","name":"Creamy Cajun Chicken Pa
 R.push(...R_ALDI);
 const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const DEF_ON = [true,true,true,true,true,false,false];        // Sunday–Thursday by default; Friday/Saturday can be added
-const onDays = () => DAYS.map((_,i)=>i).filter(i => S.on[i]);
+const ORDER = [6,0,1,2,3,4,5];                                // Saturday sits above Sunday when it's added
+const onDays = () => ORDER.filter(i => S.on[i]);
 const filled = () => onDays().filter(i => S.plan[i]);
 const COL = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)'];
 
@@ -971,7 +972,7 @@ function emptyRow(i){
     </div></div>`;
 }
 function addDayRow(){
-  const off = DAYS.map((_,i)=>i).filter(i => !S.on[i]);
+  const off = ORDER.filter(i => !S.on[i]);
   if (!off.length) return '';
   return `<div class="addday"><span class="small">Add a day</span>${off.map(i => `<button class="pill ghost" data-act="onday" data-i="${i}">+ ${DAYS[i]}</button>`).join('')}</div>`;
 }
