@@ -415,6 +415,7 @@ ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));colo
 .qty.multi span{display:flex;flex-direction:column;align-items:center}
 .qty.multi b{font-size:17px}
 .item.done .qty{opacity:.45}
+.addingbtn{margin-top:12px}
 </style>
 </head>
 <body>
@@ -997,6 +998,21 @@ function swapIngredient(i, k, toName, qty, unit){
   untickAll(); save(); route(); toast(v.name !== cur.name ? `Now: ${v.name}` : `Swapped ${from} for ${toName}`);
 }
 
+// add an extra ingredient to this day's version of the recipe (same variant as swaps, so Undo puts it back)
+function addIngredient(i, name, qty, unit){
+  const cur = byId(S.plan[i]); if (!cur) return;
+  const base = cur.variant ? byId(cur.base) : cur, s = scaleFor(cur);
+  const per = (unit==='g'||unit==='ml') ? qty / s : qty, add = [name, Math.round(per*1000)/1000, unit, guessAisle(name, unit, per)];
+  const e = estimate([add]), ok = !e.missed.length;
+  const v = { ...cur, id: cur.variant ? cur.id : 'var-' + Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+    i: [...cur.i, add], kcal: Math.round(cur.kcal + (ok ? e.kcal : 0)), p: Math.round(cur.p + (ok ? e.p : 0)), c: Math.round(cur.c + (ok ? e.c : 0)), f: Math.round(cur.f + (ok ? e.f : 0)),
+    est: true, variant: true, mine: true, base: base.id, swaps: [...(cur.swaps || []), ['+', name]], by: base.by };
+  delete catCache[name];
+  put('mine.' + v.id, v);
+  if (S.plan[i] !== v.id){ const plan = [...S.plan]; plan[i] = v.id; put('plan', plan); }
+  untickAll(); save(); route(); toast(`Added ${name}${ok ? '' : ' — macros not adjusted (unknown ingredient)'}`);
+}
+
 function emptyRow(i){
   return `<div class="row erow" data-day="${i}"><span class="grip off">${GRIP_SVG}</span><div class="tile etile">+</div>
     <div class="rbody"><div class="rday">${DAYS[i]}</div><div class="rtitle" style="color:var(--muted)">No dinner</div></div>
@@ -1033,7 +1049,7 @@ function viewRecipe(i){
       <a class="pill ghost" href="#/pick/${i}">Choose</a>
       ${r.mine && !r.deleted && !r.variant ? `<a class="pill ghost" href="#/mine/edit/${r.id}">Edit recipe</a>` : ''}
     </div>
-    ${r.variant ? `<div class="note varnote"><span>Swapped from <b>${esc((byId(r.base)||{}).name||'the original')}</b>: ${r.swaps.map(([a,b])=>`${esc(a)} → ${esc(b)}`).join(', ')}</span><button class="pill ghost" data-act="unswap" data-i="${i}">Undo swaps</button></div>` : ''}
+    ${r.variant ? `<div class="note varnote"><span>Changed from <b>${esc((byId(r.base)||{}).name||'the original')}</b>: ${r.swaps.map(([a,b])=>a==='+' ? `+ ${esc(b)}` : `${esc(a)} → ${esc(b)}`).join(', ')}</span><button class="pill ghost" data-act="unswap" data-i="${i}">Undo changes</button></div>` : ''}
     <div class="grid">
       <div class="card"><b>Ingredients</b><span class="small"> · ${n} ${n>1?'people':'person'}${L?' + 1 lunch':''}</span>${L?' <span class="sticker" style="cursor:default">+ Lunch</span>':''}
         ${r.i.map(([nm,q,u,a],k)=>`<div class="item" style="cursor:default"><span class="nm">${esc(nm)}</span><span class="q">${portion(q,u,m.s,n,L)}</span>${r.hidden?'':`<button class="iswap" data-act="iswap" data-i="${i}" data-k="${k}" title="Swap ${esc(nm)}" aria-label="Swap ${esc(nm)}">⇄</button>`}</div>
@@ -1041,8 +1057,13 @@ function viewRecipe(i){
             <input class="sw-q" inputmode="decimal" value="${q ? nice(u==='g'||u==='ml' ? Math.round(q*m.s) : q) : ''}" aria-label="Amount per person">
             <select class="sw-u">${UNITS.map(([v,l])=>`<option value="${v}" ${v===u?'selected':''}>${l}</option>`).join('')}</select>
             <button class="pill" data-act="doswap" data-i="${i}" data-k="${k}">Swap</button></div>`).join('')}
+        ${r.hidden?'':`<button class="pill ghost addingbtn" data-act="ingplus" data-i="${i}">+ Add an ingredient</button>
+        <div class="swapform" id="sw-add" hidden><input class="sw-n" list="swapnames" placeholder="Add an ingredient…" autocomplete="off" enterkeyhint="done">
+          <input class="sw-q" inputmode="decimal" placeholder="Qty" aria-label="Amount per person">
+          <select class="sw-u">${UNITS.map(([v,l])=>`<option value="${v}" ${v==='g'?'selected':''}>${l}</option>`).join('')}</select>
+          <button class="pill" data-act="doadd" data-i="${i}">Add</button></div>`}
         <datalist id="swapnames">${Object.keys(knownIngs()).sort().map(x=>`<option value="${esc(x)}">`).join('')}</datalist>
-        <p class="small" style="margin-top:10px">Tap ⇄ to swap an ingredient — the recipe name updates to match. Amounts are per person.</p>
+        <p class="small" style="margin-top:10px">Tap ⇄ to swap an ingredient (the name updates to match), or add one. Amounts are per person.</p>
       </div>
       <div>${r.m.length ? `<p class="label">Method${r.src?' (in short)':''}</p><ol class="method">${r.m.map(x=>`<li><span>${esc(x)}</span></li>`).join('')}</ol>` : `<p class="label">Method</p><p class="small" style="margin-bottom:12px">The method for this one is on Mob.</p>`}
         ${r.src?`<a class="pill ghost srclink" href="${esc(r.src)}" target="_blank" rel="noopener">${r.mine?'Recipe link':'Full recipe on '+r.by} ↗</a>`:''}</div>
@@ -1583,6 +1604,9 @@ $('app').addEventListener('click', e=>{
   if(a==='gen'){ generate(); toast('New week picked'); if(location.hash.includes('macros')) location.hash='#/'; }
   if(a==='swap'){ if(S.locked[i]){ toast(DAYS[i]+' is locked'); return; } swap(i); if(location.hash.startsWith('#/pick')) location.hash='#/'; }
   if(a==='iswap'){ const f=$('sw-'+b.dataset.k); document.querySelectorAll('.swapform').forEach(x=>{ if(x!==f) x.hidden=true; }); f.hidden=!f.hidden; if(!f.hidden) f.querySelector('.sw-n').focus(); return; }
+  if(a==='ingplus'){ const f=$('sw-add'); document.querySelectorAll('.swapform').forEach(x=>{ if(x!==f) x.hidden=true; }); f.hidden=!f.hidden; if(!f.hidden) f.querySelector('.sw-n').focus(); return; }
+  if(a==='doadd'){ const f=$('sw-add'), n=f.querySelector('.sw-n').value.trim(), q=parseQty(f.querySelector('.sw-q').value), u=f.querySelector('.sw-u').value;
+    if(!n){ toast('Type an ingredient'); f.querySelector('.sw-n').focus(); return; } addIngredient(i, n, isFinite(q)?q:0, u); return; }
   if(a==='doswap'){ const f=$('sw-'+b.dataset.k), n=f.querySelector('.sw-n').value.trim(), q=parseQty(f.querySelector('.sw-q').value), u=f.querySelector('.sw-u').value;
     if(!n){ toast('Type what to swap it for'); f.querySelector('.sw-n').focus(); return; } swapIngredient(i, +b.dataset.k, n, isFinite(q)?q:0, u); return; }
   if(a==='unswap'){ const r=byId(S.plan[i]); if(r && r.variant){ const plan=[...S.plan]; plan[i]=r.base; put('plan',plan); put('mine.'+r.id, {...r, deleted:true}); untickAll(); save(); route(); toast('Back to '+((byId(r.base)||{}).name||'the original')); } return; }
@@ -1649,7 +1673,7 @@ $('app').addEventListener('click', e=>{
 
 });
 $('app').addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.id==='xtra'){ e.preventDefault(); addExtra(); return; }
-  if(e.key==='Enter' && e.target.closest('.swapform')){ e.preventDefault(); e.target.closest('.swapform').querySelector('[data-act=doswap]').click(); return; }
+  if(e.key==='Enter' && e.target.closest('.swapform')){ e.preventDefault(); e.target.closest('.swapform').querySelector('[data-act=doswap],[data-act=doadd]').click(); return; }
   if(e.key==='Enter' && e.target.classList.contains('bin')){ e.preventDefault(); addExtra(e.target.dataset.cat); return; }
   if((e.key==='Enter'||e.key===' ') && e.target.classList.contains('prow')){ e.preventDefault(); e.target.click(); return; }
   const t=e.target; if(e.key!=='Enter' || !t.closest('#rform') || t.tagName==='TEXTAREA') return; e.preventDefault();
