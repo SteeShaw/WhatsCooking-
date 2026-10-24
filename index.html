@@ -438,6 +438,11 @@ body.storemode .wrap{padding-top:0}
 .isdone{display:flex;margin:10px auto 40px;padding:14px 26px;font-size:16px}
 .updbar{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:90;background:var(--ok);color:#fff;font-weight:700;font-size:14px;padding:12px 18px;border-radius:99px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
 body.storemode .ishead{padding-top:calc(14px + env(safe-area-inset-top))}
+/* caption import */
+.importc{margin-bottom:18px}
+.im-in{display:block;width:100%;border:0;background:var(--bg);border-radius:14px;padding:11px 14px;font-size:16px;margin-top:10px;color:inherit;font-family:inherit;outline:none;resize:vertical}
+.im-in:focus{box-shadow:0 0 0 2px var(--ink) inset}
+.importc .btns{align-items:center;gap:12px}
 </style>
 </head>
 <body>
@@ -1455,6 +1460,10 @@ function viewEditor(id){
   const mf = (k, l) => `<label class="field mfield"><span>${l}</span><input id="rf-${k}" class="rf-m" inputmode="numeric" value="${r[k]===''||r[k]==null?'':esc(r[k])}"></label>`;
   return `<a class="back" href="#/mine">‹ My recipes</a>
   <h1>${src ? 'Edit recipe' : 'New recipe'}</h1>
+  ${src ? '' : `<section class="card importc"><div class="xhead"><b>From a link</b><span class="small">recipe sites, TikTok, Instagram</span></div>
+    <input id="im-url" class="im-in" placeholder="Paste a recipe, TikTok or Instagram link" autocomplete="off" autocapitalize="off" inputmode="url">
+    <textarea id="im-cap" class="im-in" rows="4" placeholder="Optional: paste the caption if the link can’t be read (tap ‘more’ on the post, press and hold to copy)"></textarea>
+    <div class="btns" style="margin-top:10px"><button type="button" class="pill" data-act="import">Read it</button><span class="small" id="im-note"></span></div></section>`}
   <form id="rform" data-key="${key}" data-est="${r.est?1:''}" onsubmit="return false">
     <label class="field tfield"><span>Name</span><input id="rf-name" value="${esc(r.name||'')}" placeholder="e.g. Harissa traybake" autocomplete="off"></label>
     <div class="fields three">
@@ -1485,6 +1494,121 @@ function viewEditor(id){
     </div>
   </form>`;
 }
+// ---------- Read a TikTok / Instagram caption into the form ----------
+const EMOJI = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu;
+const ING_HEAD = /^\s*(ingredients?|you(’|')?ll need|what you need|shopping list)\b/i, METH_HEAD = /^\s*(method|instructions?|directions?|steps?|how to( make)?|recipe:?$)\b/i;
+const U_RE = /^(kg|g|grams?|ml|millilitres?|l|litres?|tsp|teaspoons?|tbsp|tablespoons?|cups?|tins?|cans?|cloves?|slices?|packs?|packets?|handfuls?|pinch(es)?|bunch(es)?)\b\.?/i;
+function parseIngLine(line){
+  let t = line.replace(EMOJI,'').replace(/^[\s\-•*·▪️✔️–—>]+/,'').replace(/^\d+[.)]\s+(?=\D)/,'').trim();
+  if (!t || t.length > 90) return null;
+  let q = '', u = '';
+  const m = t.match(/^((?:\d+\s+)?\d+\/\d+|\d*\.?\d+|[½¼¾⅓⅔])\s*(?:x\s*)?/i);
+  if (m){ q = m[1]; t = t.slice(m[0].length); const um = t.match(U_RE); if (um){ u = um[0].toLowerCase(); t = t.slice(um[0].length); } }
+  else { const tail = t.match(/[-–:,]\s*((?:\d+\s+)?\d+\/\d+|\d*\.?\d+)\s*(kg|g|ml|l|tsp|tbsp)?\s*$/i); if (tail){ q = tail[1]; u = (tail[2]||'').toLowerCase(); t = t.slice(0, tail.index); } }
+  // "400g can chopped tomatoes" → 1 tin; "½ small pack coriander" → ½ pack
+  const cont = t.match(/^\s*(?:small\s+|large\s+)?(cans?|tins?|jars?|packs?|packets?|bags?)\s+(?:of\s+)?/i);
+  if (cont){ t = t.slice(cont[0].length); if (/can|tin/i.test(cont[1])){ if (u) q = '1'; u = 'tin'; } else if (/pack|bag/i.test(cont[1]) && !u) u = 'pack'; }
+  t = t.replace(/^of\s+/i,'').replace(/\(.*?\)/g,'').replace(/,.*$/,'').replace(/^(large|small|medium|big|thumb.sized|heaped|level|generous)\s+/i,'').replace(/^(piece|knob|thumb)\s+of\s+/i,'').replace(/\s+/g,' ').trim();
+  if (!u && /\bcloves?$/i.test(t)){ u = 'clove'; t = t.replace(/\s*cloves?$/i,''); }
+  if (!t || /^(for|to serve|optional)$/i.test(t)) return null;
+  let qty = q ? parseQty(q) : NaN;
+  const map = { kg:['g',1000], gram:['g',1], grams:['g',1], g:['g',1], ml:['ml',1], millilitre:['ml',1], millilitres:['ml',1], l:['ml',1000], litre:['ml',1000], litres:['ml',1000],
+    tsp:['tsp',1], teaspoon:['tsp',1], teaspoons:['tsp',1], tbsp:['tbsp',1], tablespoon:['tbsp',1], tablespoons:['tbsp',1], cup:['ml',240], cups:['ml',240],
+    tin:['tin',1], tins:['tin',1], can:['tin',1], cans:['tin',1], clove:['clove',1], cloves:['clove',1], slice:['slice',1], slices:['slice',1],
+    pack:['pack',1], packs:['pack',1], packet:['pack',1], packets:['pack',1], handful:['g',30], handfuls:['g',30], pinch:['',0], pinches:['',0], bunch:['',1], bunches:['',1] };
+  const [unit, mult] = map[u.replace(/\.$/,'')] || ['', 1];
+  if (isFinite(qty)) qty = Math.round(qty * mult * 100) / 100; else qty = '';
+  if (!unit && qty === '' && !/\b(salt|pepper|oil|to taste)\b/i.test(t) && t.split(' ').length > 6) return null;   // probably a sentence, not an ingredient
+  return [bestName(t), qty === 0 ? '' : qty, unit || (qty !== '' && /\b(chicken|beef|pork|lamb|turkey|mince|rice|pasta|cheese|yog|spinach|flour|sugar|butter)\b/i.test(t) && qty > 20 ? 'g' : unit)];
+}
+// match free text to an ingredient the app already knows (so it's priced), else keep it tidy
+function bestName(t){
+  const want = toks(t).filter(w => !STOP.has(w)); if (!want.length) return t;
+  let best = null, sc = 0;
+  Object.keys(knownIngs()).forEach(n => { const have = toks(n.replace(/\(.*?\)/g,'')); if (!have.length) return;
+    const hit = have.filter(w => want.includes(w)).length; if (!hit) return;
+    const score = hit / have.length + hit / want.length; if (score > sc && hit === have.length && hit / want.length >= .6){ sc = score; best = n; } });
+  return best && sc >= 1.2 ? best : t.charAt(0).toUpperCase() + t.slice(1);
+}
+function parseCaption(text){
+  const raw = String(text).replace(/\r/g,'').replace(/#[\w-]+/g,'').split('\n').map(l => l.trim());
+  const lines = raw.filter(Boolean);
+  const out = { name:'', serves:'', mins:'', ings:[], steps:[] };
+  const first = (lines[0] || '').replace(EMOJI,'').replace(/\s*[-–|,(]?\s*(ready in|in just|takes|only|serves|under)\b.*$/i,'').replace(/[:!.]+$/,'').replace(/\s+/g,' ').trim();
+  if (first && !ING_HEAD.test(first) && first.length < 70) out.name = first;
+  const all = lines.join(' ');
+  const sv = all.match(/serves?\s*:?\s*(\d+)|(\d+)\s*(servings|portions|people)/i); if (sv) out.serves = sv[1] || sv[2];
+  const tm = all.match(/(\d+)\s*(?:-\s*\d+\s*)?(?:mins?|minutes)\b/i); if (tm) out.mins = tm[1];
+  let mode = '';
+  lines.forEach((l, k) => {
+    const clean = l.replace(EMOJI,'').trim();
+    if (ING_HEAD.test(clean)){ mode = 'i'; const rest = clean.replace(ING_HEAD,'').replace(/^[:\s-]+/,''); if (rest) rest.split(/,\s*/).forEach(x => { const p = parseIngLine(x); if (p) out.ings.push(p); }); return; }
+    if (METH_HEAD.test(clean)){ mode = 'm'; return; }
+    if (k === 0 && out.name) return;
+    if (mode === 'm' || (/^(step\s*)?\d+[.):]\s+\D/i.test(clean) && mode !== 'i')){ const st = clean.replace(/^(step\s*)?\d+[.):]\s*/i,'').trim(); if (st.length > 3) out.steps.push(st); return; }
+    if (mode === 'i' || /^[-•*·▪️✔️]|^((\d+\s+)?\d+\/\d+|\d*\.?\d+|[½¼¾])\s*(kg|g|ml|l|tsp|tbsp|cups?|tins?|cans?|cloves?|x)?\s+[a-z]/i.test(clean)){ const p = parseIngLine(clean); if (p) out.ings.push(p); }
+  });
+  return out;
+}
+// links are read by a small job in your private data repo (phones can't read other sites directly)
+async function readLink(url){
+  const note = $('im-note'), id = Date.now().toString(36) + Math.random().toString(36).slice(2,6), H = { Authorization:'Bearer '+SY.cfg.token, Accept:'application/vnd.github+json' };
+  const base = `https://api.github.com/repos/${SY.cfg.repo}/contents/imports/`;
+  note.textContent = 'Reading the link… this takes about half a minute';
+  const put = await fetch(base + `req-${id}.json`, { method:'PUT', headers:H, body: JSON.stringify({ message:'Read recipe link', content: b64e(JSON.stringify({ url })) }) });
+  if (put.status !== 201){ note.textContent = 'Couldn’t send the link — check sync is on in Macros, or paste the caption instead.'; return; }
+  for (let k = 0; k < 40; k++){
+    await new Promise(r => setTimeout(r, 3000));
+    if (!$('im-note')) return;                                          // left the page
+    const r = await fetch(base + `res-${id}.json`, { cache:'no-store', headers:H }).catch(() => null);
+    if (!r || r.status !== 200) { note.textContent = `Reading the link… ${Math.min(95, (k+1)*4)}%`; continue; }
+    const j = await r.json(), res = JSON.parse(b64d(j.content));
+    fetch(base + `res-${id}.json`, { method:'DELETE', headers:H, body: JSON.stringify({ message:'Tidy link result', sha: j.sha }) }).catch(()=>{});
+    return res;
+  }
+  note.textContent = 'That’s taking too long — try again, or paste the caption instead.';
+}
+function tagFrom(ings){ const meat = ings.map(x=>x[0]).join(' ').toLowerCase();
+  $('rf-tag').value = /tofu/.test(meat)?'tofu':/chicken/.test(meat)?'chicken':/turkey/.test(meat)?'turkey':/lamb/.test(meat)?'lamb':/beef|steak|mince/.test(meat)?'beef':/pork|sausage|bacon|chorizo/.test(meat)?'pork':/salmon|cod|prawn|tuna|fish/.test(meat)?'fish':'veg'; }
+async function runImport(){
+  const url = ($('im-url').value||'').trim(); let cap = $('im-cap').value || '';
+  if (!cap.trim()){
+    if (!/^https?:\/\//.test(url)){ toast('Paste a link or a caption'); $('im-url').focus(); return; }
+    if (!SY.cfg){ toast('Turn on Household sync in Macros to read links — or paste the caption'); $('im-cap').focus(); return; }
+    const btn = document.querySelector('[data-act=import]'); btn.disabled = true;
+    const res = await readLink(url).catch(() => null); btn.disabled = false;
+    if (!res) return;
+    if (!res.ok){ $('im-note').textContent = 'Couldn’t open that page — paste the caption instead.'; return; }
+    if (res.image && !$('rf-img').value) $('rf-img').value = res.image;
+    $('rf-src').value = url;
+    if (res.kind === 'recipe' && res.ingredients && res.ingredients.length){
+      if (res.name) $('rf-name').value = res.name;
+      if (res.serves) $('rf-serves').value = res.serves; if (res.mins) $('rf-mins').value = res.mins;
+      const ings = res.ingredients.map(parseIngLine).filter(Boolean);
+      $('ings').innerHTML = ings.map(([n,q,u]) => ingRow(n, q, u)).join('') + ingRow('','','g');
+      if (res.steps && res.steps.length) $('rf-m').value = res.steps.join('\n');
+      tagFrom(ings);
+      if (res.kcal){ $('rf-kcal').value = Math.round(res.kcal); ['p','c','f'].forEach(k => { if (res[k] != null) $('rf-'+k).value = Math.round(res[k]); }); $('rform').dataset.est=''; $('estnote').textContent = 'Macros from the recipe page — per serving.'; }
+      else runEstimate();
+      $('im-note').textContent = `Read ${ings.length} ingredient${ings.length>1?'s':''}${res.steps && res.steps.length ? ` and ${res.steps.length} steps` : ''} — check the amounts below.`;
+      draftSave(); return;
+    }
+    cap = res.caption || '';
+    if (!cap.trim()){ $('im-note').textContent = 'That post didn’t share its caption — open it, copy the caption and paste it in the box above.'; $('im-cap').focus(); return; }
+    $('im-cap').value = cap;
+  }
+  const r = parseCaption(cap);
+  if (r.name && !$('rf-name').value) $('rf-name').value = r.name;
+  if (r.serves) $('rf-serves').value = r.serves; if (r.mins) $('rf-mins').value = r.mins;
+  if (/^https?:\/\//.test(url)) $('rf-src').value = url;
+  if (r.ings.length){ $('ings').innerHTML = r.ings.map(([n,q,u]) => ingRow(n, q, u)).join('') + ingRow('','','g'); }
+  if (r.steps.length) $('rf-m').value = r.steps.join('\n');
+  tagFrom(r.ings);
+  if (r.ings.length) runEstimate();
+  $('im-note').textContent = r.ings.length ? `Found ${r.ings.length} ingredient${r.ings.length>1?'s':''}${r.steps.length?` and ${r.steps.length} step${r.steps.length>1?'s':''}`:''} — check the amounts below.` : 'Couldn’t spot an ingredient list in that caption — add them below.';
+  draftSave();
+}
+
 function readForm(){
   const v = id => ($(id) ? $(id).value : '').trim();
   const i = [...document.querySelectorAll('#ings .ing')].map(row => [row.querySelector('.ing-n').value.trim(), row.querySelector('.ing-q').value.trim(), row.querySelector('.ing-u').value]);
@@ -1632,9 +1756,9 @@ function route(){
 }
 addEventListener('hashchange', ()=>{ route(); scrollTo(0,0); });
 // new version check: GitHub Pages caches for 10 minutes, so look for a newer build and offer a refresh
-const BUILD = '2026-10-24-1615';
+const BUILD = '2026-10-24-1650';
 async function checkUpdate(){ try{ const h = await fetch(location.pathname + '?v=' + Date.now(), { cache:'no-store' }).then(r => r.text());
-  const m = h.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD && !$('upd')){ const d = document.createElement('button'); d.id='upd'; d.className='updbar'; d.textContent='New version ready — tap to update'; d.onclick=()=>location.reload(); document.body.appendChild(d); } }catch(e){} }
+  const m = h.match(/const BUILD = '2026-10-24-1650']+)'/); if (m && m[1] !== BUILD && !$('upd')){ const d = document.createElement('button'); d.id='upd'; d.className='updbar'; d.textContent='New version ready — tap to update'; d.onclick=()=>location.reload(); document.body.appendChild(d); } }catch(e){} }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); }); setTimeout(checkUpdate, 3000);
 // true full screen where the phone allows it (Android, iPad, desktop); on iPhone the home-screen app already hides Safari's bars
 function goFull(on){ try{ const d=document, el=d.documentElement;
@@ -1697,6 +1821,7 @@ $('app').addEventListener('click', e=>{
   if(a==='ingadd'){ $('ings').insertAdjacentHTML('beforeend', ingRow('','','g')); const rows=$('ings').querySelectorAll('.ing'); rows[rows.length-1].querySelector('.ing-n').focus(); draftSave(); }
   if(a==='ingdel'){ const row=b.closest('.ing'); if($('ings').children.length>1) row.remove(); else row.querySelectorAll('input').forEach(x=>x.value=''); draftSave(); }
   if(a==='ingest') runEstimate();
+  if(a==='import') runImport();
   if(a==='rsave') saveRecipe(false);
   if(a==='rsaveadd') saveRecipe(true);
   if(a==='rdel'){ const id=$('rform').dataset.key, r=S.mine[id]; if(!r || !confirm(`Delete ${r.name}? Past weeks that used it keep it.`)) return;
