@@ -404,6 +404,17 @@ ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));colo
 .storesec h3 .muted{font-size:13px;font-weight:600}
 .subsec{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:14px 0 2px}
 .shopS{color:#f06c00;font-weight:700}
+/* in-store amounts */
+.storesec .item{align-items:center}
+.qty{flex:none;width:66px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--soft);border-radius:14px;padding:6px 8px;line-height:1.05}
+.qty b{font-size:22px;font-weight:800;letter-spacing:-.03em;white-space:nowrap}
+.storesec .pn{font-size:15px}
+.storesec .dots{max-width:40px;flex-wrap:wrap;justify-content:flex-end}
+.qty small{font-size:11px;font-weight:600;color:var(--muted);text-align:center;max-width:74px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qty.multi{flex-direction:column;gap:4px}
+.qty.multi span{display:flex;flex-direction:column;align-items:center}
+.qty.multi b{font-size:17px}
+.item.done .qty{opacity:.45}
 </style>
 </head>
 <body>
@@ -1105,18 +1116,27 @@ function storeSection(name, prod, code){
 }
 // trust the words on the list first; only fall back to the matched product (and its shop aisle) when they say nothing useful
 function sectionFor(name, prod, code, own){ const a = storeSection(name, '', own); return (a[0]==='cup' && a[1]==='other') ? storeSection(name, prod, code || own) : a; }
+// the big "how many to grab" badge: packs to pick up, and what size
+function qtyBadge(bp, it){
+  if (!bp) return `<span class="qty"><b>${fmt(it.q,it.u).replace('× ','')}</b><small>needed</small></span>`;
+  if (bp.perKg) return `<span class="qty"><b>${bp.buy[0].label.replace(' by weight','')}</b><small>loose</small></span>`;
+  if (bp.buy.length === 1) return `<span class="qty"><b>${bp.buy[0].n}</b><small>${esc(bp.buy[0].label)}</small></span>`;
+  return `<span class="qty multi">${bp.buy.map(x => `<span><b>${x.n}</b><small>${esc(x.label)}</small></span>`).join('')}</span>`;
+}
 function storeView(rows){
   const items = [];
   rows.forEach(it => { const key=it.name+'|'+it.u, pr=it.prod, bp=it.bp, lbl = bp ? (bp.perKg ? 'kg' : bp.buy[bp.buy.length-1].label) : '';
     const sec = it.a==='V' ? ['fv'] : sectionFor(it.name, pr && pr.n, '', it.a==='M' ? 'M' : it.a==='D' ? 'D' : '');
     items.push({ sec, sort:(pr?pr.n:it.name), html:`<label class="item ${S.ticked[key]?'done':''}"><input type="checkbox" data-key="${key}" ${S.ticked[key]?'checked':''}>
-      <span class="nm"><span class="pn">${pr ? esc(pr.n) : esc(it.name)}</span><span class="pd">${it.shop==='S' && !/^Sainsbury/.test(pr?pr.n:'')?'<b class="shopS">Sainsbury\'s</b> · ':''}Need ${fmt(it.q,it.u).replace('× ','')} · buy ${packStr(bp)||'—'}</span></span>
+      ${qtyBadge(bp, it)}
+      <span class="nm"><span class="pn">${pr ? esc(pr.n) : esc(it.name)}</span><span class="pd">${it.shop==='S' && !/^Sainsbury/.test(pr?pr.n:'')?'<b class="shopS">Sainsbury\'s</b> · ':''}for ${fmt(it.q,it.u).replace('× ','')} in the recipes</span></span>
       <span class="dots">${[...it.days].sort().map(d=>`<i style="${dayStyle(d)}" title="${DAYS[d]}"></i>`).join('')}</span>
       ${bp?`<button class="price ${pr && S.prices[it.name+'|'+lbl]!=null?'edited':''}" data-act="price" data-key="${it.name}" data-label="${lbl}">${gbp(bp.cost)}</button>`:''}</label>` }); });
   extrasList().forEach(([id,v]) => { const x=extraInfo(v), it=x.it;
     const sec = sectionFor(v.t, it && it.n, it && it.a !== 'R' ? it.a : '', '');
     items.push({ sec, sort:v.t, html:`<label class="item ${v.done?'done':''}"><input type="checkbox" data-extra="${id}" ${v.done?'checked':''}>
-      <span class="nm"><span class="pn">${esc(v.t)} <span class="ctag">${v.cat||'added'}</span></span><span class="pd">${it ? `${it.shop==='S'?'<b class="shopS">Sainsbury\'s</b> · ':''}${esc(it.n)}${it.sz?' · '+esc(it.sz):''}${x.qty>1?` · ×${x.qty}`:''}` : 'Your item'}</span></span>
+      <span class="qty"><b>${x.qty}</b>${it && it.sz ? `<small>${esc(it.sz)}</small>` : ''}</span>
+      <span class="nm"><span class="pn">${esc(v.t)} <span class="ctag">${v.cat||'added'}</span></span><span class="pd">${it ? `${it.shop==='S'?'<b class="shopS">Sainsbury\'s</b> · ':''}${esc(it.n)}` : 'Your item'}</span></span>
       <button class="price" data-act="xprice" data-id="${id}">${x.cost!=null?gbp(x.cost):'£ –'}</button></label>` }); });
   const out = STORE.map(([k, title]) => {
     const here = items.filter(x => x.sec[0] === k).sort((a,b) => a.sort.localeCompare(b.sort)); if (!here.length) return '';
