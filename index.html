@@ -744,6 +744,8 @@ function save(push=true){ try{ lastSaved = JSON.stringify(S); localStorage.setIt
 function getP(o,path){ const i=path.indexOf('.'); if(i<0) return o[path]; const t=o[path.slice(0,i)]; return t==null?undefined:t[path.slice(i+1)]; }
 function setP(o,path,v){ const i=path.indexOf('.'); if(i<0){ o[path]=v; return; } o[path.slice(0,i)][path.slice(i+1)]=v; }
 function put(path,val,ts){ setP(S,path,val); S._mt[path] = ts===undefined ? Date.now() : ts; }
+// a tick remembers how much was needed when you ticked it: it stays ticked through plan changes unless you now need more
+const isTicked = (key, q) => { const t = S.ticked[key]; return t === true || (typeof t === 'number' && q <= t + 1e-6); };
 function untickAll(ts){ Object.keys(S.ticked).forEach(k=>{ if(S.ticked[k]) put('ticked.'+k,false,ts); }); }
 const esc = t => String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const $ = id => document.getElementById(id);
@@ -774,7 +776,7 @@ function generate(initial){
 function swap(i){
   const others=S.plan.filter((id,j)=>id && j!==i);
   const plan=[...S.plan]; plan[i]=pick([...others,S.plan[i]].filter(Boolean),tagsOf(others));
-  put('plan',plan); put('cooked.'+i,false); put('shopped.'+i,false); untickAll(); save(); route();
+  put('plan',plan); put('cooked.'+i,false); put('shopped.'+i,false); save(); route();
   toast('Shuffled '+DAYS[i]);
 }
 
@@ -1086,7 +1088,7 @@ function swapIngredient(i, k, toName, qty, unit){
   delete catCache[toName];
   put('mine.' + v.id, v);
   if (S.plan[i] !== v.id){ const plan = [...S.plan]; plan[i] = v.id; put('plan', plan); }
-  untickAll(); save(); route(); toast(v.name !== cur.name ? `Now: ${v.name}` : `Swapped ${from} for ${toName}`);
+  save(); route(); toast(v.name !== cur.name ? `Now: ${v.name}` : `Swapped ${from} for ${toName}`);
 }
 
 // add an extra ingredient to this day's version of the recipe (same variant as swaps, so Undo puts it back)
@@ -1102,7 +1104,7 @@ function addIngredient(i, name, qty, unit){
   delete catCache[name];
   put('mine.' + v.id, v);
   if (S.plan[i] !== v.id){ const plan = [...S.plan]; plan[i] = v.id; put('plan', plan); }
-  untickAll(); save(); route(); toast(`Now: ${v.name}${ok ? '' : ' (macros not adjusted)'}`);
+  save(); route(); toast(`Now: ${v.name}${ok ? '' : ' (macros not adjusted)'}`);
 }
 
 // change or remove something you added (amounts are per person, like the add form)
@@ -1116,7 +1118,7 @@ function editAdded(i, k, qty, unit, remove){
   const swaps = remove ? (cur.swaps||[]).filter(([x,y]) => !(x === '+' && y === old[0])) : cur.swaps;
   const v = { ...cur, i: ing, adds, swaps, name: withAdds(cur.nm0 || cur.name, adds),
     kcal: Math.max(150, Math.round(cur.kcal + d('kcal'))), p: Math.max(0, Math.round(cur.p + d('p'))), c: Math.max(0, Math.round(cur.c + d('c'))), f: Math.max(0, Math.round(cur.f + d('f'))) };
-  put('mine.' + v.id, v); untickAll(); save(); route();
+  put('mine.' + v.id, v); save(); route();
   toast(remove ? `Removed ${old[0]}` : `Updated ${old[0]}`);
 }
 
@@ -1184,7 +1186,7 @@ function viewRecipe(i){
 
 function viewShop(){
   const rows=shopRows(), t=totals(rows), g=shopping();
-  const ex=extrasList(), got=rows.filter(x=>S.ticked[x.name+'|'+x.u]).length + ex.filter(([,v])=>v.done).length, done=!!S.shopDone;
+  const ex=extrasList(), got=rows.filter(x=>isTicked(x.name+'|'+x.u, x.q)).length + ex.filter(([,v])=>v.done).length, done=!!S.shopDone;
   const shopSec = sh => {
     const list=rows.filter(r=>r.shop===sh); if(!list.length) return '';
     const left=list.filter(r=>r.a==='M'||r.a==='V'), right=list.filter(r=>r.a==='D'||r.a==='C');
@@ -1259,7 +1261,7 @@ function storeView(rows, full){
   const items = [];
   rows.forEach(it => { const key=it.name+'|'+it.u, pr=it.prod, bp=it.bp, lbl = bp ? (bp.perKg ? 'kg' : bp.buy[bp.buy.length-1].label) : '';
     const sec = it.a==='V' ? ['fv'] : sectionFor(it.name, pr && pr.n, '', it.a==='M' ? 'M' : it.a==='D' ? 'D' : '');
-    items.push({ sec, sort:(pr?pr.n:it.name), html:`<label class="item ${S.ticked[key]?'done':''}"><input type="checkbox" data-key="${key}" ${S.ticked[key]?'checked':''}>
+    items.push({ sec, sort:(pr?pr.n:it.name), html:`<label class="item ${isTicked(key,it.q)?'done':''}"><input type="checkbox" data-key="${key}" data-q="${it.q}" ${isTicked(key,it.q)?'checked':''}>
       ${qtyBadge(bp, it)}
       <span class="nm"><span class="pn">${pr ? esc(pr.n) : esc(it.name)}</span><span class="pd">${it.shop==='S' && !/^Sainsbury/.test(pr?pr.n:'')?'<b class="shopS">Sainsbury\'s</b> · ':''}for ${fmt(it.q,it.u).replace('× ','')} in the recipes</span></span>
       ${full ? '' : `<span class="dots">${[...it.days].sort().map(d=>`<i style="${dayStyle(d)}" title="${DAYS[d]}"></i>`).join('')}</span>
@@ -1298,11 +1300,11 @@ function viewStore(){
 
 function aisle(a,list){
   return `<div class="aisle"><h3>${A[a]}<span class="muted" style="font-weight:500">${list.length}</span></h3>${list.map(it=>{
-    const key=it.name+'|'+it.u, done=S.ticked[key], pr=it.prod, bp=it.bp;
+    const key=it.name+'|'+it.u, done=isTicked(key,it.q), pr=it.prod, bp=it.bp;
     const title = pr ? (pr.u ? `<a href="${pr.u}" target="_blank" rel="noopener">${pr.n}</a>` : pr.n) : it.name;
     const lbl = bp ? (bp.perKg ? 'kg' : bp.buy[bp.buy.length-1].label) : '';
     const edited = pr && S.prices[it.name+'|'+lbl] != null;
-    return `<label class="item ${done?'done':''}"><input type="checkbox" data-key="${key}" ${done?'checked':''}>
+    return `<label class="item ${done?'done':''}"><input type="checkbox" data-key="${key}" data-q="${it.q}" ${done?'checked':''}>
       <span class="nm"><span class="pn">${title}</span><span class="pd">Need ${fmt(it.q,it.u).replace('× ','')} · buy ${packStr(bp)||'—'}</span></span>
       <span class="dots">${[...it.days].sort().map(d=>`<i style="${dayStyle(d)}" title="${DAYS[d]}"></i>`).join('')}</span>
       ${bp?`<button class="price ${edited?'edited':''}" data-act="price" data-key="${it.name}" data-label="${lbl}">${gbp(bp.cost)}</button>`:''}</label>`;
@@ -1392,7 +1394,7 @@ function cookAgain(id){
   const todayIdx = new Date().getDay(), open = j => !S.cooked[j] && !S.locked[j];
   const days = onDays(), pos = ORDER.indexOf(todayIdx); let j = days.find(k => ORDER.indexOf(k) >= pos && open(k)); if (j === undefined) j = days.find(open);
   if (j === undefined){ toast('Every night this week is cooked or locked'); return; }
-  const plan = [...S.plan]; plan[j] = id; put('plan', plan); put('cooked.'+j, false); untickAll(); save();
+  const plan = [...S.plan]; plan[j] = id; put('plan', plan); put('cooked.'+j, false); save();
   location.hash = '#/'; toast(`Added to ${DAYS[j]}`);
 }
 
@@ -1818,7 +1820,7 @@ function viewPick(i){
 function setDay(i, id){
   const plan = [...S.plan], j = plan.indexOf(id);
   if (j >= 0 && j !== i){ plan[j] = plan[i]; put('cooked.'+j, false); }   // already in the week: swap the two nights
-  plan[i] = id; put('plan', plan); put('cooked.'+i, false); put('shopped.'+i, false); untickAll(); save();
+  plan[i] = id; put('plan', plan); put('cooked.'+i, false); put('shopped.'+i, false); save();
   location.hash = '#/'; toast(`${DAYS[i]}: ${byId(id).name}${j>=0 && j!==i ? ` (swapped with ${DAYS[j]})` : ''}`);
 }
 
@@ -1836,7 +1838,7 @@ function route(){
 }
 addEventListener('hashchange', ()=>{ route(); scrollTo(0,0); });
 // new version check: GitHub Pages caches for 10 minutes, so look for a newer build and offer a refresh
-const BUILD = '2026-10-25-0920';
+const BUILD = '2026-10-25-0930';
 async function checkUpdate(){ try{ const h = await fetch(location.pathname + '?v=' + Date.now(), { cache:'no-store' }).then(r => r.text());
   const m = h.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD && !$('upd')){ const d = document.createElement('button'); d.id='upd'; d.className='updbar'; d.textContent='New version ready — tap to update'; d.onclick=()=>location.reload(); document.body.appendChild(d); } }catch(e){} }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); }); setTimeout(checkUpdate, 3000);
@@ -1873,12 +1875,12 @@ $('app').addEventListener('click', e=>{
   if(a==='adel'){ editAdded(i, +b.dataset.k, 0, '', true); return; }
   if(a==='doswap'){ const f=$('sw-'+b.dataset.k), n=f.querySelector('.sw-n').value.trim(), q=parseQty(f.querySelector('.sw-q').value), u=f.querySelector('.sw-u').value;
     if(!n){ toast('Type what to swap it for'); f.querySelector('.sw-n').focus(); return; } swapIngredient(i, +b.dataset.k, n, isFinite(q)?q:0, u); return; }
-  if(a==='unswap'){ const r=byId(S.plan[i]); if(r && r.variant){ const plan=[...S.plan]; plan[i]=r.base; put('plan',plan); put('mine.'+r.id, {...r, deleted:true}); untickAll(); save(); route(); toast('Back to '+((byId(r.base)||{}).name||'the original')); } return; }
+  if(a==='unswap'){ const r=byId(S.plan[i]); if(r && r.variant){ const plan=[...S.plan]; plan[i]=r.base; put('plan',plan); put('mine.'+r.id, {...r, deleted:true}); save(); route(); toast('Back to '+((byId(r.base)||{}).name||'the original')); } return; }
   if(a==='sview'){ if(b.dataset.v==='store'){ goFull(true); location.hash='#/store'; return; } SV='shop'; try{ localStorage.setItem('wc-shopview', SV); }catch(e){} route(); return; }
   if(a==='storedone'){ if(!S.shopDone){ put('shopDone', true); save(); toast('Shop done — list locked'); } location.hash='#/shop'; return; }
-  if(a==='shopped'){ put('shopped.'+i, !S.shopped[i]); untickAll(); save(); route(); toast(S.shopped[i] ? `${DAYS[i]}'s ingredients are off the shopping list` : `${DAYS[i]}'s ingredients are back on the list`); return; }
-  if(a==='clear'){ put('shopped.'+i,false); const plan=[...S.plan]; plan[i]=null; put('plan',plan); put('cooked.'+i,false); put('locked.'+i,false); put('lunch.'+i,false); untickAll(); save(); route(); toast(`Cleared ${DAYS[i]}`); }
-  if(a==='onday'){ put('on.'+i,true); const plan=[...S.plan]; plan[i]=pick(plan.filter(Boolean),tagsOf(plan)); put('plan',plan); put('cooked.'+i,false); untickAll(); save(); route(); toast(`${DAYS[i]} added — tap Choose to pick something else`); }
+  if(a==='shopped'){ put('shopped.'+i, !S.shopped[i]); save(); route(); toast(S.shopped[i] ? `${DAYS[i]}'s ingredients are off the shopping list` : `${DAYS[i]}'s ingredients are back on the list`); return; }
+  if(a==='clear'){ put('shopped.'+i,false); const plan=[...S.plan]; plan[i]=null; put('plan',plan); put('cooked.'+i,false); put('locked.'+i,false); put('lunch.'+i,false); save(); route(); toast(`Cleared ${DAYS[i]}`); }
+  if(a==='onday'){ put('on.'+i,true); const plan=[...S.plan]; plan[i]=pick(plan.filter(Boolean),tagsOf(plan)); put('plan',plan); put('cooked.'+i,false); save(); route(); toast(`${DAYS[i]} added — tap Choose to pick something else`); }
   if(a==='offday'){ put('on.'+i,false); const plan=[...S.plan]; plan[i]=null; put('plan',plan); put('lunch.'+i,false); save(); route(); toast(`${DAYS[i]} taken out of the week`); }
   if(a==='choose'){ PF={q:'',tags:[],n:60}; location.hash='#/pick/'+i; }
   if(a==='setday') setDay(i, b.dataset.id);
@@ -1966,7 +1968,7 @@ $('app').addEventListener('change', e=>{
     return; }
   if(e.target.closest('#rform')){ draftSave(); return; }
   const x=e.target.dataset.extra; if(x){ put('extras.'+x,{...S.extras[x],done:e.target.checked}); save(); route(); return; }
-  const k=e.target.dataset.key; if(!k) return; put('ticked.'+k,e.target.checked); save(); route();
+  const k=e.target.dataset.key; if(!k) return; put('ticked.'+k, e.target.checked ? (+e.target.dataset.q || true) : false); save(); route();
 });
 $('app').addEventListener('input', e=>{
   if(e.target.id==='shoplock'){ e.target.parentElement.style.setProperty('--v', e.target.value); return; }
