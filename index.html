@@ -1782,11 +1782,14 @@ const HEART_SVG = on => `<svg viewBox="0 0 24 24" width="20" height="20" aria-hi
 const heartBtn = (id, cls='') => `<button class="heart ${cls} ${isLoved(id)?'on':''}" data-act="love" data-id="${id}" aria-pressed="${isLoved(id)}" aria-label="${isLoved(id)?'Remove from loved':'Love this dish'}" title="${isLoved(id)?'Loved':'Love it'}">${HEART_SVG(isLoved(id))}</button>`;
 const allRecipes = () => [...R.filter(r => !r.hidden), ...mineList()];
 let PF = { q:'', tags:[], n:60 };   // tags: any number of filters; mains are either/or, Loved/Yours narrow further
+// Healthy rule set (per standard portion): ≤650 kcal, ≥30g protein, ≤25g fat, protein ≥20% of calories, and not an indulgent style of dish
+const INDULGENT = /fried|crispy|cheesy|mac (and|&|n) cheese|carbonara|loaded|burger|pizza|cream|alfredo|battered|tempura|nacho|fries|\bpie\b|lasagne|katsu|parmigiana|\bbake\b/i;
+const isHealthy = r => !!r && r.kcal > 0 && r.kcal <= 650 && r.p >= 30 && r.f <= 25 && r.p * 4 / r.kcal >= .2 && !INDULGENT.test(r.name);
 const pfOn = t => t==='all' ? !PF.tags.length : PF.tags.includes(t);
 function pickList(i){
   const q = PF.q.trim().toLowerCase(), words = q.split(/\s+/).filter(Boolean);
-  const mains = PF.tags.filter(t => t!=='loved' && t!=='yours'), lov = pfOn('loved'), yrs = pfOn('yours');
-  let list = allRecipes().filter(r => (!mains.length || mains.includes(r.tag)) && (!lov || isLoved(r.id)) && (!yrs || r.mine));
+  const mains = PF.tags.filter(t => t!=='loved' && t!=='yours' && t!=='healthy'), lov = pfOn('loved'), yrs = pfOn('yours'), hlt = pfOn('healthy');
+  let list = allRecipes().filter(r => (!mains.length || mains.includes(r.tag)) && (!lov || isLoved(r.id)) && (!yrs || r.mine) && (!hlt || isHealthy(r)));
   if (words.length) list = list.filter(r => { const hay = (r.name + ' ' + r.tag + ' ' + (r.by||'') + ' ' + r.i.map(x => x[0]).join(' ')).toLowerCase(); return words.every(w => hay.includes(w)); });
   const rank = r => isLoved(r.id) ? 0 : r.lib ? 2 : 1;
   list.sort((a,b) => (rank(a) - rank(b)) || a.name.localeCompare(b.name));   // loved, then your collection, then the Mob library
@@ -1799,17 +1802,18 @@ function pickList(i){
       <div class="pbody"><div class="rday">${esc(r.tag)}${r.by?` · ${esc(r.by)}`:''}</div><div class="ptitle">${esc(r.name)}</div>
       <div class="rmeta">≈${k0(m.kcal)} kcal · ${k0(m.p)}g protein${r.mins?` · ${r.mins} min`:''}</div></div></div>`; }).join('') + '</div>' + (total > list.length ? `<button class="pill ghost" data-act="pmore" style="margin:16px auto;display:flex">Show more (${total - list.length} left)</button>` : '');
 }
+const hltNote = () => pfOn('healthy') ? '<p class="small" style="margin:6px 0 0">Healthy: 650 kcal or less, at least 30g protein, 25g fat or less, and not fried, creamy or cheesy.</p>' : '';
 function viewPick(i){
   if (!(i >= 0 && i < 7) || !S.on[i]) return viewWeek();
   const cur = byId(S.plan[i]), tags = ['all', ...TAGS.filter(t => allRecipes().some(r => r.tag === t))];
-  tags.splice(1, 0, 'loved'); if (mineList().length) tags.push('yours');
+  tags.splice(1, 0, 'loved', 'healthy'); if (mineList().length) tags.push('yours');
   return `<a class="back" href="#/">‹ This week</a>
   <h1>${DAYS[i]}</h1>
   <div class="sub">Pick a dinner from all ${allRecipes().length} recipes${cur ? ` · now: ${esc(cur.name)}` : ''}</div>
   <div class="addrow pickbar"><input id="pq" type="search" placeholder="Search recipes or ingredients" value="${esc(PF.q)}" autocomplete="off" enterkeyhint="search">
     <button class="pill" data-act="swap" data-i="${i}" title="Random dinner">${SHUF_SVG} Random</button></div>
-  <div class="chips">${tags.map(t => `<button class="fchip ${pfOn(t)?'on':''}" data-act="pf" data-tag="${t}">${t==='all'?'All':t==='yours'?'Yours':t==='loved'?'♥ Loved':t}</button>`).join('')}</div>
-  <div id="plist">${pickList(i)}</div>`;
+  <div class="chips">${tags.map(t => `<button class="fchip ${pfOn(t)?'on':''}" data-act="pf" data-tag="${t}">${t==='all'?'All':t==='yours'?'Yours':t==='loved'?'♥ Loved':t==='healthy'?'Healthy':t}</button>`).join('')}</div>
+  <div id="hltn">${hltNote()}</div><div id="plist">${pickList(i)}</div>`;
 }
 function setDay(i, id){
   const plan = [...S.plan], j = plan.indexOf(id);
@@ -1832,7 +1836,7 @@ function route(){
 }
 addEventListener('hashchange', ()=>{ route(); scrollTo(0,0); });
 // new version check: GitHub Pages caches for 10 minutes, so look for a newer build and offer a refresh
-const BUILD = '2026-10-25-0915';
+const BUILD = '2026-10-25-0920';
 async function checkUpdate(){ try{ const h = await fetch(location.pathname + '?v=' + Date.now(), { cache:'no-store' }).then(r => r.text());
   const m = h.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD && !$('upd')){ const d = document.createElement('button'); d.id='upd'; d.className='updbar'; d.textContent='New version ready — tap to update'; d.onclick=()=>location.reload(); document.body.appendChild(d); } }catch(e){} }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); }); setTimeout(checkUpdate, 3000);
@@ -1886,7 +1890,7 @@ $('app').addEventListener('click', e=>{
     if($('plist')) $('plist').innerHTML=pickList(+location.hash.split('/')[2]); else if($('dlist')) $('dlist').innerHTML=sweetList(); else route(); }
   if(a==='pmore'){ PF.n += 120; $('plist').innerHTML=pickList(+location.hash.split('/')[2]); return; }
   if(a==='pf'){ PF.n=60; const t=b.dataset.tag; PF.tags = t==='all' ? [] : PF.tags.includes(t) ? PF.tags.filter(x=>x!==t) : [...PF.tags, t];
-    document.querySelectorAll('.fchip').forEach(c=>c.classList.toggle('on',pfOn(c.dataset.tag))); $('plist').innerHTML=pickList(+location.hash.split('/')[2]); }
+    document.querySelectorAll('.fchip').forEach(c=>c.classList.toggle('on',pfOn(c.dataset.tag))); $('plist').innerHTML=pickList(+location.hash.split('/')[2]); if($('hltn')) $('hltn').innerHTML=hltNote(); }
   if(a==='cook'){ put('cooked.'+i,!S.cooked[i]); save(); route(); if(S.cooked[i]) toast(DAYS[i]+' cooked'); }
   if(a==='lock'){ put('locked.'+i,!S.locked[i]); save(); route(); toast(S.locked[i] ? `${DAYS[i]} locked — it stays when you shuffle` : `${DAYS[i]} unlocked`); }
   if(a==='lunch') setLunch(i,!S.lunch[i]);
