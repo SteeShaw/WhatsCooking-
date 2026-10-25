@@ -844,20 +844,17 @@ function palette(r){
   // random but stable per recipe: hash the id, then pick two hues anywhere on the wheel
   let h = 2166136261; for (const ch of key) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; }
   const rnd = () => { h ^= h << 13; h >>>= 0; h ^= h >> 17; h ^= h << 5; h >>>= 0; return h / 4294967296; };
-  // 12 hue families: two each of red, orange, yellow, blue, purple and pink — no greens or teals
-  const FAM = [5, 350, 25, 38, 52, 58, 205, 228, 262, 285, 312, 328];
-  const i1 = Math.floor(rnd() * 12), step = [2,3,4,5,7,8,9,10][Math.floor(rnd() * 8)];  // skip neighbours and direct opposites
-  const h1 = FAM[i1] + (rnd()*6 - 3), h2 = FAM[(i1 + step) % 12] + (rnd()*6 - 3);
-  const white = rnd() < .25, s2 = 85 + rnd()*10, l2 = 56 + rnd()*8, s1 = 85 + rnd()*10, l1 = 55 + rnd()*7;
-  const a = hsl2hex(h1, s1, l1), b = white ? '#ffffff' : hsl2hex(h2, s2, l2);
-  // the blend between the two goes round the wheel the way that avoids green (hues ~65-200)
-  let mid;
-  if (white) mid = hsl2hex(h1, s1, 80);
-  else {
-    const up = ((h2 - h1) % 360 + 360) % 360, crosses = (from, d) => { for (let t = 0; t <= d; t += 5) { const x = (from + t) % 360; if (x > 65 && x < 200) return true; } return false; };
-    const m = crosses(h1, up) ? h1 - (360 - up) / 2 : h1 + up / 2;
-    mid = hsl2hex(((m % 360) + 360) % 360, (s1 + s2) / 2, (l1 + l2) / 2);
-  }
+  // 8 colours, each the main colour of an equal share of recipes: red, orange, yellow, green, teal, blue, purple, pink
+  const FAM = [2, 28, 50, 135, 170, 218, 270, 325];
+  const i1 = Math.floor(rnd() * 8), j = (i1 + (rnd() < .5 ? 1 : 7)) % 8;   // second colour is a neighbour
+  const h1 = FAM[i1] + (rnd()*6 - 3), white = rnd() < .2;
+  const dim = (i1 === 3 || i1 === 4) ? 10 : 0;   // greens and teals look brighter, so darken them to match
+  const s1 = 82 + rnd()*10, l1 = 52 + rnd()*6 - dim, l2 = 58 + rnd()*6 - dim;
+  const a = hsl2hex(h1, s1, l1);
+  // the second colour only leans a third of the way towards its neighbour, so the card still reads as its main colour
+  let d = ((FAM[j] - h1) % 360 + 540) % 360 - 180;
+  const b = white ? '#ffffff' : hsl2hex(h1 + d/3, s1, l2);
+  const mid = white ? hsl2hex(h1, s1, 78) : hsl2hex(h1 + d/6, s1, (l1 + l2) / 2);
   return palCache[key] = [a, b, mid];
 }
 const lum = hex => { const n = parseInt(hex.slice(1),16), c = [n>>16, n>>8&255, n&255].map(v => { v/=255; return v<=.03928 ? v/12.92 : ((v+.055)/1.055)**2.4; }); return .2126*c[0]+.7152*c[1]+.0722*c[2]; };
@@ -1799,7 +1796,7 @@ function route(){
 }
 addEventListener('hashchange', ()=>{ route(); scrollTo(0,0); });
 // new version check: GitHub Pages caches for 10 minutes, so look for a newer build and offer a refresh
-const BUILD = '2026-10-25-0830';
+const BUILD = '2026-10-25-0815';
 async function checkUpdate(){ try{ const h = await fetch(location.pathname + '?v=' + Date.now(), { cache:'no-store' }).then(r => r.text());
   const m = h.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD && !$('upd')){ const d = document.createElement('button'); d.id='upd'; d.className='updbar'; d.textContent='New version ready — tap to update'; d.onclick=()=>location.reload(); document.body.appendChild(d); } }catch(e){} }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); }); setTimeout(checkUpdate, 3000);
