@@ -449,6 +449,12 @@ body.storemode .ishead{padding-top:calc(14px + env(safe-area-inset-top))}
 .shopped.on{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 40%,transparent);background:color-mix(in srgb,var(--ok) 8%,var(--bg))}
 .shopped.on .sbox{background:var(--ok);border-color:var(--ok)}
 .shopped.on .sbox::after{content:"";width:4px;height:7px;border:solid #fff;border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg)}
+/* editable added ingredients */
+.aedit{display:flex;align-items:center;gap:5px;flex:none}
+.aedit input,.aedit select{border:0;background:var(--bg);border-radius:10px;padding:7px 8px;font-size:15px;color:inherit;font-family:inherit;outline:none;min-width:0}
+.aedit .a-q{width:56px;text-align:right}
+.aedit .a-u{width:58px;appearance:none;-webkit-appearance:none;text-align:center}
+.aedit input:focus,.aedit select:focus{box-shadow:0 0 0 2px var(--ink) inset}
 </style>
 </head>
 <body>
@@ -770,7 +776,7 @@ function portion(q,u,s,n,L=0){
 function shopping(){
   const n=S.settings.people, items={};
   S.plan.forEach((id,di)=>{ const r=byId(id); if(!r || S.shopped[di]) return; /* already bought for this dinner */ const s=scaleFor(r), L=S.lunch[di]?1:0;
-    r.i.forEach(([name,q,u,a])=>{ const key=name+'|'+u, mult=(a==='S'||u==='tsp'||u==='tbsp'||u==='pack')?n+L:n*s+L;
+    r.i.forEach(([name,q,u,a,added])=>{ const key=name+'|'+u, mult=(added||a==='S'||u==='tsp'||u==='tbsp'||u==='pack')?n+L:n*s+L;
       items[key]=items[key]||{name,u,a,q:0,days:new Set()}; items[key].q+=q*mult; items[key].days.add(di); }); });
   sweetsList().forEach(r => r.i.forEach(([name,q,u,a]) => { const key=name+'|'+u;
       items[key]=items[key]||{name,u,a,q:0,days:new Set()}; items[key].q += a==='S' ? 0 : q*(r.serves||1); items[key].sweet=true; }));
@@ -1021,8 +1027,8 @@ function swapIngredient(i, k, toName, qty, unit){
   const cur = byId(S.plan[i]); if (!cur) return;
   const base = cur.variant ? byId(cur.base) : cur;
   const [from, , , ] = cur.i[k], s = scaleFor(cur);
-  const per = (unit==='g'||unit==='ml') ? qty / s : qty;        // the form shows scaled grams; recipes store unscaled
-  const ing = cur.i.map((x,j) => j === k ? [toName, Math.round(per*1000)/1000, unit, guessAisle(toName, unit, per)] : x);
+  const per = (unit==='g'||unit==='ml') && !cur.i[k][4] ? qty / s : qty;        // the form shows scaled grams; recipes store unscaled (added ones are per person as typed)
+  const ing = cur.i.map((x,j) => j === k ? [toName, Math.round(per*1000)/1000, unit, guessAisle(toName, unit, per), ...(x[4] ? [1] : [])] : x);
   // nudge the macros by the difference between the two ingredients, where both are known
   const a = estimate([cur.i[k]]), b = estimate([[toName, per, unit]]), known = !a.missed.length && !b.missed.length;
   const d = k2 => known ? b[k2] - a[k2] : 0;
@@ -1043,7 +1049,7 @@ function swapIngredient(i, k, toName, qty, unit){
 function addIngredient(i, name, qty, unit){
   const cur = byId(S.plan[i]); if (!cur) return;
   const base = cur.variant ? byId(cur.base) : cur, s = scaleFor(cur);
-  const per = (unit==='g'||unit==='ml') ? qty / s : qty, add = [name, Math.round(per*1000)/1000, unit, guessAisle(name, unit, per)];
+  const per = qty, add = [name, Math.round(per*1000)/1000, unit, guessAisle(name, unit, per), 1];
   const e = estimate([add]), ok = !e.missed.length;
   const v = { ...cur, id: cur.variant ? cur.id : 'var-' + Date.now().toString(36) + Math.random().toString(36).slice(2,5),
     nm0: cur.nm0 || cur.name, adds: [...(cur.adds||[]), name], name: withAdds(cur.nm0 || cur.name, [...(cur.adds||[]), name]),
@@ -1053,6 +1059,21 @@ function addIngredient(i, name, qty, unit){
   put('mine.' + v.id, v);
   if (S.plan[i] !== v.id){ const plan = [...S.plan]; plan[i] = v.id; put('plan', plan); }
   untickAll(); save(); route(); toast(`Now: ${v.name}${ok ? '' : ' (macros not adjusted)'}`);
+}
+
+// change or remove something you added (amounts are per person, like the add form)
+function editAdded(i, k, qty, unit, remove){
+  const cur = byId(S.plan[i]); if (!cur || !cur.variant || !cur.i[k] || !cur.i[k][4]) return;
+  const old = cur.i[k], per = qty;
+  const nw = remove ? null : [old[0], Math.round(per*1000)/1000, unit, guessAisle(old[0], unit, per), 1];
+  const a = estimate([old]), b = nw ? estimate([nw]) : {kcal:0,p:0,c:0,f:0,missed:[]}, ok = !a.missed.length && !b.missed.length, d = k2 => ok ? b[k2] - a[k2] : 0;
+  const ing = remove ? cur.i.filter((_,j) => j !== k) : cur.i.map((x,j) => j === k ? nw : x);
+  const adds = remove ? (cur.adds||[]).filter((x,j,arr) => !(x === old[0] && arr.indexOf(x) === j)) : (cur.adds||[]);
+  const swaps = remove ? (cur.swaps||[]).filter(([x,y]) => !(x === '+' && y === old[0])) : cur.swaps;
+  const v = { ...cur, i: ing, adds, swaps, name: withAdds(cur.nm0 || cur.name, adds),
+    kcal: Math.max(150, Math.round(cur.kcal + d('kcal'))), p: Math.max(0, Math.round(cur.p + d('p'))), c: Math.max(0, Math.round(cur.c + d('c'))), f: Math.max(0, Math.round(cur.f + d('f'))) };
+  put('mine.' + v.id, v); untickAll(); save(); route();
+  toast(remove ? `Removed ${old[0]}` : `Updated ${old[0]}`);
 }
 
 function emptyRow(i){
@@ -1094,9 +1115,13 @@ function viewRecipe(i){
     ${r.variant ? `<div class="note varnote"><span>Changed from <b>${esc((byId(r.base)||{}).name||'the original')}</b>: ${r.swaps.map(([a,b])=>a==='+' ? `+ ${esc(b)}` : `${esc(a)} → ${esc(b)}`).join(', ')}</span><button class="pill ghost" data-act="unswap" data-i="${i}">Undo changes</button></div>` : ''}
     <div class="grid">
       <div class="card"><b>Ingredients</b><span class="small"> · ${n} ${n>1?'people':'person'}${L?' + 1 lunch':''}</span>${L?' <span class="sticker" style="cursor:default">+ Lunch</span>':''}
-        ${r.i.map(([nm,q,u,a],k)=>`<div class="item" style="cursor:default"><span class="nm">${esc(nm)}</span><span class="q">${portion(q,u,m.s,n,L)}</span>${r.hidden?'':`<button class="iswap" data-act="iswap" data-i="${i}" data-k="${k}" title="Swap ${esc(nm)}" aria-label="Swap ${esc(nm)}">⇄</button>`}</div>
+        ${r.i.map(([nm,q,u,a,added],k)=>`<div class="item ${added?'added':''}" style="cursor:default"><span class="nm">${esc(nm)}${added?' <span class="ctag">added</span>':''}</span>${added
+          ? `<span class="aedit"><input class="a-q" data-i="${i}" data-k="${k}" inputmode="decimal" value="${q ? nice(q) : ''}" aria-label="Amount per person for ${esc(nm)}">
+             <select class="a-u" data-i="${i}" data-k="${k}" aria-label="Unit">${UNITS.map(([v,l])=>`<option value="${v}" ${v===u?'selected':''}>${l}</option>`).join('')}</select>
+             <button class="iswap" data-act="adel" data-i="${i}" data-k="${k}" title="Remove ${esc(nm)}" aria-label="Remove ${esc(nm)}">✕</button></span>`
+          : `<span class="q">${portion(q,u,m.s,n,L)}</span>`}${r.hidden?'':`<button class="iswap" data-act="iswap" data-i="${i}" data-k="${k}" title="Swap ${esc(nm)}" aria-label="Swap ${esc(nm)}">⇄</button>`}</div>
           <div class="swapform" id="sw-${k}" hidden><input class="sw-n" list="swapnames" placeholder="Swap ${esc(nm)} for…" autocomplete="off" enterkeyhint="done">
-            <input class="sw-q" inputmode="decimal" value="${q ? nice(u==='g'||u==='ml' ? Math.round(q*m.s) : q) : ''}" aria-label="Amount per person">
+            <input class="sw-q" inputmode="decimal" value="${q ? nice((u==='g'||u==='ml') && !added ? Math.round(q*m.s) : q) : ''}" aria-label="Amount per person">
             <select class="sw-u">${UNITS.map(([v,l])=>`<option value="${v}" ${v===u?'selected':''}>${l}</option>`).join('')}</select>
             <button class="pill" data-act="doswap" data-i="${i}" data-k="${k}">Swap</button></div>`).join('')}
         ${r.hidden?'':`<button class="pill ghost addingbtn" data-act="ingplus" data-i="${i}">+ Add an ingredient</button>
@@ -1765,7 +1790,7 @@ function route(){
 }
 addEventListener('hashchange', ()=>{ route(); scrollTo(0,0); });
 // new version check: GitHub Pages caches for 10 minutes, so look for a newer build and offer a refresh
-const BUILD = '2026-10-25-0745';
+const BUILD = '2026-10-25-0750';
 async function checkUpdate(){ try{ const h = await fetch(location.pathname + '?v=' + Date.now(), { cache:'no-store' }).then(r => r.text());
   const m = h.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD && !$('upd')){ const d = document.createElement('button'); d.id='upd'; d.className='updbar'; d.textContent='New version ready — tap to update'; d.onclick=()=>location.reload(); document.body.appendChild(d); } }catch(e){} }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); }); setTimeout(checkUpdate, 3000);
@@ -1799,6 +1824,7 @@ $('app').addEventListener('click', e=>{
   if(a==='ingplus'){ const f=$('sw-add'); document.querySelectorAll('.swapform').forEach(x=>{ if(x!==f) x.hidden=true; }); f.hidden=!f.hidden; if(!f.hidden) f.querySelector('.sw-n').focus(); return; }
   if(a==='doadd'){ const f=$('sw-add'), n=f.querySelector('.sw-n').value.trim(), q=parseQty(f.querySelector('.sw-q').value), u=f.querySelector('.sw-u').value;
     if(!n){ toast('Type an ingredient'); f.querySelector('.sw-n').focus(); return; } addIngredient(i, n, isFinite(q)?q:0, u); return; }
+  if(a==='adel'){ editAdded(i, +b.dataset.k, 0, '', true); return; }
   if(a==='doswap'){ const f=$('sw-'+b.dataset.k), n=f.querySelector('.sw-n').value.trim(), q=parseQty(f.querySelector('.sw-q').value), u=f.querySelector('.sw-u').value;
     if(!n){ toast('Type what to swap it for'); f.querySelector('.sw-n').focus(); return; } swapIngredient(i, +b.dataset.k, n, isFinite(q)?q:0, u); return; }
   if(a==='unswap'){ const r=byId(S.plan[i]); if(r && r.variant){ const plan=[...S.plan]; plan[i]=r.base; put('plan',plan); put('mine.'+r.id, {...r, deleted:true}); untickAll(); save(); route(); toast('Back to '+((byId(r.base)||{}).name||'the original')); } return; }
@@ -1885,6 +1911,8 @@ function addExtra(cat){
 }
 const extrasList = () => Object.entries(S.extras).filter(([,v])=>v && v.t);
 $('app').addEventListener('change', e=>{
+  if(e.target.classList.contains('a-q') || e.target.classList.contains('a-u')){ const row=e.target.closest('.aedit'), q=parseQty(row.querySelector('.a-q').value);
+    editAdded(+e.target.dataset.i, +e.target.dataset.k, isFinite(q)?q:0, row.querySelector('.a-u').value); return; }
   if(e.target.id==='shoplock'){ const v=+e.target.value, on=!!S.shopDone;
     if(!on && v>=85){ put('shopDone', true); save(); route(); toast('Shop done — list locked'); }
     else if(on && v<=15){ put('shopDone', false); save(); route(); toast('List unlocked'); }
