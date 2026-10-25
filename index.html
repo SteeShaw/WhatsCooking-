@@ -846,15 +846,14 @@ function palette(r){
   const rnd = () => { h ^= h << 13; h >>>= 0; h ^= h >> 17; h ^= h << 5; h >>>= 0; return h / 4294967296; };
   // 8 colours, each the main colour of an equal share of recipes: red, orange, yellow, green, teal, blue, purple, pink
   const FAM = [2, 28, 50, 135, 170, 218, 270, 325];
-  const i1 = Math.floor(rnd() * 8), j = (i1 + (rnd() < .5 ? 1 : 7)) % 8;   // second colour is a neighbour
-  const h1 = FAM[i1] + (rnd()*6 - 3), white = rnd() < .2;
-  const dim = (i1 === 3 || i1 === 4) ? 10 : 0;   // greens and teals look brighter, so darken them to match
-  const s1 = 82 + rnd()*10, l1 = 52 + rnd()*6 - dim, l2 = 58 + rnd()*6 - dim;
-  const a = hsl2hex(h1, s1, l1);
-  // the second colour only leans a third of the way towards its neighbour, so the card still reads as its main colour
-  let d = ((FAM[j] - h1) % 360 + 540) % 360 - 180;
-  const b = white ? '#ffffff' : hsl2hex(h1 + d/3, s1, l2);
-  const mid = white ? hsl2hex(h1, s1, 78) : hsl2hex(h1 + d/6, s1, (l1 + l2) / 2);
+  const i1 = Math.floor(rnd() * 8), j = (i1 + [2,3,5,6][Math.floor(rnd() * 4)]) % 8;   // second colour: 2-3 colours away either way
+  const white = rnd() < .2, dimOf = i => (i === 3 || i === 4) ? 10 : 0;   // greens and teals look brighter, so darken them to match
+  const h1 = FAM[i1] + (rnd()*6 - 3), h2 = FAM[j] + (rnd()*6 - 3);
+  const s1 = 82 + rnd()*10, s2 = 82 + rnd()*10, l1 = 52 + rnd()*6 - dimOf(i1), l2 = 54 + rnd()*6 - dimOf(j);
+  const a = hsl2hex(h1, s1, l1), b = white ? '#ffffff' : hsl2hex(h2, s2, l2);
+  // the middle of the blend goes the short way round the wheel between the two colours
+  const d = ((h2 - h1) % 360 + 540) % 360 - 180;
+  const mid = white ? hsl2hex(h1, s1, 78) : hsl2hex((h1 + d/2 + 360) % 360, 92, Math.max(l1, l2) + 4);
   return palCache[key] = [a, b, mid];
 }
 const lum = hex => { const n = parseInt(hex.slice(1),16), c = [n>>16, n>>8&255, n&255].map(v => { v/=255; return v<=.03928 ? v/12.92 : ((v+.055)/1.055)**2.4; }); return .2126*c[0]+.7152*c[1]+.0722*c[2]; };
@@ -1796,7 +1795,7 @@ function route(){
 }
 addEventListener('hashchange', ()=>{ route(); scrollTo(0,0); });
 // new version check: GitHub Pages caches for 10 minutes, so look for a newer build and offer a refresh
-const BUILD = '2026-10-25-0815';
+const BUILD = '2026-10-25-0820';
 async function checkUpdate(){ try{ const h = await fetch(location.pathname + '?v=' + Date.now(), { cache:'no-store' }).then(r => r.text());
   const m = h.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD && !$('upd')){ const d = document.createElement('button'); d.id='upd'; d.className='updbar'; d.textContent='New version ready — tap to update'; d.onclick=()=>location.reload(); document.body.appendChild(d); } }catch(e){} }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); }); setTimeout(checkUpdate, 3000);
