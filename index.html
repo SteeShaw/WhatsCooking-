@@ -350,6 +350,11 @@ ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));colo
 .havebox .hvl{display:flex;align-items:center;gap:12px;flex:1;min-width:0;cursor:pointer}
 .pill.sm{padding:6px 12px;font-size:13px;flex:none}
 .havebox .onl{flex:none;font-size:13px;font-weight:700;color:#0e9a5c;padding:6px 4px}
+.pastshops .trip{border-top:1px solid var(--line);padding:10px 0}
+.pastshops .trip summary{display:flex;justify-content:space-between;gap:10px;cursor:pointer;list-style:none}
+.pastshops .trip summary::-webkit-details-marker{display:none}
+.pastshops ul{list-style:none;margin:8px 0 10px;padding:0}
+.pastshops li{display:flex;justify-content:space-between;gap:10px;padding:4px 0}
 /* recipe picker: photo-first cards */
 .pgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px;margin-top:8px}
 @media (min-width:700px){.pgrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px 16px}}
@@ -740,7 +745,7 @@ const COL = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)'];
 const DEF = {kcal:2500,protein:160,carbs:260,fat:85,share:30,people:1};
 let S = norm(load());
 function norm(x){ x = x || {};
-  x.settings = {...DEF, ...(x.settings||{})}; x.plan = x.plan||[]; x.locked = x.locked||[]; x.ticked = x.ticked||{}; x.cooked = x.cooked||[]; x.lunch = x.lunch||[]; x.prices = x.prices||{}; x.extras = x.extras||{}; x.history = x.history||{}; x.mine = x.mine||{}; x.loved = x.loved||{}; x.shopped = x.shopped||[]; x.on = Array.isArray(x.on) && x.on.length===7 ? x.on : [...DEF_ON]; while (x.plan.length < 7) x.plan.push(null); x.sweets = x.sweets||{}; x.have = x.have||{}; x._mt = x._mt||{};
+  x.settings = {...DEF, ...(x.settings||{})}; x.plan = x.plan||[]; x.locked = x.locked||[]; x.ticked = x.ticked||{}; x.cooked = x.cooked||[]; x.lunch = x.lunch||[]; x.prices = x.prices||{}; x.extras = x.extras||{}; x.history = x.history||{}; x.mine = x.mine||{}; x.loved = x.loved||{}; x.shopped = x.shopped||[]; x.on = Array.isArray(x.on) && x.on.length===7 ? x.on : [...DEF_ON]; while (x.plan.length < 7) x.plan.push(null); x.sweets = x.sweets||{}; x.have = x.have||{}; x.bought = x.bought||{}; x.trips = x.trips||{}; x._mt = x._mt||{};
   return x; }
 function load(){ try{ return JSON.parse(localStorage.getItem('wc')); }catch(e){ return null; } }
 function save(push=true){ try{ lastSaved = JSON.stringify(S); localStorage.setItem('wc', lastSaved); }catch(e){} if(push) queuePush(); }
@@ -816,6 +821,8 @@ function shopping(){
 function shopRows(){
   const g=shopping(), rows=[];
   ['M','V','D','C'].forEach(a => (g[a]||[]).forEach(it => {
+    const bq = S.bought[it.name+'|'+it.u] || 0;   // already bought on an earlier shop this week
+    if (bq){ it = {...it, q: it.q - bq}; if (it.q <= 1e-6) return; }
     if (P[it.name] && it.u==='pack' && P[it.name].packs){ const [ , pr, lbl] = P[it.name].packs[0], n = Math.max(1, Math.ceil(it.q - 1e-9)), price = priceOf(it.name, lbl, pr);
       rows.push({...it, shop:P[it.name].s, prod:P[it.name], bp:{buy:[{label:lbl, n, price}], cost:n*price}}); }
     else if (P[it.name]) rows.push({...it, shop:P[it.name].s, prod:P[it.name], bp:bestPacks(it.name,it.q)});
@@ -849,7 +856,7 @@ function catRow(it){
   return { it:c, bp:{ buy:[{label:c.sz||'pack', n, price:c.pr}], cost:n*c.pr } };
 }
 function totals(rows=shopRows()){ const t={A:0,S:0,X:0}; rows.forEach(r=>{ if(r.bp) t[r.shop]+=r.bp.cost; });
-  extrasList().forEach(([,v])=>{ const x=extraInfo(v); if(x.cost!=null){ t.X+=x.cost; t[x.it && x.it.shop==='S' ? 'S' : 'A'] += x.cost; } }); t.all=t.A+t.S; return t; }
+  shopExtras().forEach(([,v])=>{ const x=extraInfo(v); if(x.cost!=null){ t.X+=x.cost; t[x.it && x.it.shop==='S' ? 'S' : 'A'] += x.cost; } }); t.all=t.A+t.S; return t; }
 const packStr = bp => bp ? bp.buy.map(b=>(b.n>1?b.n+' × ':'')+b.label).join(' + ') : '';
 
 
@@ -966,10 +973,11 @@ function rollover(){
   put('week', cur);
   DAYS.forEach((_,i) => { put('locked.'+i, false); put('lunch.'+i, false); put('on.'+i, DEF_ON[i]); put('shopped.'+i, false); });
   put('shopDone', false);
-  Object.keys(S.have).forEach(k => { if (S.have[k]) put('have.'+k, false); });   // check the cupboard again each week
+  Object.keys(S.have).forEach(k => { if (S.have[k]) put('have.'+k, false); });
+  Object.keys(S.bought).forEach(k => { if (S.bought[k]) put('bought.'+k, 0); });   // a new week starts with nothing bought   // check the cupboard again each week
   Object.keys(S.sweets).forEach(id => { if (S.sweets[id]) put('sweets.'+id, false); });
   // breakfast & lunch items are bought every week: keep them, just untick; one-off added items go once bought
-  Object.entries(S.extras).forEach(([id,v]) => { if (!v) return; if (v.cat){ if (v.done) put('extras.'+id, {...v, done:false}); } else if (v.done) put('extras.'+id, null); });
+  Object.entries(S.extras).forEach(([id,v]) => { if (!v) return; if (v.cat){ if (v.done || v.got) put('extras.'+id, {...v, done:false, got:false}); } else if (v.done) put('extras.'+id, null); });
   generate();
   toast('New week picked — last week is saved in Past weeks');
   return true;
@@ -1193,7 +1201,7 @@ function viewRecipe(i){
 const hkey = n => n.replace(/\./g, '·');
 function haveBox(list){
   const names = [...new Set(list.map(x => x.name))].sort((a,b) => a.localeCompare(b));
-  const onList = n => extrasList().some(([,v]) => v.staple === n || v.t.toLowerCase() === n.toLowerCase());
+  const onList = n => shopExtras().some(([,v]) => v.staple === n || v.t.toLowerCase() === n.toLowerCase());
   const got = names.filter(n => S.have[hkey(n)] || onList(n)).length;
   return `<section class="card havebox"><div class="xhead"><b>Check you have</b><span class="subx">${got} of ${names.length} sorted</span></div>
     <p class="small" style="margin:2px 0 8px">Cupboard bits the recipes use. Tick what you've got, or add it to the list.</p>
@@ -1202,10 +1210,41 @@ function haveBox(list){
         ${on || have ? '' : `<button class="pill ghost sm" data-act="haveadd" data-n="${esc(n)}">+ Add to list</button>`}</div>`; }).join('')}
   </section>`;
 }
-function endToast(){ const left = shopRows().filter(x=>!isTicked(x.name+'|'+x.u, x.q)).length + extrasList().filter(([,v])=>!v.done).length;
+// Finish shop: save this trip to Past shops, take what you bought off the list, keep what you didn't get
+function finishShop(){
+  const rows = shopRows(), items = [], keys = {}, xs = []; let total = 0;
+  rows.forEach(it => { const key = it.name+'|'+it.u; if (!isTicked(key, it.q)) return;
+    const cost = it.bp ? it.bp.cost : null; if (cost != null) total += cost;
+    items.push({ n: it.prod ? it.prod.n : it.name, need: fmt(it.q,it.u).replace('× ',''), buy: packStr(it.bp) || '', cost });
+    keys[key] = it.q; put('bought.'+key, (S.bought[key] || 0) + it.q); put('ticked.'+key, false); });
+  shopExtras().forEach(([id,v]) => { if (!v.done) return; const x = extraInfo(v); if (x.cost != null) total += x.cost;
+    items.push({ n: v.t, need: '', buy: x.it ? x.it.n : '', cost: x.cost }); xs.push([id, v]);
+    put('extras.'+id, v.cat ? {...v, done:false, got:true} : null); });
+  if (!items.length){ toast('Tick what you bought first'); return false; }
+  const left = shopRows().length + shopExtras().length;
+  put('trips.'+Date.now().toString(36), { at: Date.now(), week: S.week, items, total, keys, xs });
+  put('shopDone', false); untickAll(); save(); route();
+  toast(`Shop saved — ${items.length} bought${total ? ' · '+gbp(total) : ''}. ${left ? `${left} still to get` : 'Nothing left to get'}`);
+  return true;
+}
+// undo a finished shop: put its items back on the list
+function restoreTrip(id){ const tr = S.trips[id]; if (!tr) return;
+  Object.entries(tr.keys || {}).forEach(([k,q]) => put('bought.'+k, Math.max(0, (S.bought[k] || 0) - q)));
+  (tr.xs || []).forEach(([xid, v]) => put('extras.'+xid, {...v, done:false, got:false}));
+  put('trips.'+id, null); save(); route(); toast('Back on the list'); }
+const tripsList = () => Object.entries(S.trips).filter(([,t]) => t && t.at).sort((a,b) => b[1].at - a[1].at);
+function pastShops(){ const ts = tripsList(); if (!ts.length) return '';
+  const day = d => new Date(d).toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' }) + ', ' + new Date(d).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+  return `<section class="card pastshops"><div class="xhead"><b>Past shops</b><span class="subx">${ts.length}</span></div>
+    ${ts.slice(0, 10).map(([id,t], k) => `<details class="trip"><summary><span><b>${day(t.at)}</b><span class="small"> · ${t.items.length} item${t.items.length>1?'s':''}</span></span><span>${t.total ? gbp(t.total) : ''}</span></summary>
+      <ul>${t.items.map(x => `<li><span>${esc(x.n)}${x.buy ? `<span class="small"> · ${esc(x.buy)}</span>` : ''}</span><span class="small">${x.cost != null ? gbp(x.cost) : ''}</span></li>`).join('')}</ul>
+      ${k === 0 && t.week === S.week ? `<button class="pill ghost sm" data-act="untrip" data-id="${id}">Undo — put these back on the list</button>` : ''}</details>`).join('')}
+  </section>`; }
+function endToast(){ const left = shopRows().filter(x=>!isTicked(x.name+'|'+x.u, x.q)).length + shopExtras().filter(([,v])=>!v.done).length;
   return left ? `Shop ended — ${left} thing${left>1?'s':''} still to get` : 'Shop ended — everything bought'; }
 function viewShop(){
-  const done=!!S.shopDone, all=shopRows(), allEx=extrasList(), g=shopping();
+  if (S.shopDone){ put('shopDone', false); save(); }   // old 'shop ended' state from the previous version
+  const done=!!S.shopDone, all=shopRows(), allEx=shopExtras(), g=shopping();
   const got=all.filter(x=>isTicked(x.name+'|'+x.u, x.q)).length + allEx.filter(([,v])=>v.done).length;
   // once the shop is ended, what you bought comes off the list and only what you didn't get stays
   const rows = done ? all.filter(x=>!isTicked(x.name+'|'+x.u, x.q)) : all, ex = done ? allEx.filter(([,v])=>!v.done) : allEx, t=totals(rows);
@@ -1223,8 +1262,8 @@ function viewShop(){
       <div class="stat"><b>${gbp(t.A)}</b><span>Aldi</span></div>
       <div class="stat"><b>${gbp(t.S)}</b><span>Sainsbury's</span></div></div>
     <div class="small" style="margin-top:8px">Prices checked ${PRICED}. ${done ? 'Shop ended — bought items are off the list. Prices above are for what\'s left.' : 'Tap a price to change it to what you paid.'}</div></div>
-  <div class="slidelock ${done?'on':''}" style="--v:${done?100:0}"><span class="sl-text">${done ? 'Shop ended ✓ · slide back to see it all' : 'Slide to end the shop'}</span>
-    <input type="range" id="shoplock" min="0" max="100" step="1" value="${done?100:0}" aria-label="${done?'Shop ended — slide left to bring bought items back':'Slide right to end the shop'}"></div>
+  <div class="slidelock ${done?'on':''}" style="--v:${done?100:0}"><span class="sl-text">${got ? 'Slide to finish the shop' : 'Tick what you buy, then slide to finish'}</span>
+    <input type="range" id="shoplock" min="0" max="100" step="1" value="${done?100:0}" aria-label="Slide right to finish the shop: it's saved to Past shops and what you didn't buy stays on the list"></div>
   <div class="btns" style="margin:14px 0 26px"><button class="pill" data-act="copy">Copy list</button>${got && !done?`<button class="pill ghost" data-act="untick">Untick all</button>`:''}</div>
   ${done && !(rows.length+ex.length) ? '<div class="card" style="text-align:center;padding:22px"><b>All bought ✓</b><p class="small" style="margin-top:4px">Nothing left to get this week.</p></div>' : ''}
   <div class="shopbody">
@@ -1243,6 +1282,7 @@ function viewShop(){
   </section>
   ${shopSec('A')}${shopSec('S')}`}
   ${g.S ? haveBox(g.S) : ''}
+  ${pastShops()}
   </div>`;
 }
 // ---------- In-store view: one list in the order you walk round Aldi ----------
@@ -1290,7 +1330,7 @@ function storeView(rows, full){
       <span class="nm"><span class="pn">${pr ? esc(pr.n) : esc(it.name)}</span><span class="pd">${it.shop==='S' && !/^Sainsbury/.test(pr?pr.n:'')?'<b class="shopS">Sainsbury\'s</b> · ':''}for ${fmt(it.q,it.u).replace('× ','')} in the recipes</span></span>
       ${full ? '' : `<span class="dots">${[...it.days].sort().map(d=>`<i style="${dayStyle(d)}" title="${DAYS[d]}"></i>`).join('')}</span>
       ${bp?`<button class="price ${pr && S.prices[it.name+'|'+lbl]!=null?'edited':''}" data-act="price" data-key="${it.name}" data-label="${lbl}">${gbp(bp.cost)}</button>`:''}`}</label>` }); });
-  extrasList().filter(([,v]) => !(S.shopDone && v.done)).forEach(([id,v]) => { const x=extraInfo(v), it=x.it;
+  shopExtras().filter(([,v]) => !(S.shopDone && v.done)).forEach(([id,v]) => { const x=extraInfo(v), it=x.it;
     const sec = sectionFor(v.t, it && it.n, it && it.a !== 'R' ? it.a : '', '');
     items.push({ sec, sort:v.t, html:`<label class="item ${v.done?'done':''}"><input type="checkbox" data-extra="${id}" ${v.done?'checked':''}>
       <span class="qty"><b>${x.qty}</b>${it && it.sz ? `<small>${esc(it.sz)}</small>` : ''}</span>
@@ -1318,7 +1358,7 @@ function viewStore(){
       <span class="ispct">${pct}%</span></header>
     <div class="isbar"><i style="width:${pct}%"></i></div>
     <div class="isbody">${v.html}</div>
-    ${v.total || S.shopDone ? `<button class="pill isdone" data-act="storedone">${S.shopDone ? 'Back to the list' : v.left ? `End shop — keep ${v.left} on the list` : 'All in — end shop'}</button>` : ''}
+    ${v.total && v.left < v.total ? `<button class="pill isdone" data-act="storedone">${v.left ? `Finish shop — keep ${v.left} on the list` : 'All in — finish shop'}</button>` : ''}
   </div>`;
 }
 
@@ -1862,7 +1902,7 @@ function route(){
 }
 addEventListener('hashchange', ()=>{ route(); scrollTo(0,0); });
 // new version check: GitHub Pages caches for 10 minutes, so look for a newer build and offer a refresh
-const BUILD = '2026-10-25-1210';
+const BUILD = '2026-10-25-1225';
 async function checkUpdate(){ try{ const h = await fetch(location.pathname + '?v=' + Date.now(), { cache:'no-store' }).then(r => r.text());
   const m = h.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD && !$('upd')){ const d = document.createElement('button'); d.id='upd'; d.className='updbar'; d.textContent='New version ready — tap to update'; d.onclick=()=>location.reload(); document.body.appendChild(d); } }catch(e){} }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); }); setTimeout(checkUpdate, 3000);
@@ -1901,7 +1941,8 @@ $('app').addEventListener('click', e=>{
     if(!n){ toast('Type what to swap it for'); f.querySelector('.sw-n').focus(); return; } swapIngredient(i, +b.dataset.k, n, isFinite(q)?q:0, u); return; }
   if(a==='unswap'){ const r=byId(S.plan[i]); if(r && r.variant){ const plan=[...S.plan]; plan[i]=r.base; put('plan',plan); put('mine.'+r.id, {...r, deleted:true}); save(); route(); toast('Back to '+((byId(r.base)||{}).name||'the original')); } return; }
   if(a==='sview'){ if(b.dataset.v==='store'){ goFull(true); location.hash='#/store'; return; } SV='shop'; try{ localStorage.setItem('wc-shopview', SV); }catch(e){} route(); return; }
-  if(a==='storedone'){ if(!S.shopDone){ put('shopDone', true); save(); toast(endToast()); } location.hash='#/shop'; return; }
+  if(a==='storedone'){ if (finishShop()) location.hash='#/shop'; return; }
+  if(a==='untrip'){ restoreTrip(b.dataset.id); return; }
   if(a==='shopped'){ put('shopped.'+i, !S.shopped[i]); save(); route(); toast(S.shopped[i] ? `${DAYS[i]}'s ingredients are off the shopping list` : `${DAYS[i]}'s ingredients are back on the list`); return; }
   if(a==='clear'){ put('shopped.'+i,false); const plan=[...S.plan]; plan[i]=null; put('plan',plan); put('cooked.'+i,false); put('locked.'+i,false); put('lunch.'+i,false); save(); route(); toast(`Cleared ${DAYS[i]}`); }
   if(a==='onday'){ put('on.'+i,true); const plan=[...S.plan]; plan[i]=pick(plan.filter(Boolean),tagsOf(plan)); put('plan',plan); put('cooked.'+i,false); save(); route(); toast(`${DAYS[i]} added — tap Choose to pick something else`); }
@@ -1961,7 +2002,7 @@ $('app').addEventListener('click', e=>{
     const rows=shopRows(), t=totals(rows), g=shopping();
     const txt=['A','S'].map(sh=>{ const l=rows.filter(r=>r.shop===sh); if(!l.length) return '';
       return SHOP[sh].toUpperCase()+` (${gbp(t[sh])})\n`+l.map(r=>`- ${r.prod?r.prod.n:r.name} — ${packStr(r.bp)} ${r.bp?gbp(r.bp.cost):''}`).join('\n'); }).filter(Boolean).join('\n\n')
-      +(extrasList().length?'\n\nALSO\n'+extrasList().map(([,v])=>{ const x=extraInfo(v); return '- '+v.t+(x.it?` (${x.it.n})`:'')+(x.cost!=null?' '+gbp(x.cost):''); }).join('\n'):'')
+      +(shopExtras().length?'\n\nALSO\n'+shopExtras().map(([,v])=>{ const x=extraInfo(v); return '- '+v.t+(x.it?` (${x.it.n})`:'')+(x.cost!=null?' '+gbp(x.cost):''); }).join('\n'):'')
       +(g.S?'\n\nCHECK YOU HAVE\n'+[...new Set(g.S.map(x=>x.name))].map(x=>'- '+x).join('\n'):'')+`\n\nEstimated total ${gbp(t.all)}`;
     navigator.clipboard.writeText(txt).then(()=>toast('List copied')).catch(()=>toast('Copy failed'));
   }
@@ -1983,12 +2024,13 @@ function addExtra(cat){
   (cat ? document.querySelector(`.bin[data-cat="${cat}"]`) : $('xtra'))?.focus(); toast(it ? `Added ${t} — ${gbp(extraInfo(v).cost)} at ${SHOP[it.shop||'A']}` : `Added ${t} — no match, tap £ to price it`);
 }
 const extrasList = () => Object.entries(S.extras).filter(([,v])=>v && v.t);
+const shopExtras = () => extrasList().filter(([,v]) => !v.got);   // breakfast & lunch items already bought this week drop off the shopping list
 $('app').addEventListener('change', e=>{
   if(e.target.classList.contains('a-q') || e.target.classList.contains('a-u')){ const row=e.target.closest('.aedit'), q=parseQty(row.querySelector('.a-q').value);
     editAdded(+e.target.dataset.i, +e.target.dataset.k, isFinite(q)?q:0, row.querySelector('.a-u').value); return; }
   if(e.target.id==='shoplock'){ const v=+e.target.value, on=!!S.shopDone;
-    if(!on && v>=85){ put('shopDone', true); save(); route(); toast(endToast()); }
-    else if(on && v<=15){ put('shopDone', false); save(); route(); toast('Bought items are back on the list'); }
+    if(!on && v>=85){ if (!finishShop()){ e.target.value = 0; e.target.parentElement.style.setProperty('--v', 0); } }
+    else if(on && v<=15){ put('shopDone', false); save(); route(); }
     else { const el=e.target; el.value=on?100:0; el.parentElement.style.setProperty('--v', el.value); }
     return; }
   if(e.target.closest('#rform')){ draftSave(); return; }
@@ -2143,7 +2185,7 @@ function gh(method, body){
 function allPaths(){
   const ps=['plan','week','shopDone']; Object.keys(S.history).forEach(k=>ps.push('history.'+k)); Object.keys(S.settings).forEach(k=>ps.push('settings.'+k));
   for(let i=0;i<7;i++) ps.push('cooked.'+i,'locked.'+i,'lunch.'+i,'on.'+i,'shopped.'+i);
-  ['ticked','prices','extras','mine','loved','sweets','have'].forEach(a=>Object.keys(S[a]).forEach(k=>ps.push(a+'.'+k)));
+  ['ticked','prices','extras','mine','loved','sweets','have','bought','trips'].forEach(a=>Object.keys(S[a]).forEach(k=>ps.push(a+'.'+k)));
   return ps;
 }
 // take whichever side changed each piece most recently
