@@ -395,6 +395,10 @@ ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));colo
 .drow .tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
 .drow .rbody{display:flex;flex-direction:column;flex:1;min-width:0}
 .drow .rtitle{font-size:15px}
+.mk{flex:none;width:26px;height:26px;border-radius:99px;border:2px solid var(--line);display:grid;place-items:center;color:#fff;font-size:14px;font-weight:800}
+.mk.on{background:#0e9a5c;border-color:#0e9a5c}
+.drow.made .rtitle{text-decoration:line-through;color:var(--muted)}
+.drow.made .tile{opacity:.5}
 .bx{flex:none;width:28px;height:28px;border-radius:99px;color:var(--muted);font-size:12px}
 .bx:hover{background:var(--soft);color:var(--ink)}
 .dpick{align-self:flex-start}
@@ -745,7 +749,7 @@ const COL = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)'];
 const DEF = {kcal:2500,protein:160,carbs:260,fat:85,share:30,people:1};
 let S = norm(load());
 function norm(x){ x = x || {};
-  x.settings = {...DEF, ...(x.settings||{})}; x.plan = x.plan||[]; x.locked = x.locked||[]; x.ticked = x.ticked||{}; x.cooked = x.cooked||[]; x.lunch = x.lunch||[]; x.prices = x.prices||{}; x.extras = x.extras||{}; x.history = x.history||{}; x.mine = x.mine||{}; x.loved = x.loved||{}; x.shopped = x.shopped||[]; x.on = Array.isArray(x.on) && x.on.length===7 ? x.on : [...DEF_ON]; while (x.plan.length < 7) x.plan.push(null); x.sweets = x.sweets||{}; x.have = x.have||{}; x.bought = x.bought||{}; x.trips = x.trips||{}; x._mt = x._mt||{};
+  x.settings = {...DEF, ...(x.settings||{})}; x.plan = x.plan||[]; x.locked = x.locked||[]; x.ticked = x.ticked||{}; x.cooked = x.cooked||[]; x.lunch = x.lunch||[]; x.prices = x.prices||{}; x.extras = x.extras||{}; x.history = x.history||{}; x.mine = x.mine||{}; x.loved = x.loved||{}; x.shopped = x.shopped||[]; x.on = Array.isArray(x.on) && x.on.length===7 ? x.on : [...DEF_ON]; while (x.plan.length < 7) x.plan.push(null); x.sweets = x.sweets||{}; x.have = x.have||{}; x.bought = x.bought||{}; x.made = x.made||{}; x.trips = x.trips||{}; x._mt = x._mt||{};
   return x; }
 function load(){ try{ return JSON.parse(localStorage.getItem('wc')); }catch(e){ return null; } }
 function save(push=true){ try{ lastSaved = JSON.stringify(S); localStorage.setItem('wc', lastSaved); }catch(e){} if(push) queuePush(); }
@@ -976,6 +980,7 @@ function rollover(){
   Object.keys(S.have).forEach(k => { if (S.have[k]) put('have.'+k, false); });
   Object.keys(S.bought).forEach(k => { if (S.bought[k]) put('bought.'+k, 0); });   // a new week starts with nothing bought   // check the cupboard again each week
   Object.keys(S.sweets).forEach(id => { if (S.sweets[id]) put('sweets.'+id, false); });
+  Object.keys(S.made).forEach(id => { if (S.made[id]) put('made.'+id, false); });
   // breakfast & lunch items are bought every week: keep them, just untick; one-off added items go once bought
   Object.entries(S.extras).forEach(([id,v]) => { if (!v) return; if (v.cat){ if (v.done || v.got) put('extras.'+id, {...v, done:false, got:false}); } else if (v.done) put('extras.'+id, null); });
   generate();
@@ -1802,8 +1807,9 @@ function saveRecipe(andAdd){
 // ---------- Dessert ----------
 function dessertBento(){
   const list = sweetsList();
-  return `<section class="bento dessert"><div class="bhead"><b>Dessert</b>${list.length?`<span class="small">${list.length}</span>`:''}</div>
-    ${list.length ? `<div class="dlist">${list.map((r,k) => `<a class="drow" href="#/sweet/${r.id}" style="${gradStyle(r,k+3)}"><span class="tile grad">${imgTag(r,'')}</span>
+  const nm = list.filter(r => S.made[r.id]).length;
+  return `<section class="bento dessert"><div class="bhead"><b>Dessert</b>${list.length?`<span class="small">${nm ? `${nm} of ${list.length} made` : list.length}</span>`:''}</div>
+    ${list.length ? `<div class="dlist">${list.map((r,k) => `<a class="drow ${S.made[r.id]?'made':''}" href="#/sweet/${r.id}" style="${gradStyle(r,k+3)}"><button class="mk ${S.made[r.id]?'on':''}" data-act="made" data-id="${r.id}" aria-pressed="${!!S.made[r.id]}" aria-label="${S.made[r.id]?'Made — tap to undo':'Mark '+esc(r.name)+' as made'}">${S.made[r.id]?'✓':''}</button><span class="tile grad">${imgTag(r,'')}</span>
         <span class="rbody"><span class="rtitle">${esc(r.name)}</span><span class="rmeta">≈${k0(r.kcal)} kcal a serving · serves ${r.serves}${isLoved(r.id)?' · <span class="lovedot">♥</span>':''}</span></span>
         <button class="bx" data-act="sweet" data-id="${r.id}" aria-label="Remove ${esc(r.name)}">✕</button></a>`).join('')}</div>`
       : `<span class="small">${D.length ? 'Pick something sweet for the week.' : 'Turn on Household sync in Macros to load the dessert recipes.'}</span>`}
@@ -1835,7 +1841,7 @@ function viewSweet(id){
     ${photoOf(r) ? `<div class="banner grad">${imgTag(r,'')}</div>` : ''}
     <div class="rhead"><div><div class="label" style="margin:2px 0 4px">Dessert · serves ${r.serves}${r.mins?` · ${r.mins} min`:''}</div><h1>${esc(r.name)}</h1></div>${heartBtn(r.id,'big')}</div>
     <div class="sub" style="margin-top:0">${macroLine(r)} a serving</div>
-    <div class="btns" style="margin:0 0 24px"><button class="pill" data-act="sweet" data-id="${r.id}" data-stay="1">${on ? 'Remove from this week' : 'Add to this week'}</button>
+    <div class="btns" style="margin:0 0 24px">${on ? `<button class="pill ${S.made[r.id]?'ghost':''}" data-act="made" data-id="${r.id}">${S.made[r.id] ? 'Made ✓' : 'Mark made'}</button>` : ''}<button class="pill ${on?'ghost':''}" data-act="sweet" data-id="${r.id}" data-stay="1">${on ? 'Remove from this week' : 'Add to this week'}</button>
       <a class="pill ghost" href="${esc(r.src)}" target="_blank" rel="noopener">Method on Mob ↗</a></div>
     <div class="card"><b>Ingredients</b><span class="small"> · whole recipe</span>
       ${r.i.map(([nm,q,u]) => `<div class="item" style="cursor:default"><span class="nm">${esc(nm)}</span><span class="q">${portion(q,u,1,r.serves)}</span></div>`).join('')}</div>
@@ -1902,7 +1908,7 @@ function route(){
 }
 addEventListener('hashchange', ()=>{ route(); scrollTo(0,0); });
 // new version check: GitHub Pages caches for 10 minutes, so look for a newer build and offer a refresh
-const BUILD = '2026-10-25-1225';
+const BUILD = '2026-10-25-1640';
 async function checkUpdate(){ try{ const h = await fetch(location.pathname + '?v=' + Date.now(), { cache:'no-store' }).then(r => r.text());
   const m = h.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD && !$('upd')){ const d = document.createElement('button'); d.id='upd'; d.className='updbar'; d.textContent='New version ready — tap to update'; d.onclick=()=>location.reload(); document.body.appendChild(d); } }catch(e){} }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); }); setTimeout(checkUpdate, 3000);
@@ -1949,6 +1955,7 @@ $('app').addEventListener('click', e=>{
   if(a==='offday'){ put('on.'+i,false); const plan=[...S.plan]; plan[i]=null; put('plan',plan); put('lunch.'+i,false); save(); route(); toast(`${DAYS[i]} taken out of the week`); }
   if(a==='choose'){ PF={q:'',tags:[],n:60}; location.hash='#/pick/'+i; }
   if(a==='setday') setDay(i, b.dataset.id);
+  if(a==='made'){ const id=b.dataset.id; put('made.'+id, !S.made[id]); save(); route(); const r=sweetById(id); if(S.made[id] && r) toast(`${r.name} made`); return; }
   if(a==='sweet'){ const id=b.dataset.id, on=!S.sweets[id], r=sweetById(id); put('sweets.'+id, on); save();
     toast(on ? `${r ? r.name : 'Dessert'} added — ingredients are on the shopping list` : 'Dessert removed');
     if(on && location.hash.startsWith('#/sweets')) location.hash='#/'; else route(); }
@@ -2185,7 +2192,7 @@ function gh(method, body){
 function allPaths(){
   const ps=['plan','week','shopDone']; Object.keys(S.history).forEach(k=>ps.push('history.'+k)); Object.keys(S.settings).forEach(k=>ps.push('settings.'+k));
   for(let i=0;i<7;i++) ps.push('cooked.'+i,'locked.'+i,'lunch.'+i,'on.'+i,'shopped.'+i);
-  ['ticked','prices','extras','mine','loved','sweets','have','bought','trips'].forEach(a=>Object.keys(S[a]).forEach(k=>ps.push(a+'.'+k)));
+  ['ticked','prices','extras','mine','loved','sweets','have','bought','trips','made'].forEach(a=>Object.keys(S[a]).forEach(k=>ps.push(a+'.'+k)));
   return ps;
 }
 // take whichever side changed each piece most recently
