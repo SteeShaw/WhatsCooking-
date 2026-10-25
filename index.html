@@ -1202,9 +1202,13 @@ function haveBox(list){
         ${on || have ? '' : `<button class="pill ghost sm" data-act="haveadd" data-n="${esc(n)}">+ Add to list</button>`}</div>`; }).join('')}
   </section>`;
 }
+function endToast(){ const left = shopRows().filter(x=>!isTicked(x.name+'|'+x.u, x.q)).length + extrasList().filter(([,v])=>!v.done).length;
+  return left ? `Shop ended — ${left} thing${left>1?'s':''} still to get` : 'Shop ended — everything bought'; }
 function viewShop(){
-  const rows=shopRows(), t=totals(rows), g=shopping();
-  const ex=extrasList(), got=rows.filter(x=>isTicked(x.name+'|'+x.u, x.q)).length + ex.filter(([,v])=>v.done).length, done=!!S.shopDone;
+  const done=!!S.shopDone, all=shopRows(), allEx=extrasList(), g=shopping();
+  const got=all.filter(x=>isTicked(x.name+'|'+x.u, x.q)).length + allEx.filter(([,v])=>v.done).length;
+  // once the shop is ended, what you bought comes off the list and only what you didn't get stays
+  const rows = done ? all.filter(x=>!isTicked(x.name+'|'+x.u, x.q)) : all, ex = done ? allEx.filter(([,v])=>!v.done) : allEx, t=totals(rows);
   const shopSec = sh => {
     const list=rows.filter(r=>r.shop===sh); if(!list.length) return '';
     const left=list.filter(r=>r.a==='M'||r.a==='V'), right=list.filter(r=>r.a==='D'||r.a==='C');
@@ -1213,16 +1217,17 @@ function viewShop(){
       <div class="grid">${list.length>6?`<div>${col(left)}</div><div>${col(right)}</div>`:`<div>${col(list)}</div>`}</div></section>`;
   };
   return `<h1>Shopping</h1>
-  <div class="sub">${got} of ${rows.length+ex.length} in the basket · for ${weekRange()}${lunches()?` · includes ${lunches()} lunch${lunches()>1?'es':''}`:''}</div>
+  <div class="sub">${done ? `${got} bought · ${rows.length+ex.length ? `${rows.length+ex.length} still to get` : 'nothing left to get'}` : `${got} of ${rows.length+ex.length} in the basket`} · for ${weekRange()}${lunches()?` · includes ${lunches()} lunch${lunches()>1?'es':''}`:''}</div>
   <div class="card totals"><div class="stats">
       <div class="stat"><b>${gbp(t.all)}</b><span>estimated total</span></div>
       <div class="stat"><b>${gbp(t.A)}</b><span>Aldi</span></div>
       <div class="stat"><b>${gbp(t.S)}</b><span>Sainsbury's</span></div></div>
-    <div class="small" style="margin-top:8px">Prices checked ${PRICED}. ${done ? 'Shop done — the list is locked.' : 'Tap a price to change it to what you paid.'}</div></div>
-  <div class="slidelock ${done?'on':''}" style="--v:${done?100:0}"><span class="sl-text">${done ? 'Shop done ✓ · slide to unlock' : 'Slide when the shop\'s done'}</span>
-    <input type="range" id="shoplock" min="0" max="100" step="1" value="${done?100:0}" aria-label="${done?'Shop done — slide left to unlock the list':'Slide right when the shop is done'}"></div>
+    <div class="small" style="margin-top:8px">Prices checked ${PRICED}. ${done ? 'Shop ended — bought items are off the list. Prices above are for what\'s left.' : 'Tap a price to change it to what you paid.'}</div></div>
+  <div class="slidelock ${done?'on':''}" style="--v:${done?100:0}"><span class="sl-text">${done ? 'Shop ended ✓ · slide back to see it all' : 'Slide to end the shop'}</span>
+    <input type="range" id="shoplock" min="0" max="100" step="1" value="${done?100:0}" aria-label="${done?'Shop ended — slide left to bring bought items back':'Slide right to end the shop'}"></div>
   <div class="btns" style="margin:14px 0 26px"><button class="pill" data-act="copy">Copy list</button>${got && !done?`<button class="pill ghost" data-act="untick">Untick all</button>`:''}</div>
-  <div class="shopbody ${done?'locked':''}" ${done?'inert':''}>
+  ${done && !(rows.length+ex.length) ? '<div class="card" style="text-align:center;padding:22px"><b>All bought ✓</b><p class="small" style="margin-top:4px">Nothing left to get this week.</p></div>' : ''}
+  <div class="shopbody">
   <div class="seg" role="tablist"><button class="${SV==='shop'?'on':''}" data-act="sview" data-v="shop" role="tab">By shop</button><button class="${SV==='store'?'on':''}" data-act="sview" data-v="store" role="tab">In store</button></div>
   ${SV==='store' ? storeView(rows) : `<section class="card extras"><div class="xhead"><b>Added items</b>${ex.length?`<span class="subx">${gbp(t.X)}</span>`:''}</div>
     <div class="addrow"><input id="xtra" placeholder="Milk, bin bags, snacks…" autocomplete="off" enterkeyhint="done"><button class="pill" data-act="addx">Add</button></div>
@@ -1277,6 +1282,7 @@ function qtyBadge(bp, it){
 }
 function storeView(rows, full){
   const items = [];
+  if (S.shopDone) rows = rows.filter(it => !isTicked(it.name+'|'+it.u, it.q));   // shop ended: only what wasn't bought
   rows.forEach(it => { const key=it.name+'|'+it.u, pr=it.prod, bp=it.bp, lbl = bp ? (bp.perKg ? 'kg' : bp.buy[bp.buy.length-1].label) : '';
     const sec = it.a==='V' ? ['fv'] : sectionFor(it.name, pr && pr.n, '', it.a==='M' ? 'M' : it.a==='D' ? 'D' : '');
     items.push({ sec, sort:(pr?pr.n:it.name), html:`<label class="item ${isTicked(key,it.q)?'done':''}"><input type="checkbox" data-key="${key}" data-q="${it.q}" ${isTicked(key,it.q)?'checked':''}>
@@ -1284,7 +1290,7 @@ function storeView(rows, full){
       <span class="nm"><span class="pn">${pr ? esc(pr.n) : esc(it.name)}</span><span class="pd">${it.shop==='S' && !/^Sainsbury/.test(pr?pr.n:'')?'<b class="shopS">Sainsbury\'s</b> · ':''}for ${fmt(it.q,it.u).replace('× ','')} in the recipes</span></span>
       ${full ? '' : `<span class="dots">${[...it.days].sort().map(d=>`<i style="${dayStyle(d)}" title="${DAYS[d]}"></i>`).join('')}</span>
       ${bp?`<button class="price ${pr && S.prices[it.name+'|'+lbl]!=null?'edited':''}" data-act="price" data-key="${it.name}" data-label="${lbl}">${gbp(bp.cost)}</button>`:''}`}</label>` }); });
-  extrasList().forEach(([id,v]) => { const x=extraInfo(v), it=x.it;
+  extrasList().filter(([,v]) => !(S.shopDone && v.done)).forEach(([id,v]) => { const x=extraInfo(v), it=x.it;
     const sec = sectionFor(v.t, it && it.n, it && it.a !== 'R' ? it.a : '', '');
     items.push({ sec, sort:v.t, html:`<label class="item ${v.done?'done':''}"><input type="checkbox" data-extra="${id}" ${v.done?'checked':''}>
       <span class="qty"><b>${x.qty}</b>${it && it.sz ? `<small>${esc(it.sz)}</small>` : ''}</span>
@@ -1311,8 +1317,8 @@ function viewStore(){
       <div class="istitle"><b>${v.left ? `${v.left} to get` : 'All done'}</b><span>${done} of ${v.total} in the basket</span></div>
       <span class="ispct">${pct}%</span></header>
     <div class="isbar"><i style="width:${pct}%"></i></div>
-    <div class="isbody ${S.shopDone?'locked':''}" ${S.shopDone?'inert':''}>${v.html}</div>
-    ${v.total ? `<button class="pill isdone" data-act="storedone">${S.shopDone ? 'Shop done ✓ — back to the list' : v.left ? 'Finish shop' : 'All in — finish shop'}</button>` : ''}
+    <div class="isbody">${v.html}</div>
+    ${v.total || S.shopDone ? `<button class="pill isdone" data-act="storedone">${S.shopDone ? 'Back to the list' : v.left ? `End shop — keep ${v.left} on the list` : 'All in — end shop'}</button>` : ''}
   </div>`;
 }
 
@@ -1856,7 +1862,7 @@ function route(){
 }
 addEventListener('hashchange', ()=>{ route(); scrollTo(0,0); });
 // new version check: GitHub Pages caches for 10 minutes, so look for a newer build and offer a refresh
-const BUILD = '2026-10-25-0940';
+const BUILD = '2026-10-25-1210';
 async function checkUpdate(){ try{ const h = await fetch(location.pathname + '?v=' + Date.now(), { cache:'no-store' }).then(r => r.text());
   const m = h.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD && !$('upd')){ const d = document.createElement('button'); d.id='upd'; d.className='updbar'; d.textContent='New version ready — tap to update'; d.onclick=()=>location.reload(); document.body.appendChild(d); } }catch(e){} }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); }); setTimeout(checkUpdate, 3000);
@@ -1895,7 +1901,7 @@ $('app').addEventListener('click', e=>{
     if(!n){ toast('Type what to swap it for'); f.querySelector('.sw-n').focus(); return; } swapIngredient(i, +b.dataset.k, n, isFinite(q)?q:0, u); return; }
   if(a==='unswap'){ const r=byId(S.plan[i]); if(r && r.variant){ const plan=[...S.plan]; plan[i]=r.base; put('plan',plan); put('mine.'+r.id, {...r, deleted:true}); save(); route(); toast('Back to '+((byId(r.base)||{}).name||'the original')); } return; }
   if(a==='sview'){ if(b.dataset.v==='store'){ goFull(true); location.hash='#/store'; return; } SV='shop'; try{ localStorage.setItem('wc-shopview', SV); }catch(e){} route(); return; }
-  if(a==='storedone'){ if(!S.shopDone){ put('shopDone', true); save(); toast('Shop done — list locked'); } location.hash='#/shop'; return; }
+  if(a==='storedone'){ if(!S.shopDone){ put('shopDone', true); save(); toast(endToast()); } location.hash='#/shop'; return; }
   if(a==='shopped'){ put('shopped.'+i, !S.shopped[i]); save(); route(); toast(S.shopped[i] ? `${DAYS[i]}'s ingredients are off the shopping list` : `${DAYS[i]}'s ingredients are back on the list`); return; }
   if(a==='clear'){ put('shopped.'+i,false); const plan=[...S.plan]; plan[i]=null; put('plan',plan); put('cooked.'+i,false); put('locked.'+i,false); put('lunch.'+i,false); save(); route(); toast(`Cleared ${DAYS[i]}`); }
   if(a==='onday'){ put('on.'+i,true); const plan=[...S.plan]; plan[i]=pick(plan.filter(Boolean),tagsOf(plan)); put('plan',plan); put('cooked.'+i,false); save(); route(); toast(`${DAYS[i]} added — tap Choose to pick something else`); }
@@ -1981,8 +1987,8 @@ $('app').addEventListener('change', e=>{
   if(e.target.classList.contains('a-q') || e.target.classList.contains('a-u')){ const row=e.target.closest('.aedit'), q=parseQty(row.querySelector('.a-q').value);
     editAdded(+e.target.dataset.i, +e.target.dataset.k, isFinite(q)?q:0, row.querySelector('.a-u').value); return; }
   if(e.target.id==='shoplock'){ const v=+e.target.value, on=!!S.shopDone;
-    if(!on && v>=85){ put('shopDone', true); save(); route(); toast('Shop done — list locked'); }
-    else if(on && v<=15){ put('shopDone', false); save(); route(); toast('List unlocked'); }
+    if(!on && v>=85){ put('shopDone', true); save(); route(); toast(endToast()); }
+    else if(on && v<=15){ put('shopDone', false); save(); route(); toast('Bought items are back on the list'); }
     else { const el=e.target; el.value=on?100:0; el.parentElement.style.setProperty('--v', el.value); }
     return; }
   if(e.target.closest('#rform')){ draftSave(); return; }
