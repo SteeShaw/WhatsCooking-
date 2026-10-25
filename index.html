@@ -844,8 +844,8 @@ function palette(r){
   // random but stable per recipe: hash the id, then pick two hues anywhere on the wheel
   let h = 2166136261; for (const ch of key) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; }
   const rnd = () => { h ^= h << 13; h >>>= 0; h ^= h >> 17; h ^= h << 5; h >>>= 0; return h / 4294967296; };
-  // 12 hue families that each look distinct (the raw wheel has a huge stretch of green)
-  const FAM = [2, 20, 38, 52, 80, 135, 172, 198, 222, 255, 282, 318];
+  // 12 hue families, weighted towards warm reds, pinks and purples — evenly spaced families made 5 of 12 green, teal or blue
+  const FAM = [0, 15, 30, 45, 110, 170, 205, 240, 265, 290, 320, 342];
   const i1 = Math.floor(rnd() * 12), step = [2,3,4,5,7,8,9,10][Math.floor(rnd() * 8)];  // skip neighbours and direct opposites
   const h1 = FAM[i1] + (rnd()*10 - 5), h2 = FAM[(i1 + step) % 12] + (rnd()*10 - 5);
   const second = rnd() < .25 ? '#ffffff' : hsl2hex(h2, 85 + rnd()*10, 56 + rnd()*8);
@@ -1790,7 +1790,7 @@ function route(){
 }
 addEventListener('hashchange', ()=>{ route(); scrollTo(0,0); });
 // new version check: GitHub Pages caches for 10 minutes, so look for a newer build and offer a refresh
-const BUILD = '2026-10-25-0750';
+const BUILD = '2026-10-25-0800';
 async function checkUpdate(){ try{ const h = await fetch(location.pathname + '?v=' + Date.now(), { cache:'no-store' }).then(r => r.text());
   const m = h.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD && !$('upd')){ const d = document.createElement('button'); d.id='upd'; d.className='updbar'; d.textContent='New version ready — tap to update'; d.onclick=()=>location.reload(); document.body.appendChild(d); } }catch(e){} }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); }); setTimeout(checkUpdate, 3000);
