@@ -849,11 +849,13 @@ function palette(r){
   const i1 = Math.floor(rnd() * 8), j = (i1 + [2,3,5,6][Math.floor(rnd() * 4)]) % 8;   // second colour: 2-3 colours away either way
   const white = rnd() < .2, dimOf = i => (i === 3 || i === 4) ? 10 : 0;   // greens and teals look brighter, so darken them to match
   const h1 = FAM[i1] + (rnd()*6 - 3), h2 = FAM[j] + (rnd()*6 - 3);
-  const s1 = 82 + rnd()*10, s2 = 82 + rnd()*10, l1 = 52 + rnd()*6 - dimOf(i1), l2 = 54 + rnd()*6 - dimOf(j);
+  // softer, slightly pastel; greens and teals get a little less saturation again
+  const satOf = i => (i === 3 || i === 4) ? 48 : 68;
+  const s1 = satOf(i1) + rnd()*8, s2 = satOf(j) + rnd()*8, l1 = 66 + rnd()*5 - dimOf(i1)/2, l2 = 70 + rnd()*5 - dimOf(j)/2;
   const a = hsl2hex(h1, s1, l1), b = white ? '#ffffff' : hsl2hex(h2, s2, l2);
   // the middle of the blend goes the short way round the wheel between the two colours
   const d = ((h2 - h1) % 360 + 540) % 360 - 180;
-  const mid = white ? hsl2hex(h1, s1, 78) : hsl2hex((h1 + d/2 + 360) % 360, 92, Math.max(l1, l2) + 4);
+  const mid = white ? hsl2hex(h1, s1, 84) : hsl2hex((h1 + d/2 + 360) % 360, (s1 + s2) / 2, Math.max(l1, l2) + 2);
   return palCache[key] = [a, b, mid];
 }
 const lum = hex => { const n = parseInt(hex.slice(1),16), c = [n>>16, n>>8&255, n&255].map(v => { v/=255; return v<=.03928 ? v/12.92 : ((v+.055)/1.055)**2.4; }); return .2126*c[0]+.7152*c[1]+.0722*c[2]; };
@@ -1795,7 +1797,7 @@ function route(){
 }
 addEventListener('hashchange', ()=>{ route(); scrollTo(0,0); });
 // new version check: GitHub Pages caches for 10 minutes, so look for a newer build and offer a refresh
-const BUILD = '2026-10-25-0820';
+const BUILD = '2026-10-25-0830';
 async function checkUpdate(){ try{ const h = await fetch(location.pathname + '?v=' + Date.now(), { cache:'no-store' }).then(r => r.text());
   const m = h.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD && !$('upd')){ const d = document.createElement('button'); d.id='upd'; d.className='updbar'; d.textContent='New version ready — tap to update'; d.onclick=()=>location.reload(); document.body.appendChild(d); } }catch(e){} }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); }); setTimeout(checkUpdate, 3000);
