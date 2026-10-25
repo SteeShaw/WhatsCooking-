@@ -196,17 +196,17 @@ ol.method li::before{content:counter(s);flex:none;width:26px;height:26px;border-
 .srclink{margin-top:14px}
 
 /* ethereal, slowly drifting gradients coloured by each recipe */
-.grad{position:relative;overflow:hidden;isolation:isolate;background:linear-gradient(140deg,var(--g1),var(--gm,var(--g1)),var(--g2))}
+.grad{position:relative;overflow:hidden;isolation:isolate;background:linear-gradient(var(--ga,140deg),var(--g1),var(--gm,var(--g1)),var(--g2))}
 .grad::before,.grad::after{content:"";position:absolute;inset:-35%;z-index:-1;pointer-events:none}
 .grad::before{background:
-  radial-gradient(closest-side at 28% 30%,var(--g1),transparent 80%),
-  radial-gradient(closest-side at 74% 72%,var(--g2),transparent 80%);
-  filter:blur(70px) saturate(1.35);animation:drift 22s ease-in-out infinite alternate;animation-delay:var(--d,0s)}
+  radial-gradient(closest-side at var(--p1,28% 30%),var(--g1),transparent 80%),
+  radial-gradient(closest-side at var(--p2,74% 72%),var(--g2),transparent 80%);
+  filter:blur(70px);animation:drift 22s ease-in-out infinite alternate;animation-delay:var(--d,0s)}
 .grad::after{background:
   radial-gradient(closest-side at 55% 45%,var(--g2),transparent 70%),
   radial-gradient(closest-side at 15% 30%,var(--g4),transparent 70%);
   filter:blur(80px);opacity:0;mix-blend-mode:screen;display:none;animation:drift2 30s ease-in-out infinite alternate;animation-delay:var(--d,0s)}
-.tile.grad::before{filter:blur(14px) saturate(1.35)} .tile.grad::after{filter:blur(16px)}
+.tile.grad::before{filter:blur(14px)} .tile.grad::after{filter:blur(16px)}
 .progress i.grad::before{filter:blur(4px)} .progress i.grad::after{display:none}
 .dots i{overflow:hidden;position:relative;background:linear-gradient(135deg,var(--g1),var(--g3))}
 .hero.grad{box-shadow:0 18px 40px -18px color-mix(in srgb,var(--g2) 70%,transparent)}
@@ -839,30 +839,31 @@ function hsl2hex(h, s, l){ h=((h%360)+360)%360; if (h > 60 && h < 170) { l -= 12
   const k=n=>(n+h/30)%12, a=s*Math.min(l,1-l), f=n=>l-a*Math.max(-1,Math.min(k(n)-3,9-k(n),1));
   return '#'+[f(0),f(8),f(4)].map(x=>Math.round(x*255).toString(16).padStart(2,'0')).join(''); }
 const palCache = {};
+// hand-picked gradient pairs, each used by an equal share of recipes
+const GRADS = [
+  ['#ffb38a','#ff7eb3'], ['#f6d365','#fda085'], ['#ff9a8b','#a88beb'], ['#fbc2eb','#a6c1ee'],
+  ['#a18cd1','#fbc2eb'], ['#8ec5fc','#e0c3fc'], ['#84fab0','#8fd3f4'], ['#a8edea','#fed6e3'],
+  ['#ff9966','#ff5e62'], ['#f093fb','#f5576c'], ['#667eea','#c39be8'], ['#ffe29f','#ffa99f'],
+  ['#5b8def','#9fe0f5'], ['#eecda3','#ef629f'], ['#43c6ac','#f8ffae'], ['#fad0c4','#ffd1ff'],
+  ['#7f7fd5','#91eae4'], ['#ff6fd8','#ffc796'], ['#c2e59c','#64b3f4'], ['#fccb90','#d57eeb'],
+  ['#e96443','#f9b16e'], ['#96fbc4','#f9f586'], ['#4facfe','#c2a5f9'], ['#f78ca0','#f9d29d'],
+];
+// a few directions: [angle, where the first colour glows, where the second glows]
+const DIRS = [[135,'25% 25%','75% 75%'], [45,'25% 75%','75% 25%'], [180,'50% 15%','50% 85%'], [90,'15% 50%','85% 50%'], [315,'75% 75%','25% 25%'], [225,'75% 25%','25% 75%']];
+const mixHex = (x, y) => '#' + [1,3,5].map(k => Math.round((parseInt(x.substr(k,2),16) + parseInt(y.substr(k,2),16)) / 2).toString(16).padStart(2,'0')).join('');
 function palette(r){
   const key = r ? r.id : 'none'; if (palCache[key]) return palCache[key];
-  // random but stable per recipe: hash the id, then pick two hues anywhere on the wheel
   let h = 2166136261; for (const ch of key) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; }
   const rnd = () => { h ^= h << 13; h >>>= 0; h ^= h >> 17; h ^= h << 5; h >>>= 0; return h / 4294967296; };
-  // 8 colours, each the main colour of an equal share of recipes: red, orange, yellow, green, teal, blue, purple, pink
-  const FAM = [2, 28, 50, 135, 170, 218, 270, 325];
-  const i1 = Math.floor(rnd() * 8), j = (i1 + [2,3,5,6][Math.floor(rnd() * 4)]) % 8;   // second colour: 2-3 colours away either way
-  const white = rnd() < .2, dimOf = i => (i === 3 || i === 4) ? 10 : 0;   // greens and teals look brighter, so darken them to match
-  const h1 = FAM[i1] + (rnd()*6 - 3), h2 = FAM[j] + (rnd()*6 - 3);
-  // softer, slightly pastel; greens and teals get a little less saturation again
-  const satOf = i => (i === 3 || i === 4) ? 48 : 68;
-  const s1 = satOf(i1) + rnd()*8, s2 = satOf(j) + rnd()*8, l1 = 66 + rnd()*5 - dimOf(i1)/2, l2 = 70 + rnd()*5 - dimOf(j)/2;
-  const a = hsl2hex(h1, s1, l1), b = white ? '#ffffff' : hsl2hex(h2, s2, l2);
-  // the middle of the blend goes the short way round the wheel between the two colours
-  const d = ((h2 - h1) % 360 + 540) % 360 - 180;
-  const mid = white ? hsl2hex(h1, s1, 84) : hsl2hex((h1 + d/2 + 360) % 360, (s1 + s2) / 2, Math.max(l1, l2) + 2);
-  return palCache[key] = [a, b, mid];
+  let [a, b] = GRADS[Math.floor(rnd() * GRADS.length)];
+  if (rnd() < .5) [a, b] = [b, a];
+  return palCache[key] = [a, b, mixHex(a, b), DIRS[Math.floor(rnd() * DIRS.length)]];
 }
 const lum = hex => { const n = parseInt(hex.slice(1),16), c = [n>>16, n>>8&255, n&255].map(v => { v/=255; return v<=.03928 ? v/12.92 : ((v+.055)/1.055)**2.4; }); return .2126*c[0]+.7152*c[1]+.0722*c[2]; };
 function gradStyle(r, i){
-  const [a, b, m] = palette(r), g = [a, b, a, b];
+  const [a, b, m, [ang, p1, p2]] = palette(r), g = [a, b, a, b];
   const dark = (lum(a) + lum(b)) / 2 > .5;
-  return `--c:${g[0]};--g1:${g[0]};--g2:${g[1]};--g3:${g[2]};--g4:${g[3]};--gm:${m};--on:${dark ? '#14110d' : '#fff'};--off:${dark ? '#fff' : '#14110d'};--d:${-(i*3.7 % 17).toFixed(1)}s`;
+  return `--c:${g[0]};--g1:${g[0]};--g2:${g[1]};--g3:${g[2]};--g4:${g[3]};--gm:${m};--ga:${ang}deg;--p1:${p1};--p2:${p2};--on:${dark ? '#14110d' : '#fff'};--off:${dark ? '#fff' : '#14110d'};--d:${-(i*3.7 % 17).toFixed(1)}s`;
 }
 const LOCK_SVG = on => on
   ? '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M7 10V7a5 5 0 0 1 10 0v3h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/></svg>'
@@ -1797,7 +1798,7 @@ function route(){
 }
 addEventListener('hashchange', ()=>{ route(); scrollTo(0,0); });
 // new version check: GitHub Pages caches for 10 minutes, so look for a newer build and offer a refresh
-const BUILD = '2026-10-25-0830';
+const BUILD = '2026-10-25-0840';
 async function checkUpdate(){ try{ const h = await fetch(location.pathname + '?v=' + Date.now(), { cache:'no-store' }).then(r => r.text());
   const m = h.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD && !$('upd')){ const d = document.createElement('button'); d.id='upd'; d.className='updbar'; d.textContent='New version ready — tap to update'; d.onclick=()=>location.reload(); document.body.appendChild(d); } }catch(e){} }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); }); setTimeout(checkUpdate, 3000);
