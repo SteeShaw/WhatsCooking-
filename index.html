@@ -346,6 +346,10 @@ ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));colo
 .rhead{display:flex;align-items:flex-start;gap:12px}
 .lovedot{color:#e8366b}
 .plabel{margin:16px 0 0}
+.havebox .hv{display:flex;align-items:center;gap:10px}
+.havebox .hvl{display:flex;align-items:center;gap:12px;flex:1;min-width:0;cursor:pointer}
+.pill.sm{padding:6px 12px;font-size:13px;flex:none}
+.havebox .onl{flex:none;font-size:13px;font-weight:700;color:#0e9a5c;padding:6px 4px}
 /* recipe picker: photo-first cards */
 .pgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px;margin-top:8px}
 @media (min-width:700px){.pgrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px 16px}}
@@ -736,7 +740,7 @@ const COL = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)'];
 const DEF = {kcal:2500,protein:160,carbs:260,fat:85,share:30,people:1};
 let S = norm(load());
 function norm(x){ x = x || {};
-  x.settings = {...DEF, ...(x.settings||{})}; x.plan = x.plan||[]; x.locked = x.locked||[]; x.ticked = x.ticked||{}; x.cooked = x.cooked||[]; x.lunch = x.lunch||[]; x.prices = x.prices||{}; x.extras = x.extras||{}; x.history = x.history||{}; x.mine = x.mine||{}; x.loved = x.loved||{}; x.shopped = x.shopped||[]; x.on = Array.isArray(x.on) && x.on.length===7 ? x.on : [...DEF_ON]; while (x.plan.length < 7) x.plan.push(null); x.sweets = x.sweets||{}; x._mt = x._mt||{};
+  x.settings = {...DEF, ...(x.settings||{})}; x.plan = x.plan||[]; x.locked = x.locked||[]; x.ticked = x.ticked||{}; x.cooked = x.cooked||[]; x.lunch = x.lunch||[]; x.prices = x.prices||{}; x.extras = x.extras||{}; x.history = x.history||{}; x.mine = x.mine||{}; x.loved = x.loved||{}; x.shopped = x.shopped||[]; x.on = Array.isArray(x.on) && x.on.length===7 ? x.on : [...DEF_ON]; while (x.plan.length < 7) x.plan.push(null); x.sweets = x.sweets||{}; x.have = x.have||{}; x._mt = x._mt||{};
   return x; }
 function load(){ try{ return JSON.parse(localStorage.getItem('wc')); }catch(e){ return null; } }
 function save(push=true){ try{ lastSaved = JSON.stringify(S); localStorage.setItem('wc', lastSaved); }catch(e){} if(push) queuePush(); }
@@ -962,6 +966,7 @@ function rollover(){
   put('week', cur);
   DAYS.forEach((_,i) => { put('locked.'+i, false); put('lunch.'+i, false); put('on.'+i, DEF_ON[i]); put('shopped.'+i, false); });
   put('shopDone', false);
+  Object.keys(S.have).forEach(k => { if (S.have[k]) put('have.'+k, false); });   // check the cupboard again each week
   Object.keys(S.sweets).forEach(id => { if (S.sweets[id]) put('sweets.'+id, false); });
   // breakfast & lunch items are bought every week: keep them, just untick; one-off added items go once bought
   Object.entries(S.extras).forEach(([id,v]) => { if (!v) return; if (v.cat){ if (v.done) put('extras.'+id, {...v, done:false}); } else if (v.done) put('extras.'+id, null); });
@@ -1184,6 +1189,19 @@ function viewRecipe(i){
   </div>`;
 }
 
+// "Check you have": cupboard staples the recipes use — tick the ones you've got, or put one on the list
+const hkey = n => n.replace(/\./g, '·');
+function haveBox(list){
+  const names = [...new Set(list.map(x => x.name))].sort((a,b) => a.localeCompare(b));
+  const onList = n => extrasList().some(([,v]) => v.staple === n || v.t.toLowerCase() === n.toLowerCase());
+  const got = names.filter(n => S.have[hkey(n)] || onList(n)).length;
+  return `<section class="card havebox"><div class="xhead"><b>Check you have</b><span class="subx">${got} of ${names.length} sorted</span></div>
+    <p class="small" style="margin:2px 0 8px">Cupboard bits the recipes use. Tick what you've got, or add it to the list.</p>
+    ${names.map(n => { const have = !!S.have[hkey(n)], on = onList(n);
+      return `<div class="item hv ${have?'done':''}"><label class="hvl"><input type="checkbox" data-have="${esc(hkey(n))}" ${have?'checked':''} ${on?'disabled':''}><span class="nm"><span class="pn">${esc(n)}</span></span></label>${on?'<span class="onl">✓ On the list</span>':''}
+        ${on || have ? '' : `<button class="pill ghost sm" data-act="haveadd" data-n="${esc(n)}">+ Add to list</button>`}</div>`; }).join('')}
+  </section>`;
+}
 function viewShop(){
   const rows=shopRows(), t=totals(rows), g=shopping();
   const ex=extrasList(), got=rows.filter(x=>isTicked(x.name+'|'+x.u, x.q)).length + ex.filter(([,v])=>v.done).length, done=!!S.shopDone;
@@ -1219,7 +1237,7 @@ function viewShop(){
     ${ex.length?`<div class="btns" style="margin-top:10px"><button class="pill" data-act="checkx">Check prices</button></div>`:''}
   </section>
   ${shopSec('A')}${shopSec('S')}`}
-  ${g.S?`<div class="card small"><b style="color:var(--ink)">Check you have</b><p style="margin-top:4px">${[...new Set(g.S.map(x=>x.name))].map(esc).join(', ')}</p></div>`:''}
+  ${g.S ? haveBox(g.S) : ''}
   </div>`;
 }
 // ---------- In-store view: one list in the order you walk round Aldi ----------
@@ -1838,7 +1856,7 @@ function route(){
 }
 addEventListener('hashchange', ()=>{ route(); scrollTo(0,0); });
 // new version check: GitHub Pages caches for 10 minutes, so look for a newer build and offer a refresh
-const BUILD = '2026-10-25-0930';
+const BUILD = '2026-10-25-0940';
 async function checkUpdate(){ try{ const h = await fetch(location.pathname + '?v=' + Date.now(), { cache:'no-store' }).then(r => r.text());
   const m = h.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD && !$('upd')){ const d = document.createElement('button'); d.id='upd'; d.className='updbar'; d.textContent='New version ready — tap to update'; d.onclick=()=>location.reload(); document.body.appendChild(d); } }catch(e){} }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); }); setTimeout(checkUpdate, 3000);
@@ -1897,6 +1915,7 @@ $('app').addEventListener('click', e=>{
   if(a==='lock'){ put('locked.'+i,!S.locked[i]); save(); route(); toast(S.locked[i] ? `${DAYS[i]} locked — it stays when you shuffle` : `${DAYS[i]} unlocked`); }
   if(a==='lunch') setLunch(i,!S.lunch[i]);
   if(a==='untick'){ untickAll(); Object.entries(S.extras).forEach(([id,v])=>{ if(v&&v.done) put('extras.'+id,{...v,done:false}); }); save(); route(); }
+  if(a==='haveadd'){ const n=b.dataset.n, v=matchExtra({t:n, done:false, staple:n}), it=v.m?byKey(v.m):null; put('extras.'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), v); save(); route(); toast(it ? `Added ${n} — ${gbp(extraInfo(v).cost)} at ${SHOP[it.shop||'A']}` : `Added ${n} to the list`); return; }
   if(a==='addx') addExtra();
   if(a==='addcat') addExtra(b.dataset.cat);
   if(a==='delx'){ put('extras.'+b.dataset.id,null); save(); route(); }
@@ -1967,6 +1986,7 @@ $('app').addEventListener('change', e=>{
     else { const el=e.target; el.value=on?100:0; el.parentElement.style.setProperty('--v', el.value); }
     return; }
   if(e.target.closest('#rform')){ draftSave(); return; }
+  const hv=e.target.dataset.have; if(hv){ put('have.'+hv, e.target.checked); save(); route(); return; }
   const x=e.target.dataset.extra; if(x){ put('extras.'+x,{...S.extras[x],done:e.target.checked}); save(); route(); return; }
   const k=e.target.dataset.key; if(!k) return; put('ticked.'+k, e.target.checked ? (+e.target.dataset.q || true) : false); save(); route();
 });
@@ -2117,7 +2137,7 @@ function gh(method, body){
 function allPaths(){
   const ps=['plan','week','shopDone']; Object.keys(S.history).forEach(k=>ps.push('history.'+k)); Object.keys(S.settings).forEach(k=>ps.push('settings.'+k));
   for(let i=0;i<7;i++) ps.push('cooked.'+i,'locked.'+i,'lunch.'+i,'on.'+i,'shopped.'+i);
-  ['ticked','prices','extras','mine','loved','sweets'].forEach(a=>Object.keys(S[a]).forEach(k=>ps.push(a+'.'+k)));
+  ['ticked','prices','extras','mine','loved','sweets','have'].forEach(a=>Object.keys(S[a]).forEach(k=>ps.push(a+'.'+k)));
   return ps;
 }
 // take whichever side changed each piece most recently
