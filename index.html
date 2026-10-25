@@ -346,6 +346,25 @@ ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));colo
 .rhead{display:flex;align-items:flex-start;gap:12px}
 .lovedot{color:#e8366b}
 .plabel{margin:16px 0 0}
+/* recipe picker: photo-first cards */
+.pgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px;margin-top:8px}
+@media (min-width:700px){.pgrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px 16px}}
+@media (min-width:960px){.pgrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.pgrid .plabel{grid-column:1/-1;margin:14px 0 -6px}
+.pcard{cursor:pointer;min-width:0;outline:none}
+.pimg{position:relative;aspect-ratio:1/1;border-radius:20px;overflow:hidden;background:var(--c);transition:transform .15s}
+.pimg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
+.pcard:hover .pimg,.pcard:focus-visible .pimg{transform:scale(1.02)}
+.pcard:active .pimg{transform:scale(.98)}
+.pcard.active .pimg{box-shadow:0 0 0 3px var(--bg),0 0 0 6px var(--ink)}
+.heart.onimg{position:absolute;top:8px;right:8px;z-index:2;background:rgba(255,255,255,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#14110d}
+.heart.onimg.on{color:#e8366b}
+.pon{position:absolute;left:8px;bottom:8px;z-index:2;background:rgba(20,17,13,.78);color:#fff;font-size:12px;font-weight:700;padding:5px 10px;border-radius:99px;backdrop-filter:blur(8px)}
+.pbody{padding:10px 2px 0}
+.pbody .rday{font-size:11px}
+.ptitle{font-weight:700;font-size:15px;line-height:1.25;margin:3px 0 4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pbody .rmeta{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
 /* breakfast & lunch bentos */
 .bentos{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
 .bento{background:var(--soft);border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
@@ -1727,11 +1746,10 @@ function sweetList(){
   list.sort((a,b) => (isLoved(b.id) - isLoved(a.id)) || a.name.localeCompare(b.name));
   if (!list.length) return `<p class="small" style="padding:18px 0">Nothing matches “${esc(DF)}”.</p>`;
   const nl = list.filter(r => isLoved(r.id)).length;
-  return list.map((r,k) => `${k===0 && nl ? '<p class="label plabel">♥ Loved</p>' : ''}${k===nl && nl ? '<p class="label plabel">Everything else</p>' : ''}<div class="row prow ${S.sweets[r.id]?'active':''}" role="button" tabindex="0" data-act="sweet" data-id="${r.id}" style="${gradStyle(r,k)}">
-      <div class="tile grad">${imgTag(r,'')}</div>
-      <div class="rbody"><div class="rday">serves ${r.serves}${r.mins?` · ${r.mins} min`:''}${S.sweets[r.id]?' · <b>this week</b>':''}</div><div class="rtitle">${esc(r.name)}</div>
-      <div class="rmeta">≈${k0(r.kcal)} kcal · ${k0(r.p)}g protein a serving</div></div>
-      ${heartBtn(r.id)}<span class="chev">${S.sweets[r.id]?'✓':'+'}</span></div>`).join('');
+  return '<div class="pgrid">' + list.map((r,k) => `${k===0 && nl ? '<p class="label plabel">♥ Loved</p>' : ''}${k===nl && nl ? '<p class="label plabel">Everything else</p>' : ''}<div class="pcard prow ${S.sweets[r.id]?'active':''}" role="button" tabindex="0" data-act="sweet" data-id="${r.id}" style="${gradStyle(r,k)}">
+      <div class="pimg grad">${imgTag(r,'')}${heartBtn(r.id,'onimg')}${S.sweets[r.id]?'<span class="pon">This week</span>':''}</div>
+      <div class="pbody"><div class="rday">serves ${r.serves}${r.mins?` · ${r.mins} min`:''}</div><div class="ptitle">${esc(r.name)}</div>
+      <div class="rmeta">≈${k0(r.kcal)} kcal · ${k0(r.p)}g protein each</div></div></div>`).join('') + '</div>';
 }
 function viewSweets(){
   return `<a class="back" href="#/">‹ This week</a><h1>Desserts</h1>
@@ -1771,12 +1789,11 @@ function pickList(i){
   const total = list.length; list = list.slice(0, PF.n);
   if (!list.length) return `<p class="small" style="padding:18px 0">${lov && !q && !mains.length ? 'Nothing loved yet — tap the heart on a dish you love.' : `Nothing matches${q ? ` “${esc(PF.q)}”` : ''}.`}</p>`;
   const nl = list.filter(r => isLoved(r.id)).length, heads = { 0:'♥ Loved', 1:'Your recipes', 2:'Mob library' };
-  return list.map((r,k) => { const m = scaled(r), d = S.plan.indexOf(r.id), rk = rank(r), head = !lov && (k===0 || rank(list[k-1]) !== rk) && (nl || rk===2) ? `<p class="label plabel">${heads[rk]}</p>` : '';
-    return `${head}<div class="row prow ${d===i?'active':''}" role="button" tabindex="0" data-act="setday" data-i="${i}" data-id="${r.id}" style="${gradStyle(r,k)}">
-      <div class="tile grad">${imgTag(r,'')}</div>
-      <div class="rbody"><div class="rday">${esc(r.tag)}${r.by?` · ${esc(r.by)}`:''}${d>=0?` · <b>on ${DAYS[d]}</b>`:''}</div><div class="rtitle">${esc(r.name)}</div>
-      <div class="rmeta">≈${k0(m.kcal)} kcal · ${k0(m.p)}g protein${r.mins?` · ${r.mins} min`:''}</div></div>
-      ${heartBtn(r.id)}<span class="chev">›</span></div>`; }).join('') + (total > list.length ? `<button class="pill ghost" data-act="pmore" style="margin:16px auto;display:flex">Show more (${total - list.length} left)</button>` : '');
+  return '<div class="pgrid">' + list.map((r,k) => { const m = scaled(r), d = S.plan.indexOf(r.id), rk = rank(r), head = !lov && (k===0 || rank(list[k-1]) !== rk) && (nl || rk===2) ? `<p class="label plabel">${heads[rk]}</p>` : '';
+    return `${head}<div class="pcard prow ${d===i?'active':''}" role="button" tabindex="0" data-act="setday" data-i="${i}" data-id="${r.id}" style="${gradStyle(r,k)}">
+      <div class="pimg grad">${imgTag(r,'')}${heartBtn(r.id,'onimg')}${d>=0?`<span class="pon">${d===i?'Picked':'On '+DAYS[d].slice(0,3)}</span>`:''}</div>
+      <div class="pbody"><div class="rday">${esc(r.tag)}${r.by?` · ${esc(r.by)}`:''}</div><div class="ptitle">${esc(r.name)}</div>
+      <div class="rmeta">≈${k0(m.kcal)} kcal · ${k0(m.p)}g protein${r.mins?` · ${r.mins} min`:''}</div></div></div>`; }).join('') + '</div>' + (total > list.length ? `<button class="pill ghost" data-act="pmore" style="margin:16px auto;display:flex">Show more (${total - list.length} left)</button>` : '');
 }
 function viewPick(i){
   if (!(i >= 0 && i < 7) || !S.on[i]) return viewWeek();
@@ -1811,7 +1828,7 @@ function route(){
 }
 addEventListener('hashchange', ()=>{ route(); scrollTo(0,0); });
 // new version check: GitHub Pages caches for 10 minutes, so look for a newer build and offer a refresh
-const BUILD = '2026-10-25-0855';
+const BUILD = '2026-10-25-0905';
 async function checkUpdate(){ try{ const h = await fetch(location.pathname + '?v=' + Date.now(), { cache:'no-store' }).then(r => r.text());
   const m = h.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD && !$('upd')){ const d = document.createElement('button'); d.id='upd'; d.className='updbar'; d.textContent='New version ready — tap to update'; d.onclick=()=>location.reload(); document.body.appendChild(d); } }catch(e){} }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); }); setTimeout(checkUpdate, 3000);
