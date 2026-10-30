@@ -1242,13 +1242,16 @@ const tripsList = () => Object.entries(S.trips).filter(([,t]) => t && t.at).sort
 function pastShops(){ const ts = tripsList(); if (!ts.length) return '';
   const day = d => new Date(d).toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' }) + ', ' + new Date(d).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
   return `<section class="card pastshops"><div class="xhead"><b>Past shops</b><span class="subx">${ts.length}</span></div>
-    ${ts.slice(0, 10).map(([id,t], k) => `<details class="trip"><summary><span><b>${day(t.at)}</b><span class="small"> · ${t.items.length} item${t.items.length>1?'s':''}</span></span><span>${t.real != null ? `<b>${gbp(t.real)}</b>${t.total ? `<span class="small"> · est ${gbp(t.total)}</span>` : ''}` : t.total ? gbp(t.total) : ''}</span></summary>
+    ${ts.slice(0, 10).map(([id,t], k) => `<details class="trip"><summary><span><b>${day(t.at)}</b><span class="small">${t.store ? ' · '+esc(t.store) : ''} · ${t.items.length} item${t.items.length>1?'s':''}</span></span><span>${t.real != null ? `<b>${gbp(t.real)}</b>${t.total ? `<span class="small"> · est ${gbp(t.total)}</span>` : ''}` : t.total ? gbp(t.total) : ''}</span></summary>
       <ul>${t.items.map(x => `<li><span>${esc(x.n)}${x.buy ? `<span class="small"> · ${esc(x.buy)}</span>` : ''}</span><span class="small">${x.cost != null ? gbp(x.cost) : ''}</span></li>`).join('')}</ul>
+      <div class="rcpt">${STORES.map(st => `<button class="pill sm ${t.store === st ? '' : 'ghost'}" data-act="tripshop" data-id="${id}" data-s="${st}" aria-pressed="${t.store === st}">${t.store === st ? '✓ ' : ''}${st}</button>`).join('')}</div>
       <div class="rcpt"><label class="pill ghost sm">📷 ${t.real != null ? 'Re-scan receipt' : 'Scan receipt'}<input type="file" accept="image/*" hidden data-receipt="${id}"></label>
         <button class="pill ghost sm" data-act="realspend" data-id="${id}">${t.real != null ? 'Edit spend' : 'Type spend'}</button></div>
       ${k === 0 && t.week === S.week ? `<button class="pill ghost sm" data-act="untrip" data-id="${id}">Undo — put these back on the list</button>` : ''}</details>`).join('')}
   </section>`; }
 // Receipt → real spend: OCR the photo on the phone (Tesseract, loaded only when first needed), find the total, confirm it
+const STORES = ["Aldi", "Sainsbury's", 'Tesco'];
+function setStore(id, st){ const t = S.trips[id]; if (!t) return; put('trips.'+id, {...t, store: t.store === st ? null : st}); save(); route(); }
 function setReal(id, v){ const t = S.trips[id]; if (!t) return; put('trips.'+id, {...t, real: v}); save(); route(); }
 function askReal(id, guess){ const t = S.trips[id]; if (!t) return;
   const pre = guess ?? t.real ?? t.total;
@@ -1277,7 +1280,9 @@ async function readReceipt(id, file){ if (!file) return;
   toast('Reading receipt…');
   try { const [T, img] = await Promise.all([loadTess(), prepImg(file)]);
     const { data } = await T.recognize(img, 'eng');
-    const tot = findTotal(data.text || '');
+    const tot = findTotal(data.text || ''), tr = S.trips[id], txt = data.text || '';
+    const st = /ald[il1]/i.test(txt) ? 'Aldi' : /sainsbury/i.test(txt) ? "Sainsbury's" : /tesco/i.test(txt) ? 'Tesco' : null;
+    if (tr && st && !tr.store) put('trips.'+id, {...tr, store: st});
     if (tot == null) toast('Couldn’t find the total — type it in');
     askReal(id, tot); }
   catch(e){ toast('Couldn’t read that — type the total in'); askReal(id, null); } }
@@ -1986,6 +1991,7 @@ $('app').addEventListener('click', e=>{
   if(a==='storedone'){ if (finishShop()) location.hash='#/shop'; return; }
   if(a==='untrip'){ restoreTrip(b.dataset.id); return; }
   if(a==='realspend'){ askReal(b.dataset.id); return; }
+  if(a==='tripshop'){ setStore(b.dataset.id, b.dataset.s); return; }
   if(a==='shopped'){ put('shopped.'+i, !S.shopped[i]); save(); route(); toast(S.shopped[i] ? `${DAYS[i]}'s ingredients are off the shopping list` : `${DAYS[i]}'s ingredients are back on the list`); return; }
   if(a==='clear'){ put('shopped.'+i,false); const plan=[...S.plan]; plan[i]=null; put('plan',plan); put('cooked.'+i,false); put('locked.'+i,false); put('lunch.'+i,false); save(); route(); toast(`Cleared ${DAYS[i]}`); }
   if(a==='onday'){ put('on.'+i,true); const plan=[...S.plan]; plan[i]=pick(plan.filter(Boolean),tagsOf(plan)); put('plan',plan); put('cooked.'+i,false); save(); route(); toast(`${DAYS[i]} added — tap Choose to pick something else`); }
