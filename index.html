@@ -421,6 +421,7 @@ ol.method li::before{background:linear-gradient(135deg,var(--g1),var(--g3));colo
 /* add / clear days */
 .xclear{min-width:30px;width:30px;padding:0;font-size:12px}
 .erow{cursor:default}
+.weeknav{display:flex;justify-content:space-between;gap:8px;margin:0 0 10px}
 .etile{background:var(--soft)!important;color:var(--muted);border:1.5px dashed var(--line)}
 .addday{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:14px 0 4px}
 .addday .pill{padding:7px 12px}
@@ -774,7 +775,7 @@ const COL = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)'];
 const DEF = {kcal:2500,protein:160,carbs:260,fat:85,share:30,people:1};
 let S = norm(load());
 function norm(x){ x = x || {};
-  x.settings = {...DEF, ...(x.settings||{})}; x.plan = x.plan||[]; x.locked = x.locked||[]; x.ticked = x.ticked||{}; x.cooked = x.cooked||[]; x.lunch = x.lunch||[]; x.prices = x.prices||{}; x.extras = x.extras||{}; x.history = x.history||{}; x.mine = x.mine||{}; x.loved = x.loved||{}; x.shopped = x.shopped||[]; x.on = Array.isArray(x.on) && x.on.length===7 ? x.on : [...DEF_ON]; while (x.plan.length < 7) x.plan.push(null); x.sweets = x.sweets||{}; x.have = x.have||{}; x.bought = x.bought||{}; x.made = x.made||{}; x.trips = x.trips||{}; x.prods = x.prods||{}; x.nectar = x.nectar||{}; x._mt = x._mt||{};
+  x.settings = {...DEF, ...(x.settings||{})}; x.plan = x.plan||[]; x.locked = x.locked||[]; x.ticked = x.ticked||{}; x.cooked = x.cooked||[]; x.lunch = x.lunch||[]; x.prices = x.prices||{}; x.extras = x.extras||{}; x.history = x.history||{}; x.mine = x.mine||{}; x.loved = x.loved||{}; x.shopped = x.shopped||[]; x.on = Array.isArray(x.on) && x.on.length===7 ? x.on : [...DEF_ON]; while (x.plan.length < 7) x.plan.push(null); x.sweets = x.sweets||{}; x.have = x.have||{}; x.bought = x.bought||{}; x.made = x.made||{}; x.trips = x.trips||{}; x.prods = x.prods||{}; x.ahead = x.ahead||{}; x.nectar = x.nectar||{}; x._mt = x._mt||{};
   return x; }
 function load(){ try{ return JSON.parse(localStorage.getItem('wc')); }catch(e){ return null; } }
 function save(push=true){ try{ lastSaved = JSON.stringify(S); localStorage.setItem('wc', lastSaved); }catch(e){} if(push) queuePush(); }
@@ -1007,10 +1008,45 @@ function rollover(){
   Object.keys(S.sweets).forEach(id => { if (S.sweets[id]) put('sweets.'+id, false); });
   Object.keys(S.made).forEach(id => { if (S.made[id]) put('made.'+id, false); });
   // breakfast & lunch items are bought every week: keep them, just untick; one-off added items go once bought
+  Object.keys(S.ahead).forEach(k => { if (k < cur && S.ahead[k]) put('ahead.'+k, null); });
   Object.entries(S.extras).forEach(([id,v]) => { if (!v) return; if (v.cat){ if (v.done || v.got) put('extras.'+id, {...v, done:false, got:false}); } else if (v.done) put('extras.'+id, null); });
+  const pre = S.ahead[cur];
+  if (pre && pre.some(Boolean)){
+    DAYS.forEach((_,i) => { if (pre[i] && byId(pre[i])){ put('on.'+i, true); put('locked.'+i, true); } });
+    put('plan', DAYS.map((_,i) => pre[i] || null)); generate();
+    DAYS.forEach((_,i) => { if (pre[i]) put('locked.'+i, false); }); put('ahead.'+cur, null); save(); route();
+    toast('Your planned week is in — last week is saved in Past weeks'); return true; }
   generate();
   toast('New week picked — last week is saved in Past weeks');
   return true;
+}
+// ---------- Plan ahead ----------
+const aheadN = k => Math.max(1, Math.round((dayOf(k) - dayOf(thisWeek())) / 6048e5));
+const weekAt = n => iso(addDays(dayOf(thisWeek()), 7*n));
+const aheadPlan = k => { const a = S.ahead[k]; return Array.isArray(a) ? [...a, ...Array(7)].slice(0,7).map(x => x || null) : Array(7).fill(null); };
+function setAhead(k, i, id){ const plan = aheadPlan(k); if (id){ const j = plan.indexOf(id); if (j >= 0 && j !== i) plan[j] = plan[i]; }
+  plan[i] = id || null; put('ahead.'+k, plan.some(Boolean) ? plan : null); save(); }
+function shuffleAhead(k, i){ const plan = aheadPlan(k), others = plan.filter((id,j) => id && j !== i);
+  setAhead(k, i, pick([...others, plan[i]].filter(Boolean), tagsOf(others))); }
+function fillAhead(k){ const plan = aheadPlan(k);
+  DAYS.forEach((_,i) => { if (DEF_ON[i] && !plan[i]) plan[i] = pick(plan.filter(Boolean), tagsOf(plan)); });
+  put('ahead.'+k, plan); save(); }
+const aheadNav = n => `<div class="weeknav">${n > 1 ? `<a class="pill ghost sm" href="#/ahead/${n-1}">‹</a>` : `<a class="pill ghost sm" href="#/">‹ This week</a>`}<a class="pill ghost sm" href="#/ahead/${n+1}">${n === 0 ? 'Plan ahead' : 'Next'} ›</a></div>`;
+function viewAhead(n){
+  n = Math.max(1, Math.min(52, n || 1)); const k = weekAt(n), plan = aheadPlan(k), F = plan.filter(Boolean).length;
+  const dateOf = i => dinnerDate(k, {start:'sat'}, i).getDate();
+  return `${aheadNav(n)}<h1>${weekRange(k)}</h1>
+  <div class="sub">${n === 1 ? 'Next week' : `In ${n} weeks`} · ${F ? `${F} dinner${F > 1 ? 's' : ''} planned` : 'nothing planned yet'} · becomes your week when it starts</div>
+  <div>${DAYS.map((d,i) => { const id = plan[i], x = id && byId(id), mm = x && scaled(x);
+    return `<div class="row ${x ? '' : 'erow'}" style="${x ? dayStyle(i) : ''}"><div class="tile grad ${x ? '' : 'etile'}">${x ? imgTag(x,'') : '+'}</div>
+      <div class="rbody"><div class="rday">${d} ${dateOf(i)}</div><div class="rtitle" ${x ? '' : 'style="color:var(--muted)"'}>${x ? esc(x.name) : 'No dinner'}</div>
+      ${x ? `<div class="rmeta">≈${k0(mm.kcal)} kcal · ${k0(mm.p)}g protein${x.mins ? ` · ${x.mins} min` : ''}</div>` : ''}</div>
+      <div class="acts"><button class="ract" data-act="aswap" data-i="${i}" data-k="${k}" title="Random dinner">${SHUF_SVG}<span>Shuffle</span></button>
+      <button class="ract" data-act="achoose" data-i="${i}" data-k="${k}" title="Choose from all recipes">${LIST_SVG}<span>Choose</span></button>
+      ${x ? `<button class="ract xclear" data-act="aclear" data-i="${i}" data-k="${k}" aria-label="Clear ${d}">✕</button>` : ''}</div></div>`; }).join('')}</div>
+  <div class="card small" style="margin-top:16px;display:flex;justify-content:space-between;align-items:center;gap:12px">
+    <span>Fill the empty Sunday–Thursday nights with random dinners.</span><button class="pill" data-act="afill" data-k="${k}">Fill week</button></div>
+  ${F ? `<button class="pill ghost" data-act="aclearall" data-k="${k}" style="margin:14px 0 30px">Clear this week</button>` : ''}`;
 }
 function nextIndex(){ const i=filled().find(j=>!S.cooked[j]); return i===undefined?null:i; }
 
@@ -1025,7 +1061,7 @@ function viewWeek(){
   const stat=(l,v,tt,u)=>`<div class="stat ${(l==='protein'?v/tt<.88:l==='kcal'?Math.abs(v/tt-1)>.12:false)?'off':''}"><b>${k0(v)}${u}</b><span>${l} · ${k0(tt)}${u}</span></div>`;
   const items = Object.values(shopping()).flat().filter(x=>x.a!=='S').length;
 
-  return `
+  return `${aheadNav(0)}
   <h1>${weekRange()}</h1>
   <div class="sub">${done} of ${nF} cooked · ${items} things to buy (≈${gbp(totals().all)}) · ${S.settings.people} ${S.settings.people>1?'people':'person'}${lunches()?` + ${lunches()} lunch${lunches()>1?'es':''}`:''}</div>
   <div class="progress">${prog}</div>
@@ -2003,7 +2039,7 @@ const isLoved = id => !!S.loved[id];
 const HEART_SVG = on => `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.4C1.4 7.6 3.6 4.5 7 4.5c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.4 0 5.6 3.1 4.3 6.6-1.8 4.8-9.3 9.4-9.3 9.4z" fill="${on?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>`;
 const heartBtn = (id, cls='') => `<button class="heart ${cls} ${isLoved(id)?'on':''}" data-act="love" data-id="${id}" aria-pressed="${isLoved(id)}" aria-label="${isLoved(id)?'Remove from loved':'Love this dish'}" title="${isLoved(id)?'Loved':'Love it'}">${HEART_SVG(isLoved(id))}</button>`;
 const allRecipes = () => [...R.filter(r => !r.hidden), ...mineList()];
-let PF = { q:'', tags:[], n:60, have:'' };   // tags: any number of filters; mains are either/or, Loved/Yours narrow further
+let PF = { q:'', tags:[], n:60, have:'' }, PW = null;   // PW: week key when choosing for a planned-ahead week   // tags: any number of filters; mains are either/or, Loved/Yours narrow further
 // Healthy rule set (per standard portion): ≤650 kcal, ≥30g protein, ≤25g fat, protein ≥20% of calories, and not an indulgent style of dish
 const INDULGENT = /fried|crispy|cheesy|mac (and|&|n) cheese|carbonara|loaded|burger|pizza|cream|alfredo|battered|tempura|nacho|fries|\bpie\b|lasagne|katsu|parmigiana|\bbake\b/i;
 const isHealthy = r => !!r && r.kcal > 0 && r.kcal <= 650 && r.p >= 30 && r.f <= 25 && r.p * 4 / r.kcal >= .2 && !INDULGENT.test(r.name);
@@ -2022,7 +2058,7 @@ function pickList(i){
   const total = list.length; list = list.slice(0, PF.n);
   if (!list.length) return `<p class="small" style="padding:18px 0">${lov && !q && !mains.length ? 'Nothing loved yet — tap the heart on a dish you love.' : `Nothing matches${q ? ` “${esc(PF.q)}”` : ''}.`}</p>`;
   const nl = list.filter(r => isLoved(r.id)).length, heads = { 0:'♥ Loved', 1:'Your recipes', 2:'Mob library' };
-  return '<div class="pgrid">' + list.map((r,k) => { const m = scaled(r), d = S.plan.indexOf(r.id), rk = rank(r), head = !lov && !got.length && (k===0 || rank(list[k-1]) !== rk) && (nl || rk===2) ? `<p class="label plabel">${heads[rk]}</p>` : '';
+  return '<div class="pgrid">' + list.map((r,k) => { const m = scaled(r), d = (PW ? aheadPlan(PW) : S.plan).indexOf(r.id), rk = rank(r), head = !lov && !got.length && (k===0 || rank(list[k-1]) !== rk) && (nl || rk===2) ? `<p class="label plabel">${heads[rk]}</p>` : '';
     return `${head}<div class="pcard prow ${d===i?'active':''}" role="button" tabindex="0" data-act="setday" data-i="${i}" data-id="${r.id}" style="${gradStyle(r,k)}">
       <div class="pimg grad">${imgTag(r,'')}${heartBtn(r.id,'onimg')}${d>=0?`<span class="pon">${d===i?'Picked':'On '+DAYS[d].slice(0,3)}</span>`:''}</div>
       <div class="pbody"><div class="rday">${esc(r.tag)}${r.by?` · ${esc(r.by)}`:''}</div><div class="ptitle">${esc(r.name)}</div>
@@ -2037,11 +2073,12 @@ function haveMatch(r, got){
   return { n: used.length, miss: miss.length, names: miss }; }
 const haveLine = (h, of) => `<div class="rhave">Uses ${h.n} of ${of}${h.miss ? ` · need ${h.miss}: ${esc(h.names.slice(0,3).join(', '))}${h.miss > 3 ? '…' : ''}` : ' · nothing else to buy'}</div>`;
 const hltNote = () => pfOn('healthy') ? '<p class="small" style="margin:6px 0 0">Healthy: 650 kcal or less, at least 30g protein, 25g fat or less, and not fried, creamy or cheesy.</p>' : '';
-function viewPick(i){
-  if (!(i >= 0 && i < 7) || !S.on[i]) return viewWeek();
-  const cur = byId(S.plan[i]), tags = ['all', ...TAGS.filter(t => allRecipes().some(r => r.tag === t))];
+function viewPick(i, wk){
+  PW = wk && S.ahead !== undefined && /^\d{4}-\d\d-\d\d$/.test(wk) ? wk : null;
+  if (!(i >= 0 && i < 7) || (!PW && !S.on[i])) return viewWeek();
+  const cur = byId(PW ? aheadPlan(PW)[i] : S.plan[i]), tags = ['all', ...TAGS.filter(t => allRecipes().some(r => r.tag === t))];
   tags.splice(1, 0, 'loved', 'healthy'); if (mineList().length) tags.push('yours');
-  return `<a class="back" href="#/">‹ This week</a>
+  return `<a class="back" href="${PW ? '#/ahead/'+aheadN(PW) : '#/'}">‹ ${PW ? weekRange(PW) : 'This week'}</a>
   <h1>${DAYS[i]}</h1>
   <div class="sub">Pick a dinner from all ${allRecipes().length} recipes${cur ? ` · now: ${esc(cur.name)}` : ''}</div>
   <div class="addrow pickbar"><input id="pq" type="search" placeholder="Search recipes or ingredients" value="${esc(PF.q)}" autocomplete="off" enterkeyhint="search">
@@ -2065,7 +2102,7 @@ function route(){
   document.querySelectorAll('.tab').forEach(a=>{ const on=a.dataset.r===name; a.classList.toggle('on',on); if(on) $('modelabel').textContent=a.querySelector('b').textContent; });
   menu(false);
   const parts = h.split('/');
-  $('app').innerHTML = p==='receipt' ? viewReceipt(arg) : p==='recipe' ? viewRecipe(+arg) : p==='shop' ? viewShop() : p==='macros' ? viewMacros() : p==='archive' ? viewArchive(arg) : p==='store' ? viewStore() : p==='pick' ? viewPick(+arg) : p==='sweets' ? viewSweets() : p==='sweet' ? viewSweet(arg) : p==='mine' ? (arg==='new' ? viewEditor(null) : arg==='edit' ? viewEditor(parts[2]) : viewMine()) : p==='past' ? viewPast(parts[1], +parts[2]) : viewWeek();
+  $('app').innerHTML = p==='receipt' ? viewReceipt(arg) : p==='recipe' ? viewRecipe(+arg) : p==='shop' ? viewShop() : p==='macros' ? viewMacros() : p==='archive' ? viewArchive(arg) : p==='store' ? viewStore() : p==='pick' ? viewPick(+arg, parts[2]) : p==='ahead' ? viewAhead(+arg) : p==='sweets' ? viewSweets() : p==='sweet' ? viewSweet(arg) : p==='mine' ? (arg==='new' ? viewEditor(null) : arg==='edit' ? viewEditor(parts[2]) : viewMine()) : p==='past' ? viewPast(parts[1], +parts[2]) : viewWeek();
   document.title = (p==='shop'?'Shopping':p==='macros'?'Macros':p==='mine'?'My recipes':name==='archive'?'Past weeks':weekRange()) + ' – WhatsCooking';
   if (p==='mine' && arg==='new' && !$('rf-name').value) $('rf-name').focus();
 }
@@ -2100,6 +2137,12 @@ $('app').addEventListener('click', e=>{
   const b=e.target.closest('[data-act]'); if(!b) return; e.preventDefault();
   const i=+b.dataset.i, a=b.dataset.act;
   if(a==='gen'){ generate(); toast('New week picked'); if(location.hash.includes('macros')) location.hash='#/'; }
+  if(a==='swap' && PW && location.hash.startsWith('#/pick')){ shuffleAhead(PW, i); toast('Shuffled '+DAYS[i]); location.hash='#/ahead/'+aheadN(PW); return; }
+  if(a==='aswap'){ shuffleAhead(b.dataset.k, i); route(); toast('Shuffled '+DAYS[i]); return; }
+  if(a==='achoose'){ PF={q:'',tags:[],n:60,have:PF.have||''}; location.hash='#/pick/'+i+'/'+b.dataset.k; return; }
+  if(a==='aclear'){ setAhead(b.dataset.k, i, null); route(); toast('Cleared '+DAYS[i]); return; }
+  if(a==='afill'){ fillAhead(b.dataset.k); route(); toast('Week filled'); return; }
+  if(a==='aclearall'){ put('ahead.'+b.dataset.k, null); save(); route(); toast('Cleared'); return; }
   if(a==='swap'){ if(S.locked[i]){ toast(DAYS[i]+' is locked'); return; } swap(i); if(location.hash.startsWith('#/pick')) location.hash='#/'; }
   if(a==='iswap'){ const f=$('sw-'+b.dataset.k); document.querySelectorAll('.swapform').forEach(x=>{ if(x!==f) x.hidden=true; }); f.hidden=!f.hidden; if(!f.hidden) f.querySelector('.sw-n').focus(); return; }
   if(a==='ingplus'){ const f=$('sw-add'); document.querySelectorAll('.swapform').forEach(x=>{ if(x!==f) x.hidden=true; }); f.hidden=!f.hidden; if(!f.hidden) f.querySelector('.sw-n').focus(); return; }
@@ -2121,7 +2164,7 @@ $('app').addEventListener('click', e=>{
   if(a==='onday'){ put('on.'+i,true); const plan=[...S.plan]; plan[i]=pick(plan.filter(Boolean),tagsOf(plan)); put('plan',plan); put('cooked.'+i,false); save(); route(); toast(`${DAYS[i]} added — tap Choose to pick something else`); }
   if(a==='offday'){ put('on.'+i,false); const plan=[...S.plan]; plan[i]=null; put('plan',plan); put('lunch.'+i,false); save(); route(); toast(`${DAYS[i]} taken out of the week`); }
   if(a==='choose'){ PF={q:'',tags:[],n:60,have:PF.have||''}; location.hash='#/pick/'+i; }
-  if(a==='setday') setDay(i, b.dataset.id);
+  if(a==='setday'){ if(PW){ setAhead(PW, i, b.dataset.id); location.hash='#/ahead/'+aheadN(PW); toast(`${DAYS[i]}: ${byId(b.dataset.id).name}`); return; } setDay(i, b.dataset.id); }
   if(a==='made'){ const id=b.dataset.id; put('made.'+id, !S.made[id]); save(); route(); const r=sweetById(id); if(S.made[id] && r) toast(`${r.name} made`); return; }
   if(a==='sweet'){ const id=b.dataset.id, on=!S.sweets[id], r=sweetById(id); put('sweets.'+id, on); save();
     toast(on ? `${r ? r.name : 'Dessert'} added — ingredients are on the shopping list` : 'Dessert removed');
@@ -2362,7 +2405,7 @@ function gh(method, body){
 function allPaths(){
   const ps=['plan','week','shopDone']; Object.keys(S.history).forEach(k=>ps.push('history.'+k)); Object.keys(S.settings).forEach(k=>ps.push('settings.'+k));
   for(let i=0;i<7;i++) ps.push('cooked.'+i,'locked.'+i,'lunch.'+i,'on.'+i,'shopped.'+i);
-  ['ticked','prices','extras','mine','loved','sweets','have','bought','trips','made','prods','nectar'].forEach(a=>Object.keys(S[a]).forEach(k=>ps.push(a+'.'+k)));
+  ['ticked','prices','extras','mine','loved','sweets','have','bought','trips','made','prods','nectar','ahead'].forEach(a=>Object.keys(S[a]).forEach(k=>ps.push(a+'.'+k)));
   return ps;
 }
 // take whichever side changed each piece most recently
